@@ -1,0 +1,34 @@
+Stoppuhr = 0
+Zwischenspeicher = 0
+Treffer = 0
+
+def on_pin_pressed_p0():
+    global Stoppuhr
+    Stoppuhr = input.running_time() - input.running_time()
+input.on_pin_pressed(TouchPin.P0, on_pin_pressed_p0)
+
+def on_pin_pressed_p2():
+    global Stoppuhr, Zwischenspeicher
+    Stoppuhr = input.running_time() - Zwischenspeicher
+    Zwischenspeicher = Stoppuhr + Zwischenspeicher
+input.on_pin_pressed(TouchPin.P2, on_pin_pressed_p2)
+
+def on_button_pressed_b():
+    basic.show_number(Stoppuhr / 1000)
+    basic.pause(5000)
+    basic.show_number(Treffer)
+input.on_button_pressed(Button.B, on_button_pressed_b)
+
+def on_forever():
+    global Treffer
+    while input.pin_is_pressed(TouchPin.P1):
+        basic.show_leds("""
+            # . . . #
+            . # . # .
+            . . # . .
+            . # . # .
+            # . . . #
+            """)
+        music.play_tone(988, music.beat(BeatFraction.WHOLE))
+        Treffer += 1
+basic.forever(on_forever)
