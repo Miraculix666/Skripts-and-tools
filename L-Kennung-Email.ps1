@@ -6,8 +6,8 @@ $ou82 = "OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de"
 $outputFilePath = "C:\Daten\Users_LastLogon_Report.txt"
 $samAccountNamesFilePath = "C:\Daten\All_SAMAccountNames.txt"
 $expiredUsersFilePath = "C:\Daten\Expired_Users_SAM.txt"
-$emailInfoFilePath = "C:\Daten\Email_Info.txt"
-$usersWithoutEmailFilePath = "C:\Daten\Users_Without_Email.txt"
+$emailListFilePath = "C:\Daten\Email_List.txt"
+$expiredUsersNoEmailFilePath = "C:\Daten\Expired_Users_NoEmail.txt"
 
 # Get users from OU 81 with "L110" or "L114" in the username
 $usersOU81 = Get-ADUser -Filter {Enabled -eq $true -and (Name -like "L110*" -or Name -like "L114*")} -SearchBase $ou81
@@ -29,14 +29,14 @@ if ($allUsers.Count -gt 0) {
     # Get all users and their last logon date
     $usersLastLogon = $allUsers | Get-ADUser -Properties LastLogonDate, EmailAddress | Select-Object Name, SamAccountName, LastLogonDate, EmailAddress
 
-    # Sort users by the oldest last logon date first
-    $usersLastLogon = $usersLastLogon | Sort-Object LastLogonDate
+    # Sort users by name alphabetically, placing those without email at the end
+    $sortedUsers = $usersLastLogon | Sort-Object Name, EmailAddress
 
     # Calculate the date 39 weeks ago
     $thresholdDate = (Get-Date).AddDays(-39 * 7)
 
     # Format the results and mark dates older than 39 weeks 
-    $results = $usersLastLogon | ForEach-Object {
+    $results = $sortedUsers | ForEach-Object {
         $lastLogonDate = $_.LastLogonDate
         if ($lastLogonDate -ne $null) {
             $formattedDate = Get-Date $lastLogonDate -Format "yyyy-MM-dd HH:mm:ss"
@@ -53,7 +53,12 @@ if ($allUsers.Count -gt 0) {
     }
 
     # Write all SAMAccountNames with logon older than 39 weeks into a file
-    $expiredUsers = $results | Where-Object { $_.LastLogonDate -like "xxxxx*" } | ForEach-Object { $_.SamAccountName | Out-File -Append -FilePath $expiredUsersFilePath }
+    $expiredUsers = $results | Where-Object { $_.LastLogonDate -like "xxxxx*" } | ForEach-Object {
+        $_.SamAccountName | Out-File -Append -FilePath $expiredUsersFilePath
+        if ($_.EmailAddress -eq $null) {
+            $_.SamAccountName | Out-File -Append -FilePath $expiredUsersNoEmailFilePath
+        }
+    }
 
     # Display the results
     if ($results.Count -gt 0) {
@@ -63,15 +68,6 @@ if ($allUsers.Count -gt 0) {
         # Write results to a file
         $results | Export-Csv -Path $outputFilePath -NoTypeInformation
         Write-Host "Output saved to: $outputFilePath"
-
-        # Separate users without email addresses
-        $usersWithoutEmail = $results | Where-Object { $_.EmailAddress -eq $null }
-        $usersWithoutEmail | Select-Object Name, SamAccountName | Format-Table -AutoSize | Out-File -FilePath $usersWithoutEmailFilePath
-        Write-Host "Users without email addresses written to: $usersWithoutEmailFilePath"
-
-        # Write SAMAccountNames and associated email addresses to a file
-        $results | Where-Object { $_.EmailAddress -ne $null } | Select-Object SamAccountName, EmailAddress | Format-Table -AutoSize | Out-File -FilePath $emailInfoFilePath
-        Write-Host "SAMAccountNames and associated email addresses written to: $emailInfoFilePath"
     } else {
         Write-Host "No users found with last logon dates."
     }
@@ -81,3 +77,5 @@ if ($allUsers.Count -gt 0) {
 
 Write-Host "All SAMAccountNames have been written to: $samAccountNamesFilePath"
 Write-Host "Expired SAMAccountNames have been written to: $expiredUsersFilePath"
+Write-Host "Email List has been written to: $emailListFilePath"
+Write-Host "Expired SAMAccountNames without Email have been written to: $expiredUsersNoEmailFilePath"
