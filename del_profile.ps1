@@ -1,4 +1,4 @@
-### scrit too delete remotly user rofiles on a comuter
+### script to delete remotly user profiles on a computer
 
 param (
     [Parameter(Mandatory=$true)]
