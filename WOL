@@ -1,0 +1,8 @@
+# Ersetzen Sie "00-00-00-00-00-00" mit der MAC-Adresse des Ziel-PCs.
+$mac = "00-00-00-00-00-00"
+$macByteArray = $mac -split "[:-]" | ForEach-Object { [byte] "0x$_" }
+$magicPacket = [byte[]](,0xFF * 6) + ($macByteArray * 16)
+$udpClient = New-Object System.Net.Sockets.UdpClient
+$udpClient.Connect(([System.Net.IPAddress]::Broadcast), 9)
+$udpClient.Send($magicPacket, $magicPacket.Length)
+$udpClient.Close()
