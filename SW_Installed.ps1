@@ -2,7 +2,37 @@
 $computerName = "RemoteComputerName"
 $softwareName = "SoftwareName"
 
-# Test der Remote-Registry-Verbindung herzustellen
+# Definieren Sie den Namen des Remote-Computers und der Software
+$computerName = "RemoteComputerName"
+$softwareName = "SoftwareName"
+
+#### 2. Versuch
+
+# Erstellen Sie eine Remote-Registry-Verbindung
+$reg = [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey('LocalMachine', $computerName)
+
+# Öffnen Sie den Uninstall-Schlüssel in der Registry
+$regKey = $reg.OpenSubKey('SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall')
+
+# Durchsuchen Sie alle Uninstall-Schlüssel
+$softwareFound = $false
+$regKey.GetSubKeyNames() | ForEach-Object {
+    $key = $regKey.OpenSubKey($_)
+    $displayName = $key.GetValue('DisplayName')
+    if ($displayName -and $displayName -like "*$softwareName*") {
+        Write-Output "Die Software $softwareName ist auf $computerName installiert."
+        $softwareFound = $true
+    }
+}
+
+# Überprüfen Sie, ob die Software gefunden wurde
+if (-not $softwareFound) {
+    Write-Output "Die Software $softwareName ist auf $computerName nicht installiert."
+}
+
+
+
+# Test der Remote-Registry-Verbindung 
 try {
     $reg = [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey('LocalMachine', $computerName)
     Write-Output "Die Remote-Verbindung zur Registry von $computerName wurde erfolgreich hergestellt."
@@ -10,6 +40,7 @@ try {
     Write-Output "Die Remote-Verbindung zur Registry von $computerName konnte nicht hergestellt werden. Fehler: $_"
 }
 
+### 1. Versuch
 
 # Erstellen Sie eine Remote-Registry-Verbindung
 $reg = [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey('LocalMachine', $computerName)
