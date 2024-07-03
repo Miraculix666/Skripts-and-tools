@@ -1,8 +1,19 @@
-# Benutzernamen aus dem AD abrufen und in eine Liste schreiben
-$UserList = Get-ADUser -Filter * | Select-Object -ExpandProperty SamAccountName
+# CSV-Datei zum Importieren
+$Datei = "C:\Pfad\Zur\Deiner\CSV-Datei.csv"
 
-# Liste der Benutzernamen ausgeben
-$UserList | Out-File -FilePath "C:\Pfad\Zur\Datei\Benutzerliste.txt"
+# Importieren der CSV-Informationen
+$CSVImport = Import-Csv $Datei -Delimiter ";" -Encoding Default
 
-# Erfolgsmeldung
-Write-Host "Die Benutzerliste wurde erfolgreich erstellt und unter C:\Pfad\Zur\Datei\Benutzerliste.txt gespeichert."
+# Für jeden Datensatz im CSV
+foreach ($Benutzer in $CSVImport) {
+    # Active Directory Benutzer erstellen
+    New-ADUser -Path "OU=NeueBenutzer,OU=Benutzer,OU=GPS,DC=gps,DC=germanpowershell,DC=com" `
+        -Surname $Benutzer.Name `
+        -GivenName $Benutzer.Vorname `
+        -SamAccountName $Benutzer.Login `
+        -UserPrincipalName $Benutzer.Login `
+        -AccountPassword ($Benutzer.Passwort | ConvertTo-SecureString -AsPlainText -Force) `
+        -Enabled:$true `
+        -DisplayName "$($Benutzer.Vorname) $($Benutzer.Name)" `
+        -Name "$($Benutzer.Vorname) $($Benutzer.Name)"
+}
