@@ -1,8 +1,10 @@
-# CSV-Datei zum Importieren
-$Datei = "C:\Pfad\Zur\Deiner\CSV-Datei.csv"
+# Pfad zur CSV-Datei (kann als Argument übergeben werden)
+param (
+    [string]$Import-CSV
+)
 
 # Importieren der CSV-Informationen
-$CSVImport = Import-Csv $Datei -Delimiter ";" -Encoding Default
+$CSVImport = Import-Csv $CsvPath -Delimiter ";" -Encoding Default
 
 # Für jeden Datensatz im CSV
 foreach ($Benutzer in $CSVImport) {
