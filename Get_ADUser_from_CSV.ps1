@@ -1,11 +1,10 @@
-# Pfad zur Eingabe-CSV-Datei (Nachname,Vorname)
-$InputCsvPath = "C:\Pfad\Zur\Deiner\Eingabe-Datei.csv"
+param (
+    [string]$InputCsvPath,
+    [string]$OutputCsvPath
+)
 
-# Pfad zur Ausgabe-CSV-Datei (Ergebnisse speichern)
-$OutputCsvPath = "C:\Pfad\Zur\Deiner\Ausgabe-Datei.csv"
-
-# Importieren der CSV-Informationen
-$CSVImport = Import-Csv $InputCsvPath -Delimiter "," -Encoding Default
+# Importieren der CSV-Informationen ohne Kopfzeile
+$CSVImport = Get-Content $InputCsvPath | ConvertFrom-Csv -Delimiter "," -Header "Nachname", "Vorname"
 
 # Für jeden Datensatz im CSV
 foreach ($Benutzer in $CSVImport) {
