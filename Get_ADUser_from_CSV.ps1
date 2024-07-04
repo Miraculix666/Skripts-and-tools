@@ -1,21 +1,23 @@
-# Pfad zur CSV-Datei (kann als Argument übergeben werden)
-param (
-    [string]$Import-CSV
-)
+# Pfad zur Eingabe-CSV-Datei (Nachname,Vorname)
+$InputCsvPath = "C:\Pfad\Zur\Deiner\Eingabe-Datei.csv"
+
+# Pfad zur Ausgabe-CSV-Datei (Ergebnisse speichern)
+$OutputCsvPath = "C:\Pfad\Zur\Deiner\Ausgabe-Datei.csv"
 
 # Importieren der CSV-Informationen
-$CSVImport = Import-Csv $CsvPath -Delimiter ";" -Encoding Default
+$CSVImport = Import-Csv $InputCsvPath -Delimiter "," -Encoding Default
 
 # Für jeden Datensatz im CSV
 foreach ($Benutzer in $CSVImport) {
-    # Active Directory Benutzer erstellen
-    New-ADUser -Path "OU=NeueBenutzer,OU=Benutzer,OU=GPS,DC=gps,DC=germanpowershell,DC=com" `
-        -Surname $Benutzer.Name `
-        -GivenName $Benutzer.Vorname `
-        -SamAccountName $Benutzer.Login `
-        -UserPrincipalName $Benutzer.Login `
-        -AccountPassword ($Benutzer.Passwort | ConvertTo-SecureString -AsPlainText -Force) `
-        -Enabled:$true `
-        -DisplayName "$($Benutzer.Vorname) $($Benutzer.Name)" `
-        -Name "$($Benutzer.Vorname) $($Benutzer.Name)"
+    $Nachname = $Benutzer.Nachname
+    $Vorname = $Benutzer.Vorname
+    $SamAccountName = Get-ADUser -Filter { Surname -eq $Nachname -and GivenName -eq $Vorname } | Select-Object -ExpandProperty SamAccountName
+    [PSCustomObject]@{
+        Nachname = $Nachname
+        Vorname = $Vorname
+        SamAccountName = $SamAccountName
+    } | Export-Csv -Append -Path $OutputCsvPath -NoTypeInformation
 }
+
+# Erfolgsmeldung
+Write-Host "Die SamAccountNamen wurden erfolgreich in $OutputCsvPath gespeichert."
