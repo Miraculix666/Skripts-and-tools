@@ -1,3 +1,5 @@
+Gesendet von Copilot:
+Natürlich! Hier ist das angepasste Skript, das eine Variable für das Passwort verwendet:
 
 # Define the distinguished names of the Organizational Units (OUs)
 $ou81 = "OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de"
