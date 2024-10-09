@@ -1,5 +1,16 @@
-Gesendet von Copilot:
-Natürlich! Hier ist das angepasste Skript, das eine Variable für das Passwort verwendet:
+# Function to rename existing files with a running number
+function Rename-ExistingFile {
+    param (
+        [string]$filePath
+    )
+    $counter = 1
+    $newFilePath = $filePath -replace '\.txt$', "_OLD_$('{0:D2}' -f $counter).txt"
+    while (Test-Path $newFilePath) {
+        $counter++
+        $newFilePath = $filePath -replace '\.txt$', "_OLD_$('{0:D2}' -f $counter).txt"
+    }
+    Rename-Item -Path $filePath -NewName $newFilePath
+}
 
 # Define the distinguished names of the Organizational Units (OUs)
 $ou81 = "OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de"
@@ -9,6 +20,16 @@ $ou82 = "OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de"
 $outputFilePath = "C:\Daten\Users_LastLogon_Report.txt"
 $samAccountNamesFilePath = "C:\Daten\All_SAMAccountNames.txt"
 $expiredUsersFilePath = "C:\Daten\Expired_Users_SAM.txt"
+
+# Check and rename existing files
+if (Test-Path $outputFilePath) { Rename-ExistingFile -filePath $outputFilePath }
+if (Test-Path $samAccountNamesFilePath) { Rename-ExistingFile -filePath $samAccountNamesFilePath }
+if (Test-Path $expiredUsersFilePath) { Rename-ExistingFile -filePath $expiredUsersFilePath }
+
+# Ensure the files are created anew
+New-Item -Path $outputFilePath -ItemType File -Force
+New-Item -Path $samAccountNamesFilePath -ItemType File -Force
+New-Item -Path $expiredUsersFilePath -ItemType File -Force
 
 # Get users from OU 81 with "L110" or "L114" in the username
 $usersOU81 = Get-ADUser -Filter {Enabled -eq $true -and (Name -like "L110*" -or Name -like "L114*")} -SearchBase $ou81
@@ -40,5 +61,3 @@ foreach ($samAccountName in $samAccountNames) {
 }
 
 Write-Host "Password reset completed for users in the file."
-
-Jetzt wird das Passwort in einer Variable gespeichert und verwendet. Wenn du weitere Anpassungen benötigst, lass es mich wissen!
