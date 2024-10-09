@@ -21,6 +21,24 @@ $outputFilePath = "C:\Daten\Users_LastLogon_Report.txt"
 $samAccountNamesFilePath = "C:\Daten\All_SAMAccountNames.txt"
 $expiredUsersFilePath = "C:\Daten\Expired_Users_SAM.txt"
 
+# Check and rename existing files
+if (Test-Path $outputFilePath) { Rename-ExistingFile -filePath $outputFilePath }
+if (Test-Path $samAccountNamesFilePath) { Rename-ExistingFile -filePath $samAccountNamesFilePath }
+if (Test-Path $expiredUsersFilePath) { Rename-ExistingFile -filePath $expiredUsersFilePath }
+
+# Ensure the files are created anew
+New-Item -Path $outputFilePath -ItemType File -Force
+New-Item -Path $samAccountNamesFilePath -ItemType File -Force
+New-Item -Path $expiredUsersFilePath -ItemType File -Force
+
+# Get users from OU 81 with "L110" or "L114" in the username
+$usersOU81 = Get-ADUser -Filter {Enabled -eq $true -and (Name -like "L110*" -or Name -like "L114*")} -SearchBase $ou81
+
+# Get users from OU 82 with "L110" or "L114" in the username
+$usersOU82 = Get-ADUser -Filter {Enabled -eq $true -and (Name -like "L110*" -or Name -like "L114*")} -SearchBase $ou82
+
+# Combine the results from both OUs
+$allUsers = $usersOU81 + $usersOU82
 
 # Display the results
 if ($allUsers.Count -gt 0) {
@@ -55,29 +73,9 @@ if ($allUsers.Count -gt 0) {
         }
     }
 
-
-
-# Check and rename existing files
-if (Test-Path $outputFilePath) { Rename-ExistingFile -filePath $outputFilePath }
-if (Test-Path $samAccountNamesFilePath) { Rename-ExistingFile -filePath $samAccountNamesFilePath }
-if (Test-Path $expiredUsersFilePath) { Rename-ExistingFile -filePath $expiredUsersFilePath }
-
-# Ensure the files are created anew
-New-Item -Path $outputFilePath -ItemType File -Force
-New-Item -Path $samAccountNamesFilePath -ItemType File -Force
-New-Item -Path $expiredUsersFilePath -ItemType File -Force
-
-# Get users from OU 81 with "L110" or "L114" in the username
-$usersOU81 = Get-ADUser -Filter {Enabled -eq $true -and (Name -like "L110*" -or Name -like "L114*")} -SearchBase $ou81
-
-# Get users from OU 82 with "L110" or "L114" in the username
-$usersOU82 = Get-ADUser -Filter {Enabled -eq $true -and (Name -like "L110*" -or Name -like "L114*")} -SearchBase $ou82
-
-# Combine the results from both OUs
-$allUsers = $usersOU81 + $usersOU82
-
-# Input file path containing the list of affected users
-$inputFilePath = "C:\Daten\Deaktivierte_L_Kennung_SAM.txt"
+    # Output the results to the report file
+    $results | Format-Table -AutoSize | Out-File -FilePath $outputFilePath
+}
 
 # Define the new password
 $passwordString = "P2f7aL4!01"
