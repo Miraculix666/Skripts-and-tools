@@ -21,6 +21,42 @@ $outputFilePath = "C:\Daten\Users_LastLogon_Report.txt"
 $samAccountNamesFilePath = "C:\Daten\All_SAMAccountNames.txt"
 $expiredUsersFilePath = "C:\Daten\Expired_Users_SAM.txt"
 
+
+# Display the results
+if ($allUsers.Count -gt 0) {
+    Write-Host "Users in specified OUs with 'L110' or 'L114' in the username:"
+    $allUsers | Select-Object Name, SamAccountName, DistinguishedName | Format-Table -AutoSize
+
+    # Write all SAMAccountNames in the given scope into a file
+    $allUsers | ForEach-Object { $_.SamAccountName | Out-File -Append -FilePath $samAccountNamesFilePath }
+
+    # Get all users and their last logon date
+    $usersLastLogon = $allUsers | Get-ADUser -Properties LastLogonDate | Select-Object Name, SamAccountName, LastLogonDate
+
+    # Sort users by the oldest last logon date first
+    $usersLastLogon = $usersLastLogon | Sort-Object LastLogonDate
+
+    # Calculate the date 39 weeks ago
+    $thresholdDate = (Get-Date).AddDays(-39 * 7)
+
+    # Format the results and mark dates older than 39 weeks 
+    $results = $usersLastLogon | ForEach-Object {
+        $lastLogonDate = $_.LastLogonDate
+        if ($lastLogonDate -ne $null) {
+            $formattedDate = Get-Date $lastLogonDate -Format "yyyy-MM-dd HH:mm:ss"
+            $formattedDatemarked = if ($lastLogonDate -lt $thresholdDate) {  "xxxxx $formattedDate" } else { $formattedDate }
+        } else {
+            $formattedDatemarked = "xxxxx N/A"
+        }
+        [PSCustomObject]@{
+            Name            = $_.Name
+            SamAccountName  = $_.SamAccountName
+            LastLogonDate   = $formattedDatemarked
+        }
+    }
+
+
+
 # Check and rename existing files
 if (Test-Path $outputFilePath) { Rename-ExistingFile -filePath $outputFilePath }
 if (Test-Path $samAccountNamesFilePath) { Rename-ExistingFile -filePath $samAccountNamesFilePath }
