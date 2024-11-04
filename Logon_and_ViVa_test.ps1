@@ -1,7 +1,7 @@
 # Liste der PCs und Nutzer als Strings
-$pcs = @("c00", "c01", "c02", "c03", "c04", "c05", "c06", "c07", "c08", "c09", "c10", "c11", "c12", "c13")
-$users = @("N00", "N01", "N02", "N03", "N04", "N05", "N06", "N07", "N08", "N09", "N10", "N11", "N12", "N13")
-$password = "deinPasswort"  # Passwort für alle Nutzer
+$pcs = @("c26pbze70004600", "c26pbze70004601", "c26pbze70004602", "c26pbze70004603", "c26pbze70004604", "c26pbze70004605", "c26pbze70004606", "c26pbze70004607", "c26pbze70004608", "c26pbze70004609", "c26pbze70004610", "c26pbze70004611", "c26pbze70004612", "c26pbze70004613")
+$users = @("L1101061", "L1101062", "L1101063", "L1101064", "L1101065", "L1101066", "L1101067", "L1101068", "L1101069", "L1101070", "L1101071", "L1101072") 
+$password = "PW"  # Passwort für alle Nutzer
 
 foreach ($i in 0..($pcs.Length - 1)) {
     $pc = $pcs[$i]
