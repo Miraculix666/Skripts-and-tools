@@ -12,14 +12,37 @@ foreach ($i in 0..($pcs.Length - 1)) {
     $securePassword = $userPassword
     $credential = New-Object System.Management.Automation.PSCredential ($user, $securePassword)
 
-    # Öffne RDP-Sitzung mit dem aktuellen Benutzer
-    Start-Process -FilePath "mstsc.exe" -ArgumentList "/v:$pc /prompt"
+    # Öffne RDP-Sitzung mit automatischem Login
+    $rdpFile = @"
+screen mode id:i:1
+desktopwidth:i:1024
+desktopheight:i:768
+session bpp:i:32
+winposstr:s:0,1,10,10,800,600
+full address:s:$pc
+compression:i:1
+keyboardhook:i:2
+audiomode:i:0
+redirectprinters:i:1
+redirectcomports:i:0
+redirectsmartcards:i:1
+redirectclipboard:i:1
+redirectposdevices:i:0
+drivestoredirect:s:
+autoreconnection enabled:i:1
+username:s:domain\user1
+password 51:b:$([Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($rdpPassword)))
+"@
+
+    $rdpFilePath = "$env:TEMP\$pc.rdp"
+    $rdpFile | Out-File -FilePath $rdpFilePath -Encoding Unicode
+    Start-Process -FilePath "mstsc.exe" -ArgumentList $rdpFilePath
 
     # Warte kurz, um sicherzustellen, dass die Verbindung hergestellt ist
-    Start-Sleep -Seconds 5
+    Start-Sleep -Seconds 360
 
     # Starte die Anwendung auf dem entfernten PC im Kontext eines anderen Benutzers
     Invoke-Command -ComputerName $pc -Credential $credential -ScriptBlock {
-        Start-Process -FilePath "C:\Programme (x86)\viva\viva.exe"
+        Start-Process -FilePath "C:\Programme\x\x.exe"
     }
 }
