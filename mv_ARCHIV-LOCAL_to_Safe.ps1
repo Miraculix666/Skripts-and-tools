@@ -1,6 +1,6 @@
 # Standardpfade
 $defaultSmbPfad = "\\server\freigabe"
-$defaultZielPfad = "e:\Daten\Archiv"
+$defaultZielPfad = "D:\Daten\Archiv"
 
 # Abfrage des SMB Serverpfads mit Standardpfad
 $smbPfad = Read-Host -Prompt "Geben Sie den SMB Serverpfad ein (Standard: $defaultSmbPfad)"
@@ -31,7 +31,7 @@ $protokollDatei = Join-Path $zielPfad "archiv_protokoll.txt"
 # Schleife durch alle Unterordner im SMB Pfad
 Get-ChildItem -Path $smbPfad -Directory | ForEach-Object {
   $ordnerName = $_.Name
-  $archivOrdner = Join-Path $_.FullName "---archive-Local---"
+  $archivOrdner = Join-Path $_.FullName "---LOCAL-ARCHIVE---"
 
   # Überprüfung, ob der Archivordner existiert
   if (Test-Path $archivOrdner) {
