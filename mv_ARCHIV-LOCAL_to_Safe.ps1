@@ -1,6 +1,6 @@
 # Standardpfade
 $defaultSmbPfad = "\\server\freigabe"
-$defaultZielPfad = "D:\Daten\Archiv"
+$defaultZielPfad = "e:\Daten\Archiv"
 
 # Abfrage des SMB Serverpfads mit Standardpfad
 $smbPfad = Read-Host -Prompt "Geben Sie den SMB Serverpfad ein (Standard: $defaultSmbPfad)"
