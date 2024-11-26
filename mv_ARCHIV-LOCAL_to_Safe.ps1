@@ -1,8 +1,18 @@
-# Abfrage des SMB Serverpfads
-$smbPfad = Read-Host -Prompt "Geben Sie den SMB Serverpfad ein"
+# Standardpfade
+$defaultSmbPfad = "\\server\freigabe"
+$defaultZielPfad = "D:\Archiv"
 
-# Abfrage des Zielpfads
-$zielPfad = Read-Host -Prompt "Geben Sie den Zielpfad ein"
+# Abfrage des SMB Serverpfads mit Standardpfad
+$smbPfad = Read-Host -Prompt "Geben Sie den SMB Serverpfad ein (Standard: $defaultSmbPfad)"
+if ([string]::IsNullOrEmpty($smbPfad)) {
+  $smbPfad = $defaultSmbPfad
+}
+
+# Abfrage des Zielpfads mit Standardpfad
+$zielPfad = Read-Host -Prompt "Geben Sie den Zielpfad ein (Standard: $defaultZielPfad)"
+if ([string]::IsNullOrEmpty($zielPfad)) {
+  $zielPfad = $defaultZielPfad
+}
 
 # Überprüfung, ob die Pfade existieren
 if (!(Test-Path $smbPfad)) {
