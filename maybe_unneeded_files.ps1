@@ -19,7 +19,7 @@ $groesse100MB = 100MB
 $groesse1GB = 1GB
 
 # Ausgabeverzeichnis (aktuell genutzter Pfad)
-$ausgabeVerzeichnis = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ausgabeVerzeichnis = d:\daten\maybe_unneded_files
 
 # Funktion zum Erstellen der Baumstruktur und Speichern in einer Textdatei
 function ErstelleBaumstruktur {
@@ -72,7 +72,7 @@ function ErstelleHTML {
 <!DOCTYPE html>
 <html>
 <head>
-<title>DFS Dateien - $Titel</title>
+<title>Dateien - $Titel</title>
 <style>
   body {
     background-color: #121212;
@@ -95,11 +95,11 @@ function ErstelleHTML {
 </style>
 </head>
 <body>
-<h1>DFS Dateien - $Titel</h1>
+<h1>Dateien - $Titel</h1>
 <ul>
 "@
 
-  Get-Content -Path "$ausgabeVerzeichnis\$DateiName.txt" | ForEach-Object {
+  Get-Content -Path ".\$DateiName.txt" | ForEach-Object {
     $pfad = $_ -replace "\\", "/"
     $html += "<li>$pfad</li>"
   }
