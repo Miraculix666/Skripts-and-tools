@@ -1,3 +1,15 @@
+
+AUSFÜHRLICH: Processing user: L1101642
+AUSFÜHRLICH: Processing user: L1101644
+AUSFÜHRLICH: Processing user: Ltest100
+Processing 53419 user-group combinations...
+CSV export completed: C:\daten\AD_Benutzer_Gruppen_L.csv
+AUSFÜHRLICH: Das in die Pipeline geschriebene Objekt ist eine Instanz vom Typ "Microsoft.Office.Interop.Excel.ApplicationClass" aus der primären Interoperabilitätsasse
+mbly der Komponente. Wenn dieser Typ andere Elemente als die IDispatch-Elemente verfügbar macht, funktionieren Skripts, die dieses Objekt verwenden, möglicherweise nic
+ht, sofern die primäre Interoperabilitätsassembly nicht installiert ist.
+
+
+
 [CmdletBinding()]
 param (
     [Parameter()]
