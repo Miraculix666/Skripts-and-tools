@@ -1,15 +1,3 @@
-
-AUSFÜHRLICH: Processing user: L1101642
-AUSFÜHRLICH: Processing user: L1101644
-AUSFÜHRLICH: Processing user: Ltest100
-Processing 53419 user-group combinations...
-CSV export completed: C:\daten\AD_Benutzer_Gruppen_L.csv
-AUSFÜHRLICH: Das in die Pipeline geschriebene Objekt ist eine Instanz vom Typ "Microsoft.Office.Interop.Excel.ApplicationClass" aus der primären Interoperabilitätsasse
-mbly der Komponente. Wenn dieser Typ andere Elemente als die IDispatch-Elemente verfügbar macht, funktionieren Skripts, die dieses Objekt verwenden, möglicherweise nic
-ht, sofern die primäre Interoperabilitätsassembly nicht installiert ist.
-
-
-
 [CmdletBinding()]
 param (
     [Parameter()]
@@ -22,6 +10,7 @@ function Close-ExcelProcesses {
     Get-Process -Name "excel" -ErrorAction SilentlyContinue | ForEach-Object {
         try {
             $_.CloseMainWindow() | Out-Null
+            Start-Sleep -Milliseconds 500
             if (!$_.HasExited) {
                 $_.Kill()
             }
@@ -35,6 +24,9 @@ function Close-ExcelProcesses {
 try {
     Write-Host "Starting AD user report generation..." -ForegroundColor Green
     
+    # Force close any Excel processes first
+    Close-ExcelProcesses
+    
     # Get all users with SamAccountName starting with 'L'
     $users = Get-ADUser -Filter "SamAccountName -like 'L*'" -Properties SamAccountName, Name, MemberOf, DistinguishedName, Comment
     
@@ -46,7 +38,7 @@ try {
     # Initialize collections
     $userData = @()
     $groupColors = @{}
-    $colorIndex = 20  # Excel color index starting point
+    $colorIndex = 35  # Starting with lighter colors
     
     foreach ($user in $users) {
         Write-Verbose "Processing user: $($user.SamAccountName)"
@@ -72,7 +64,7 @@ try {
             if (-not $groupColors.ContainsKey($group)) {
                 $groupColors[$group] = $colorIndex
                 $colorIndex++
-                if ($colorIndex -gt 56) { $colorIndex = 20 }  # Reset if we run out of colors
+                if ($colorIndex -gt 46) { $colorIndex = 35 }  # Reset to start of light colors
             }
             
             $userData += [PSCustomObject]@{
@@ -87,7 +79,7 @@ try {
         }
     }
     
-    # Sort data
+    # Sort data with priority on 2-digit OUs
     $sortedData = $userData | Sort-Object {
         if ($_.SortPrefix -match '^\d{2}$') { 
             [int]$_.SortPrefix 
@@ -105,7 +97,7 @@ try {
             New-Item -ItemType Directory -Path $csvDir -Force | Out-Null
         }
         
-        # Force close any open files
+        # Force remove existing CSV
         if (Test-Path $OutputPath) {
             Remove-Item $OutputPath -Force -ErrorAction Stop
         }
@@ -124,9 +116,6 @@ try {
             New-Item -ItemType Directory -Path $excelDir -Force | Out-Null
         }
         
-        # Close any open Excel processes
-        Close-ExcelProcesses
-        
         # Create new Excel file
         $excel = New-Object -ComObject Excel.Application
         $excel.Visible = $false
@@ -141,7 +130,7 @@ try {
             $worksheet.Cells.Item(1, $_) = $headers[$_ - 1]
         }
         
-        # Add data with colors
+        # Add data and apply colors
         $row = 2
         foreach ($item in $sortedData) {
             $worksheet.Cells.Item($row, 1) = $item.OU
@@ -168,7 +157,7 @@ try {
         $worksheet.Columns.Item(2).ColumnWidth = 30  # Benutzer
         $worksheet.Columns.Item(3).ColumnWidth = 20  # SamAccountName
         $worksheet.Columns.Item(4).ColumnWidth = 50  # Gruppe
-        $worksheet.Columns.Item(5).ColumnWidth = 50  # Kommentar
+        $worksheet.Columns.Item(5).ColumnWidth = 40  # Kommentar
         
         # Save and close
         if (Test-Path $ExcelPath) {
