@@ -1,127 +1,192 @@
-# Module for creating visualizations
-function Export-Visualizations {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory)]
-        [object[]]$Data,
-        [Parameter(Mandatory)]
-        [string]$HtmlPath,
-        [Parameter(Mandatory)]
-        [string]$VisioPath,
-        [Parameter(Mandatory)]
-        [string]$MindManagerPath
-    )
-    
-    try {
-        # Export HTML visualization
-        Export-HtmlVisualization -Data $Data -Path $HtmlPath
-        
-        # Export Visio diagram
-        Export-VisioVisualization -Data $Data -Path $VisioPath
-        
-        # Export MindManager map
-        Export-MindManagerVisualization -Data $Data -Path $MindManagerPath
+[CmdletBinding()]
+param (
+    [Parameter()]
+    [string]$OutputPath = "C:\daten\AD_Benutzer_Gruppen_L.csv",
+    [Parameter()]
+    [string]$ExcelPath = "C:\daten\AD_Benutzer_Gruppen_L.xlsx"
+)
+
+function Close-ExcelProcesses {
+    Get-Process -Name "excel" -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            $_.CloseMainWindow() | Out-Null
+            if (!$_.HasExited) {
+                $_.Kill()
+            }
+        } catch {
+            Write-Warning "Could not close Excel process: $_"
+        }
     }
-    catch {
-        throw "Error creating visualizations: $_"
-    }
+    Start-Sleep -Seconds 2
 }
 
-function Export-HtmlVisualization {
-    param ($Data, $Path)
+try {
+    Write-Host "Starting AD user report generation..." -ForegroundColor Green
     
-    $html = @"
-<!DOCTYPE html>
-<html>
-<head>
-    <title>AD User Groups Visualization</title>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        .node circle { fill: #fff; stroke: steelblue; stroke-width: 1.5px; }
-        .node text { font: 10px sans-serif; }
-        .link { fill: none; stroke: #ccc; stroke-width: 1.5px; }
-    </style>
-</head>
-<body>
-    <div id="visualization"></div>
-    <script>
-        const data = $($Data | ConvertTo-Json);
+    # Get all users with SamAccountName starting with 'L'
+    $users = Get-ADUser -Filter "SamAccountName -like 'L*'" -Properties SamAccountName, Name, MemberOf, DistinguishedName, Comment
+    
+    if (-not $users) {
+        Write-Warning "No users found with SamAccountName starting with 'L'"
+        exit 0
+    }
+    
+    # Initialize collections
+    $userData = @()
+    $groupColors = @{}
+    $colorIndex = 20  # Excel color index starting point
+    
+    foreach ($user in $users) {
+        Write-Verbose "Processing user: $($user.SamAccountName)"
         
-        // D3.js visualization code here
-        // Create force-directed graph
-        const width = 960;
-        const height = 600;
+        # Extract OU and numeric prefix
+        $ouMatch = $user.DistinguishedName -match 'OU=([^,]+)'
+        $ou = if ($ouMatch) { $Matches[1] } else { "No OU" }
+        $numericPrefix = if ($ou -match '^\d{2,3}') { $Matches[0] } else { "999" }
         
-        const svg = d3.select("#visualization")
-            .append("svg")
-            .attr("width", width)
-            .attr("height", height);
+        # Get and process each group
+        $groups = $user.MemberOf | ForEach-Object {
+            try {
+                (Get-ADGroup $_).Name
+            } catch {
+                Write-Warning "Could not resolve group for user $($user.SamAccountName): $_"
+                return "Unknown Group"
+            }
+        } | Sort-Object
+        
+        # Create entry for each group
+        foreach ($group in $groups) {
+            # Assign color if not already assigned
+            if (-not $groupColors.ContainsKey($group)) {
+                $groupColors[$group] = $colorIndex
+                $colorIndex++
+                if ($colorIndex -gt 56) { $colorIndex = 20 }  # Reset if we run out of colors
+            }
             
-        // Add visualization logic here
-    </script>
-</body>
-</html>
-"@
-    
-    $html | Out-File -FilePath $Path -Encoding UTF8
-    Write-Host "HTML visualization exported: $Path" -ForegroundColor Green
-}
-
-function Export-VisioVisualization {
-    param ($Data, $Path)
-    
-    try {
-        $visio = New-Object -ComObject Visio.Application
-        $visio.Visible = $false
-        
-        # Create new document
-        $doc = $visio.Documents.Add("")
-        
-        # Add shapes and connections based on $Data
-        
-        # Save and cleanup
-        $doc.SaveAs($Path)
-        $visio.Quit()
-        
-        Write-Host "Visio visualization exported: $Path" -ForegroundColor Green
-    }
-    catch {
-        Write-Warning "Visio export failed: $_"
-    }
-    finally {
-        if ($visio) {
-            $visio.Quit()
-            [System.Runtime.Interopservices.Marshal]::ReleaseComObject($visio) | Out-Null
+            $userData += [PSCustomObject]@{
+                SortPrefix = $numericPrefix
+                OU = $ou
+                UserName = $user.Name
+                SamAccountName = $user.SamAccountName
+                Group = $group
+                Comment = $user.Comment
+                ColorIndex = $groupColors[$group]
+            }
         }
     }
-}
-
-function Export-MindManagerVisualization {
-    param ($Data, $Path)
     
+    # Sort data
+    $sortedData = $userData | Sort-Object {
+        if ($_.SortPrefix -match '^\d{2}$') { 
+            [int]$_.SortPrefix 
+        } else { 
+            999 
+        }
+    }, UserName, Group | Select-Object OU, UserName, SamAccountName, Group, Comment
+    
+    Write-Host "Processing $($sortedData.Count) user-group combinations..." -ForegroundColor Green
+    
+    # Export to CSV
     try {
-        $mindManager = New-Object -ComObject MindManager.Application
-        $mindManager.Visible = $false
+        $csvDir = Split-Path -Parent $OutputPath
+        if (-not (Test-Path $csvDir)) {
+            New-Item -ItemType Directory -Path $csvDir -Force | Out-Null
+        }
         
-        # Create new document
-        $doc = $mindManager.Documents.Add()
+        # Force close any open files
+        if (Test-Path $OutputPath) {
+            Remove-Item $OutputPath -Force -ErrorAction Stop
+        }
         
-        # Add topics and relationships based on $Data
-        
-        # Save and cleanup
-        $doc.SaveAs($Path)
-        $mindManager.Quit()
-        
-        Write-Host "MindManager visualization exported: $Path" -ForegroundColor Green
+        $sortedData | Export-Csv -Path $OutputPath -NoTypeInformation -Encoding UTF8 -Force
+        Write-Host "CSV export completed: $OutputPath" -ForegroundColor Green
     }
     catch {
-        Write-Warning "MindManager export failed: $_"
+        throw "Failed to export CSV: $_"
+    }
+    
+    # Export to Excel
+    try {
+        $excelDir = Split-Path -Parent $ExcelPath
+        if (-not (Test-Path $excelDir)) {
+            New-Item -ItemType Directory -Path $excelDir -Force | Out-Null
+        }
+        
+        # Close any open Excel processes
+        Close-ExcelProcesses
+        
+        # Create new Excel file
+        $excel = New-Object -ComObject Excel.Application
+        $excel.Visible = $false
+        $excel.DisplayAlerts = $false
+        
+        $workbook = $excel.Workbooks.Add()
+        $worksheet = $workbook.Worksheets.Item(1)
+        
+        # Add headers
+        $headers = @("OU", "Benutzer", "SamAccountName", "Gruppe", "Kommentar")
+        1..5 | ForEach-Object { 
+            $worksheet.Cells.Item(1, $_) = $headers[$_ - 1]
+        }
+        
+        # Add data with colors
+        $row = 2
+        foreach ($item in $sortedData) {
+            $worksheet.Cells.Item($row, 1) = $item.OU
+            $worksheet.Cells.Item($row, 2) = $item.UserName
+            $worksheet.Cells.Item($row, 3) = $item.SamAccountName
+            $worksheet.Cells.Item($row, 4) = $item.Group
+            $worksheet.Cells.Item($row, 5) = $item.Comment
+            
+            # Color only the group cell
+            $groupCell = $worksheet.Cells.Item($row, 4)
+            $groupCell.Interior.ColorIndex = $groupColors[$item.Group]
+            
+            $row++
+        }
+        
+        # Format headers
+        $headerRange = $worksheet.Range($worksheet.Cells(1, 1), $worksheet.Cells(1, 5))
+        $headerRange.Font.Bold = $true
+        $headerRange.Interior.ColorIndex = 15
+        
+        # Add filters and adjust column widths
+        $worksheet.Range($worksheet.Cells(1, 1), $worksheet.Cells($row - 1, 5)).AutoFilter() | Out-Null
+        $worksheet.Columns.Item(1).ColumnWidth = 20  # OU
+        $worksheet.Columns.Item(2).ColumnWidth = 30  # Benutzer
+        $worksheet.Columns.Item(3).ColumnWidth = 20  # SamAccountName
+        $worksheet.Columns.Item(4).ColumnWidth = 50  # Gruppe
+        $worksheet.Columns.Item(5).ColumnWidth = 50  # Kommentar
+        
+        # Save and close
+        if (Test-Path $ExcelPath) {
+            Remove-Item $ExcelPath -Force
+        }
+        
+        $workbook.SaveAs($ExcelPath)
+        $workbook.Close($true)
+        $excel.Quit()
+        [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+        [System.GC]::Collect()
+        [System.GC]::WaitForPendingFinalizers()
+        
+        Write-Host "Excel export completed: $ExcelPath" -ForegroundColor Green
+    }
+    catch {
+        throw "Failed to export Excel file: $_"
     }
     finally {
-        if ($mindManager) {
-            $mindManager.Quit()
-            [System.Runtime.Interopservices.Marshal]::ReleaseComObject($mindManager) | Out-Null
+        if ($excel) {
+            $excel.Quit()
+            [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
         }
     }
+    
+    Write-Host "Script completed successfully." -ForegroundColor Green
+    Read-Host "Press Enter to exit"
+}
+catch {
+    Write-Error "An error occurred: $_"
+    Read-Host "Press Enter to exit"
+    exit 1
 }
