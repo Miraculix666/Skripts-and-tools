@@ -1,3 +1,68 @@
+# Funktion zur Überprüfung der Registrierung
+function Test-RegistryKey {
+    param(
+        [parameter(Mandatory=$true)]
+        [string]$Path
+    )
+    
+    try {
+        Get-ItemProperty -Path $Path -ErrorAction Stop | Out-Null
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
+
+# Überprüfen, ob Visio installiert ist
+Write-Host "Überprüfe Visio-Installation..."
+$visioInstalled = Test-RegistryKey -Path "HKLM:\SOFTWARE\Microsoft\Office\ClickToRun\Configuration"
+if ($visioInstalled) {
+    $visioVersion = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Office\ClickToRun\Configuration" -Name "VersionToReport").VersionToReport
+    Write-Host "Visio ist installiert. Version: $visioVersion"
+} else {
+    Write-Host "Visio scheint nicht installiert zu sein."
+}
+
+# Überprüfen der Benutzerrechte
+Write-Host "`nÜberprüfe Benutzerrechte..."
+$currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+
+Write-Host "Aktueller Benutzer: $currentUser"
+if ($isAdmin) {
+    Write-Host "Der Benutzer hat Administratorrechte."
+} else {
+    Write-Host "Der Benutzer hat keine Administratorrechte."
+}
+
+# Überprüfen des Zugriffs auf das Visio-Verzeichnis
+$visioPath = "${env:ProgramFiles}\Microsoft Office\root\Office16"
+Write-Host "`nÜberprüfe Zugriff auf Visio-Verzeichnis: $visioPath"
+try {
+    Get-ChildItem -Path $visioPath -ErrorAction Stop | Out-Null
+    Write-Host "Zugriff auf das Visio-Verzeichnis ist möglich."
+} catch {
+    Write-Host "Kein Zugriff auf das Visio-Verzeichnis. Fehler: $($_.Exception.Message)"
+}
+
+# Überprüfen der COM-Registrierung für Visio
+Write-Host "`nÜberprüfe COM-Registrierung für Visio..."
+$visioCOMRegistered = Test-RegistryKey -Path "HKCR:\Visio.Application"
+if ($visioCOMRegistered) {
+    Write-Host "Visio COM-Objekt ist registriert."
+} else {
+    Write-Host "Visio COM-Objekt ist nicht registriert."
+}
+
+Write-Host "`nÜberprüfung abgeschlossen."
+
+
+
+
+
+
+
 # AD User Groups Report Script
 
 # Function to force-close Excel
