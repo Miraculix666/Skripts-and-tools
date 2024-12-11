@@ -1,3 +1,27 @@
+}
+catch {
+    Write-Error "An error occurred: $_"
+    Read-Host "Press Enter to exit"
+    exit 1
+}
+Starting enhanced AD user report generation...
+Processing 53420 user-group combinations...
+CSV export completed: C:\daten\AD_Benutzer_Gruppen_L.csv
+Excel export completed: C:\daten\AD_Benutzer_Gruppen_L.xlsx
+HTML visualization exported: C:\daten\AD_Benutzer_Gruppen_L.html
+WARNUNG: Visio export failed: 
+
+Objektname nicht gefunden.
+WARNUNG: MindManager export failed: Fehler beim Aufrufen der Methode, da [System.Management.Automation.PSParameter
+izedProperty] keine Methode mit dem Namen "Add" enthält.
+An error occurred: Fehler beim Aufrufen der Methode, da [System.__ComObject] keine Methode mit dem Namen "Quit" 
+enthält.
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException
+ 
+Press Enter to exit: 
+
+
 [CmdletBinding()]
 param (
     [Parameter()]
