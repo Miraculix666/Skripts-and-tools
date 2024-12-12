@@ -1,285 +1,192 @@
-# Funktion zur Überprüfung der Registrierung
-function Test-RegistryKey {
-    param(
-        [parameter(Mandatory=$true)]
-        [string]$Path
-    )
-    
-    try {
-        Get-ItemProperty -Path $Path -ErrorAction Stop | Out-Null
-        return $true
+[CmdletBinding()]
+param (
+    [Parameter()]
+    [string]$OutputPath = "C:\daten\AD_Benutzer_Gruppen_L.csv",
+    [Parameter()]
+    [string]$ExcelPath = "C:\daten\AD_Benutzer_Gruppen_L.xlsx"
+)
+
+function Close-ExcelProcesses {
+    Get-Process -Name "excel" -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            $_.CloseMainWindow() | Out-Null
+            if (!$_.HasExited) {
+                $_.Kill()
+            }
+        } catch {
+            Write-Warning "Could not close Excel process: $_"
+        }
     }
-    catch {
-        return $false
-    }
+    Start-Sleep -Seconds 2
 }
 
-# Überprüfen, ob Visio installiert ist
-Write-Host "Überprüfe Visio-Installation..."
-$visioInstalled = Test-RegistryKey -Path "HKLM:\SOFTWARE\Microsoft\Office\ClickToRun\Configuration"
-if ($visioInstalled) {
-    $visioVersion = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Office\ClickToRun\Configuration" -Name "VersionToReport").VersionToReport
-    Write-Host "Visio ist installiert. Version: $visioVersion"
-} else {
-    Write-Host "Visio scheint nicht installiert zu sein."
-}
-
-# Überprüfen der Benutzerrechte
-Write-Host "`nÜberprüfe Benutzerrechte..."
-$currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
-
-Write-Host "Aktueller Benutzer: $currentUser"
-if ($isAdmin) {
-    Write-Host "Der Benutzer hat Administratorrechte."
-} else {
-    Write-Host "Der Benutzer hat keine Administratorrechte."
-}
-
-# Überprüfen des Zugriffs auf das Visio-Verzeichnis
-$visioPath = "${env:ProgramFiles}\Microsoft Office\root\Office16"
-Write-Host "`nÜberprüfe Zugriff auf Visio-Verzeichnis: $visioPath"
 try {
-    Get-ChildItem -Path $visioPath -ErrorAction Stop | Out-Null
-    Write-Host "Zugriff auf das Visio-Verzeichnis ist möglich."
-} catch {
-    Write-Host "Kein Zugriff auf das Visio-Verzeichnis. Fehler: $($_.Exception.Message)"
-}
-
-# Überprüfen der COM-Registrierung für Visio
-Write-Host "`nÜberprüfe COM-Registrierung für Visio..."
-$visioCOMRegistered = Test-RegistryKey -Path "HKCR:\Visio.Application"
-if ($visioCOMRegistered) {
-    Write-Host "Visio COM-Objekt ist registriert."
-} else {
-    Write-Host "Visio COM-Objekt ist nicht registriert."
-}
-
-Write-Host "`nÜberprüfung abgeschlossen."
-
-
-
-
-
-
-
-# AD User Groups Report Script
-
-# Function to force-close Excel
-function Close-Excel {
-    Get-Process excel -ErrorAction SilentlyContinue | Stop-Process -Force
-    Write-Verbose "Closed any open Excel processes."
-}
-
-# Function to force delete a file
-function Remove-FileForce {
-    param([string]$path)
-    if (Test-Path $path) {
-        Remove-Item -Path $path -Force
-        Write-Verbose "Forcefully deleted file: $path"
+    Write-Host "Starting AD user report generation..." -ForegroundColor Green
+    
+    # Get all users with SamAccountName starting with 'L'
+    $users = Get-ADUser -Filter "SamAccountName -like 'L*'" -Properties SamAccountName, Name, MemberOf, DistinguishedName, Comment
+    
+    if (-not $users) {
+        Write-Warning "No users found with SamAccountName starting with 'L'"
+        exit 0
     }
-}
-
-# Main script
-$ErrorActionPreference = "Stop"
-$VerbosePreference = "Continue"
-
-Write-Verbose "Starting AD User Groups Report Script..."
-
-# Load required assemblies
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName Microsoft.Office.Interop.Excel
-Add-Type -AssemblyName Microsoft.Office.Interop.Visio
-Add-Type -AssemblyName Mindjet.MindManager.Interop
-
-# Define output paths
-$csvPath = "C:\Output\ADUserGroups.csv"
-$excelPath = "C:\Output\ADUserGroups.xlsx"
-$htmlPath = "C:\Output\ADUserGroups.html"
-$visioPath = "C:\Output\ADUserGroups.vsdx"
-$mindManagerPath = "C:\Output\ADUserGroups.mmap"
-
-# Ensure output directory exists
-New-Item -ItemType Directory -Force -Path (Split-Path $csvPath)
-
-# Close Excel and force delete existing files
-Close-Excel
-Remove-FileForce $csvPath
-Remove-FileForce $excelPath
-Remove-FileForce $htmlPath
-Remove-FileForce $visioPath
-Remove-FileForce $mindManagerPath
-
-Write-Verbose "Retrieving AD users..."
-$users = Get-ADUser -Filter "SamAccountName -like 'L*'" -Properties SamAccountName, Name, DistinguishedName, MemberOf, Description
-
-$data = @()
-foreach ($user in $users) {
-    Write-Verbose "Processing user: $($user.SamAccountName)"
-    $ou = ($user.DistinguishedName -split ',OU=')[1]
-    if ($ou -match '^\d{2,3}$') {
-        foreach ($group in $user.MemberOf) {
-            $groupName = (Get-ADGroup $group).Name
-            $data += [PSCustomObject]@{
+    
+    # Initialize collections
+    $userData = @()
+    $groupColors = @{}
+    $colorIndex = 20  # Excel color index starting point
+    
+    foreach ($user in $users) {
+        Write-Verbose "Processing user: $($user.SamAccountName)"
+        
+        # Extract OU and numeric prefix
+        $ouMatch = $user.DistinguishedName -match 'OU=([^,]+)'
+        $ou = if ($ouMatch) { $Matches[1] } else { "No OU" }
+        $numericPrefix = if ($ou -match '^\d{2,3}') { $Matches[0] } else { "999" }
+        
+        # Get and process each group
+        $groups = $user.MemberOf | ForEach-Object {
+            try {
+                (Get-ADGroup $_).Name
+            } catch {
+                Write-Warning "Could not resolve group for user $($user.SamAccountName): $_"
+                return "Unknown Group"
+            }
+        } | Sort-Object
+        
+        # Create entry for each group
+        foreach ($group in $groups) {
+            # Assign color if not already assigned
+            if (-not $groupColors.ContainsKey($group)) {
+                $groupColors[$group] = $colorIndex
+                $colorIndex++
+                if ($colorIndex -gt 56) { $colorIndex = 20 }  # Reset if we run out of colors
+            }
+            
+            $userData += [PSCustomObject]@{
+                SortPrefix = $numericPrefix
                 OU = $ou
-                User = $user.Name
-                Group = $groupName
-                Comment = $user.Description
+                UserName = $user.Name
+                SamAccountName = $user.SamAccountName
+                Group = $group
+                Comment = $user.Comment
+                ColorIndex = $groupColors[$group]
             }
         }
     }
-}
-
-$sortedData = $data | Sort-Object {[int]$_.OU}, User, Group
-
-Write-Verbose "Exporting to CSV..."
-$sortedData | Export-Csv -Path $csvPath -NoTypeInformation
-
-Write-Verbose "Creating Excel file..."
-$excel = New-Object -ComObject Excel.Application
-$workbook = $excel.Workbooks.Add()
-$worksheet = $workbook.Worksheets.Item(1)
-
-# Add headers
-$headers = @("OU", "User", "Group", "Comment")
-for ($i = 0; $i -lt $headers.Count; $i++) {
-    $worksheet.Cells.Item(1, $i + 1) = $headers[$i]
-}
-
-# Add data
-for ($i = 0; $i -lt $sortedData.Count; $i++) {
-    $worksheet.Cells.Item($i + 2, 1) = $sortedData[$i].OU
-    $worksheet.Cells.Item($i + 2, 2) = $sortedData[$i].User
-    $worksheet.Cells.Item($i + 2, 3) = $sortedData[$i].Group
-    $worksheet.Cells.Item($i + 2, 4) = $sortedData[$i].Comment
     
-    # Color group cell
-    $worksheet.Cells.Item($i + 2, 3).Interior.ColorIndex = ($sortedData[$i].Group.GetHashCode() % 56) + 1
-}
-
-$worksheet.UsedRange.EntireColumn.AutoFit()
-$workbook.SaveAs($excelPath)
-$excel.Quit()
-
-Write-Verbose "Creating HTML visualization..."
-$html = @"
-<!DOCTYPE html>
-<html>
-<head>
-    <title>AD User Groups</title>
-    <script src="https://d3js.org/d3.v5.min.js"></script>
-    <style>
-        .node { cursor: pointer; }
-        .node circle { fill: #fff; stroke: steelblue; stroke-width: 1.5px; }
-        .node text { font: 10px sans-serif; }
-        .link { fill: none; stroke: #ccc; stroke-width: 1.5px; }
-    </style>
-</head>
-<body>
-    <div id="tree"></div>
-    <script>
-        var data = {
-            name: "AD Users",
-            children: [
-                $($sortedData | Group-Object OU | ForEach-Object {
-                    "{name: '$($_.Name)', children: [" + ($_.Group | Group-Object User | ForEach-Object {
-                        "{name: '$($_.Name)', children: [" + ($_.Group | ForEach-Object {
-                            "{name: '$($_.Group)'}"
-                        }) -join ',' + "]}"
-                    }) -join ',' + "]}"
-                })
-            ]
-        };
-
-        var width = 960, height = 800;
-        var tree = d3.tree().size([height, width - 160]);
-        var root = d3.hierarchy(data);
-        tree(root);
-
-        var svg = d3.select("#tree").append("svg")
-            .attr("width", width)
-            .attr("height", height)
-            .append("g")
-            .attr("transform", "translate(80,0)");
-
-        var link = svg.selectAll(".link")
-            .data(root.descendants().slice(1))
-            .enter().append("path")
-            .attr("class", "link")
-            .attr("d", d => `M${d.y},${d.x}C${(d.y + d.parent.y) / 2},${d.x} ${(d.y + d.parent.y) / 2},${d.parent.x} ${d.parent.y},${d.parent.x}`);
-
-        var node = svg.selectAll(".node")
-            .data(root.descendants())
-            .enter().append("g")
-            .attr("class", "node")
-            .attr("transform", d => `translate(${d.y},${d.x})`);
-
-        node.append("circle")
-            .attr("r", 4.5);
-
-        node.append("text")
-            .attr("dy", ".31em")
-            .attr("x", d => d.children ? -6 : 6)
-            .style("text-anchor", d => d.children ? "end" : "start")
-            .text(d => d.data.name);
-    </script>
-</body>
-</html>
-"@
-
-$html | Out-File -FilePath $htmlPath
-
-Write-Verbose "Creating Visio diagram..."
-$visio = New-Object -ComObject Visio.Application
-$document = $visio.Documents.Add("")
-$page = $document.Pages.Item(1)
-
-$ouShapes = @{}
-$userShapes = @{}
-$yOffset = 0
-
-foreach ($ou in ($sortedData | Group-Object OU)) {
-    $ouShape = $page.DrawRectangle(1, 10 - $yOffset, 2, 9 - $yOffset)
-    $ouShape.Text = "OU: $($ou.Name)"
-    $ouShapes[$ou.Name] = $ouShape
+    # Sort data
+    $sortedData = $userData | Sort-Object {
+        if ($_.SortPrefix -match '^\d{2}$') { 
+            [int]$_.SortPrefix 
+        } else { 
+            999 
+        }
+    }, UserName, Group | Select-Object OU, UserName, SamAccountName, Group, Comment
     
-    foreach ($user in ($ou.Group | Group-Object User)) {
-        $userShape = $page.DrawRectangle(3, 10 - $yOffset, 4, 9.5 - $yOffset)
-        $userShape.Text = $user.Name
-        $userShapes[$user.Name] = $userShape
-        $page.DrawConnector($ouShape, $userShape)
+    Write-Host "Processing $($sortedData.Count) user-group combinations..." -ForegroundColor Green
+    
+    # Export to CSV
+    try {
+        $csvDir = Split-Path -Parent $OutputPath
+        if (-not (Test-Path $csvDir)) {
+            New-Item -ItemType Directory -Path $csvDir -Force | Out-Null
+        }
         
-        foreach ($group in $user.Group) {
-            $groupShape = $page.DrawRectangle(5, 10 - $yOffset, 6, 9.75 - $yOffset)
-            $groupShape.Text = $group.Group
-            $page.DrawConnector($userShape, $groupShape)
-            $yOffset += 0.5
+        # Force close any open files
+        if (Test-Path $OutputPath) {
+            Remove-Item $OutputPath -Force -ErrorAction Stop
         }
-        $yOffset += 1
+        
+        $sortedData | Export-Csv -Path $OutputPath -NoTypeInformation -Encoding UTF8 -Force
+        Write-Host "CSV export completed: $OutputPath" -ForegroundColor Green
     }
-    $yOffset += 2
-}
-
-$document.SaveAs($visioPath)
-$visio.Quit()
-
-Write-Verbose "Creating MindManager map..."
-$mm = New-Object -ComObject MindManager.Application
-$mm.Visible = $true
-$document = $mm.Documents.Add()
-$map = $document.CentralTopic
-
-foreach ($ou in ($sortedData | Group-Object OU)) {
-    $ouTopic = $map.AddSubTopic($ou.Name)
-    foreach ($user in ($ou.Group | Group-Object User)) {
-        $userTopic = $ouTopic.AddSubTopic($user.Name)
-        foreach ($group in $user.Group) {
-            $userTopic.AddSubTopic($group.Group)
+    catch {
+        throw "Failed to export CSV: $_"
+    }
+    
+    # Export to Excel
+    try {
+        $excelDir = Split-Path -Parent $ExcelPath
+        if (-not (Test-Path $excelDir)) {
+            New-Item -ItemType Directory -Path $excelDir -Force | Out-Null
+        }
+        
+        # Close any open Excel processes
+        Close-ExcelProcesses
+        
+        # Create new Excel file
+        $excel = New-Object -ComObject Excel.Application
+        $excel.Visible = $false
+        $excel.DisplayAlerts = $false
+        
+        $workbook = $excel.Workbooks.Add()
+        $worksheet = $workbook.Worksheets.Item(1)
+        
+        # Add headers
+        $headers = @("OU", "Benutzer", "SamAccountName", "Gruppe", "Kommentar")
+        1..5 | ForEach-Object { 
+            $worksheet.Cells.Item(1, $_) = $headers[$_ - 1]
+        }
+        
+        # Add data with colors
+        $row = 2
+        foreach ($item in $sortedData) {
+            $worksheet.Cells.Item($row, 1) = $item.OU
+            $worksheet.Cells.Item($row, 2) = $item.UserName
+            $worksheet.Cells.Item($row, 3) = $item.SamAccountName
+            $worksheet.Cells.Item($row, 4) = $item.Group
+            $worksheet.Cells.Item($row, 5) = $item.Comment
+            
+            # Color only the group cell
+            $groupCell = $worksheet.Cells.Item($row, 4)
+            $groupCell.Interior.ColorIndex = $groupColors[$item.Group]
+            
+            $row++
+        }
+        
+        # Format headers
+        $headerRange = $worksheet.Range($worksheet.Cells(1, 1), $worksheet.Cells(1, 5))
+        $headerRange.Font.Bold = $true
+        $headerRange.Interior.ColorIndex = 15
+        
+        # Add filters and adjust column widths
+        $worksheet.Range($worksheet.Cells(1, 1), $worksheet.Cells($row - 1, 5)).AutoFilter() | Out-Null
+        $worksheet.Columns.Item(1).ColumnWidth = 20  # OU
+        $worksheet.Columns.Item(2).ColumnWidth = 30  # Benutzer
+        $worksheet.Columns.Item(3).ColumnWidth = 20  # SamAccountName
+        $worksheet.Columns.Item(4).ColumnWidth = 50  # Gruppe
+        $worksheet.Columns.Item(5).ColumnWidth = 50  # Kommentar
+        
+        # Save and close
+        if (Test-Path $ExcelPath) {
+            Remove-Item $ExcelPath -Force
+        }
+        
+        $workbook.SaveAs($ExcelPath)
+        $workbook.Close($true)
+        $excel.Quit()
+        [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
+        [System.GC]::Collect()
+        [System.GC]::WaitForPendingFinalizers()
+        
+        Write-Host "Excel export completed: $ExcelPath" -ForegroundColor Green
+    }
+    catch {
+        throw "Failed to export Excel file: $_"
+    }
+    finally {
+        if ($excel) {
+            $excel.Quit()
+            [System.Runtime.Interopservices.Marshal]::ReleaseComObject($excel) | Out-Null
         }
     }
+    
+    Write-Host "Script completed successfully." -ForegroundColor Green
+    Read-Host "Press Enter to exit"
 }
-
-$document.SaveAs($mindManagerPath)
-$mm.Quit()
-
-Write-Verbose "Script completed successfully."
+catch {
+    Write-Error "An error occurred: $_"
+    Read-Host "Press Enter to exit"
+    exit 1
+}
