@@ -1,2 +1,15 @@
+$gruppen = Get-ADGroup -Filter "Name -like '*FINDUS*'" -Properties Name, Members
 
-Get-ADUser -Filter "Name -like 'L*'" -Properties Name, SamAccountName, MemberOf | Export-Csv -Path "C:\AD_User_L.csv" -NoTypeInformation
+foreach ($gruppe in $gruppen) {
+  foreach ($mitglied in $gruppe.Members) {
+    try {
+      $user = Get-ADUser -Identity $mitglied -Properties Name, SamAccountName
+      if ($user.Name -like "L*") {
+        # Ausgabe der relevanten Informationen (z.B. Gruppenname, Benutzername)
+        Write-Host "Gruppe: $($gruppe.Name), Benutzer: $($user.SamAccountName)"
+      }
+    } catch {
+      # Fehlerbehandlung, falls das Mitglied keine AD-Benutzer ist
+    }
+  }
+}
