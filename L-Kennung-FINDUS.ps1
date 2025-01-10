@@ -4,8 +4,6 @@ $csvPath = "C:\Daten\AD_User_FINDUS_Gruppen.csv"
 # Kopfzeile in die CSV-Datei schreiben
 "Gruppenname,Benutzername" | Out-File -FilePath $csvPath -Encoding UTF8
 
-# Alle Benutzer mit relevanten Eigenschaften abrufen
-$alleBenutzer = Get-ADUser -Filter * -Properties Name, SamAccountName, MemberOf
 
 # Alle Gruppen mit relevanten Eigenschaften abrufen
 $alleGruppen = Get-ADGroup -Filter "Name -like '*FINDUS*'" -Properties Name, Members
