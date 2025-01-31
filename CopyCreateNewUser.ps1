@@ -1,3 +1,61 @@
+<#
+.SYNOPSIS
+Erstellt neue AD-Benutzer basierend auf vorhandenen Vorlagen und überprüft optional die Erstellung.
+
+.DESCRIPTION
+Dieses Skript erstellt neue AD-Benutzer, indem es vorhandene Benutzer als Vorlagen verwendet und deren Attribute und Berechtigungen kopiert. Optional kann es die erfolgreiche Erstellung und korrekte Verrechtung überprüfen.
+
+.PARAMETER InputMethod
+Die Methode zur Eingabe der Benutzerdaten. Mögliche Werte: Interactive, Predefined, CSV
+
+.PARAMETER TemplateUser
+Der Benutzername des Vorlagenbenutzers.
+
+.PARAMETER NewUserName
+Der Benutzername für den neuen AD-Benutzer.
+
+.PARAMETER NewUserPassword
+Das Passwort für den neuen AD-Benutzer.
+
+.PARAMETER CsvPath
+Der Pfad zur CSV-Datei mit den Benutzerdaten.
+
+.PARAMETER Verify
+Schalter zur Aktivierung der Überprüfung nach der Benutzererstellung.
+
+.EXAMPLE
+.\New-ADUserFromTemplate.ps1 -InputMethod Interactive -Verify
+.\New-ADUserFromTemplate.ps1 -InputMethod Predefined -TemplateUser "john.doe" -NewUserName "jane.smith" -NewUserPassword "P@ssw0rd123!" -Verify
+.\New-ADUserFromTemplate.ps1 -InputMethod CSV -CsvPath "C:\Pfad\zu\ad_user_creation_template.csv" -Verify
+
+.NOTES
+Beispiel-CSV-Inhalt:
+TemplateUser,NewUserName,NewUserPassword,FirstName,LastName,Department,Title,Email
+john.doe,max.mustermann,Willkommen2025!,Max,Mustermann,IT,Junior Entwickler,max.mustermann@unternehmen.de
+jane.smith,anna.schmidt,Neustart2025!,Anna,Schmidt,Marketing,Marketing Spezialist,anna.schmidt@unternehmen.de
+#>
+
+param (
+    [Parameter(Mandatory=$false)]
+    [ValidateSet("Interactive", "Predefined", "CSV")]
+    [string]$InputMethod,
+
+    [Parameter(Mandatory=$false)]
+    [string]$TemplateUser,
+
+    [Parameter(Mandatory=$false)]
+    [string]$NewUserName,
+
+    [Parameter(Mandatory=$false)]
+    [string]$NewUserPassword,
+
+    [Parameter(Mandatory=$false)]
+    [string]$CsvPath,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$Verify
+)
+
 # Funktion zum Kopieren der Gruppenmitgliedschaften
 function Copy-ADGroupMembership {
     param (
@@ -16,7 +74,8 @@ function New-ADUserFromTemplate {
     param (
         [string]$TemplateUser,
         [string]$NewUserName,
-        [string]$NewUserPassword
+        [string]$NewUserPassword,
+        [hashtable]$AdditionalProperties
     )
     
     $template = Get-ADUser -Identity $TemplateUser -Properties *
@@ -29,41 +88,107 @@ function New-ADUserFromTemplate {
         AccountPassword = (ConvertTo-SecureString -AsPlainText $NewUserPassword -Force)
     }
     
+    # Füge zusätzliche Eigenschaften hinzu, falls vorhanden
+    foreach ($key in $AdditionalProperties.Keys) {
+        $newUserParams[$key] = $AdditionalProperties[$key]
+    }
+    
     $newUser = New-ADUser @newUserParams -PassThru
     Copy-ADGroupMembership -SourceUser $TemplateUser -TargetUser $newUser.SamAccountName
     
     return $newUser
 }
 
+# Funktion zur Überprüfung der Benutzererstellung und Verrechtung
+function Verify-ADUser {
+    param (
+        [string]$TemplateUser,
+        [string]$NewUserName
+    )
+
+    $template = Get-ADUser -Identity $TemplateUser -Properties *
+    $newUser = Get-ADUser -Identity $NewUserName -Properties *
+
+    Write-Host "Überprüfe Benutzer $NewUserName..."
+
+    # Überprüfe, ob der Benutzer existiert
+    if ($null -eq $newUser) {
+        Write-Host "Fehler: Benutzer $NewUserName wurde nicht erstellt." -ForegroundColor Red
+        return
+    }
+
+    Write-Host "Benutzer $NewUserName existiert." -ForegroundColor Green
+
+    # Überprüfe Gruppenmitgliedschaften
+    $templateGroups = Get-ADUser -Identity $TemplateUser -Properties MemberOf | Select-Object -ExpandProperty MemberOf
+    $newUserGroups = Get-ADUser -Identity $NewUserName -Properties MemberOf | Select-Object -ExpandProperty MemberOf
+
+    $missingGroups = Compare-Object -ReferenceObject $templateGroups -DifferenceObject $newUserGroups | Where-Object { $_.SideIndicator -eq '<=' } | Select-Object -ExpandProperty InputObject
+
+    if ($missingGroups) {
+        Write-Host "Warnung: Folgende Gruppen fehlen beim neuen Benutzer:" -ForegroundColor Yellow
+        $missingGroups | ForEach-Object { Write-Host "- $($_ -split ',')[0]" -ForegroundColor Yellow }
+    } else {
+        Write-Host "Gruppenmitgliedschaften sind korrekt." -ForegroundColor Green
+    }
+
+    # Überprüfe andere relevante Attribute
+    $relevantAttributes = @('Department', 'Title', 'Email')
+    foreach ($attr in $relevantAttributes) {
+        if ($newUser.$attr -ne $template.$attr) {
+            Write-Host "Warnung: $attr stimmt nicht überein. Vorlage: $($template.$attr), Neu: $($newUser.$attr)" -ForegroundColor Yellow
+        } else {
+            Write-Host "$attr ist korrekt." -ForegroundColor Green
+        }
+    }
+}
+
 # Hauptskript
-#Vorlage für die CSV
-# "TemplateUser","NewUserName","NewUserPassword","FirstName","LastName","Department","Title","Email"
-# "john.doe","max.mustermann","Willkommen2025!","Max","Mustermann","IT","Junior Entwickler",""
-# "jane.smith","anna.schmidt","Neustart2025!","Anna","Schmidt","Marketing","Marketing Spezialist",""
+if (-not $InputMethod) {
+    $InputMethod = Read-Host "Wählen Sie die Eingabemethode: Interactive, Predefined, CSV"
+}
 
+$createdUsers = @()
 
-$inputMethod = Read-Host "Wählen Sie die Eingabemethode: 1) Interaktiv, 2) Vordefiniert, 3) CSV"
-
-switch ($inputMethod) {
-    "1" {
-        $templateUser = Read-Host "Geben Sie den Benutzernamen der Vorlage ein"
-        $newUserName = Read-Host "Geben Sie den Benutzernamen des neuen Benutzers ein"
-        $newUserPassword = Read-Host "Geben Sie das Passwort für den neuen Benutzer ein" -AsSecureString
-        $newUser = New-ADUserFromTemplate -TemplateUser $templateUser -NewUserName $newUserName -NewUserPassword ([System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($newUserPassword)))
+switch ($InputMethod) {
+    "Interactive" {
+        $TemplateUser = Read-Host "Geben Sie den Benutzernamen der Vorlage ein"
+        $NewUserName = Read-Host "Geben Sie den Benutzernamen des neuen Benutzers ein"
+        $NewUserPassword = Read-Host "Geben Sie das Passwort für den neuen Benutzer ein" -AsSecureString
+        $additionalProps = @{}
+        $newUser = New-ADUserFromTemplate -TemplateUser $TemplateUser -NewUserName $NewUserName -NewUserPassword ([System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($NewUserPassword))) -AdditionalProperties $additionalProps
+        $createdUsers += @{TemplateUser = $TemplateUser; NewUserName = $NewUserName}
     }
-    "2" {
-        $templateUser = "vorlage_benutzer"
-        $newUserName = "neuer_benutzer"
-        $newUserPassword = "Sicheres_Passwort123!"
-        $newUser = New-ADUserFromTemplate -TemplateUser $templateUser -NewUserName $newUserName -NewUserPassword $newUserPassword
+    "Predefined" {
+        if (-not $TemplateUser -or -not $NewUserName -or -not $NewUserPassword) {
+            throw "Für die vordefinierte Methode müssen TemplateUser, NewUserName und NewUserPassword angegeben werden."
+        }
+        $additionalProps = @{}
+        $newUser = New-ADUserFromTemplate -TemplateUser $TemplateUser -NewUserName $NewUserName -NewUserPassword $NewUserPassword -AdditionalProperties $additionalProps
+        $createdUsers += @{TemplateUser = $TemplateUser; NewUserName = $NewUserName}
     }
-    "3" {
-        $csvPath = Read-Host "Geben Sie den Pfad zur CSV-Datei ein"
-        $users = Import-Csv $csvPath
+    "CSV" {
+        if (-not $CsvPath) {
+            $CsvPath = Read-Host "Geben Sie den Pfad zur CSV-Datei ein"
+        }
+        $users = Import-Csv $CsvPath
         foreach ($user in $users) {
-            $newUser = New-ADUserFromTemplate -TemplateUser $user.TemplateUser -NewUserName $user.NewUserName -NewUserPassword $user.NewUserPassword
+            $additionalProps = @{}
+            foreach ($prop in $user.PSObject.Properties) {
+                if ($prop.Name -notin @('TemplateUser', 'NewUserName', 'NewUserPassword')) {
+                    $additionalProps[$prop.Name] = $prop.Value
+                }
+            }
+            $newUser = New-ADUserFromTemplate -TemplateUser $user.TemplateUser -NewUserName $user.NewUserName -NewUserPassword $user.NewUserPassword -AdditionalProperties $additionalProps
+            $createdUsers += @{TemplateUser = $user.TemplateUser; NewUserName = $user.NewUserName}
         }
     }
 }
 
 Write-Host "Neue(r) Benutzer wurde(n) erstellt und Berechtigungen wurden kopiert."
+
+if ($Verify -or (Read-Host "Möchten Sie die erstellten Benutzer überprüfen? (J/N)") -eq 'J') {
+    foreach ($user in $createdUsers) {
+        Verify-ADUser -TemplateUser $user.TemplateUser -NewUserName $user.NewUserName
+    }
+}
