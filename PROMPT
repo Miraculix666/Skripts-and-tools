@@ -1,0 +1,41 @@
+## Allgemeiner Prompt zur Verbesserung und Analyse von Skripten (mit verbose Ausgaben)
+
+**Aufgabe:** Analysiere und verbessere das Skript mit dem Fokus auf Fehlerbehebung, Verbesserung der Benutzerfreundlichkeit und Code-Qualität.  Integriere ausführliche (verbose) Ausgaben und Meldungen, um die Fehlersuche zu erleichtern und den Ablauf nachvollziehbar zu machen.
+
+**Anforderungen:**
+
+1. **Parameterisierung (Optional, falls vom Skript unterstützt):**
+   - **Ohne Parameter:** Starte das Skript im interaktiven Modus, in dem alle notwendigen Informationen vom Benutzer abgefragt werden.
+   - **-Parameter "Wert":**  Verarbeite die vom Benutzer angegebenen Parameter.  Fehlende, aber notwendige Parameter sollen interaktiv abgefragt werden.  Ermögliche eine flexible Eingabe der Parameter (entweder alle per Parameter, interaktiv oder eine Kombination aus beidem).
+
+2. **Skriptanalyse und -verbesserung:**
+   - Behebe alle Syntaxfehler und korrigiere fehlerhafte Definitionen im Skript.
+   - Schreibe ausführliche Kommentare im Skript, um die Funktionalität und den Zweck jeder Code-Zeile zu erklären.  Füge Beispiele für die Verwendung hinzu.
+   - Optimiere das Skript für eine bessere Lesbarkeit und Wartbarkeit.  Berücksichtige dabei Best Practices.
+   - Stelle sicher, dass das Skript robust gegenüber ungültigen Eingaben ist (z.B. leere Felder, falsche Datentypen).  Implementiere geeignete Fehlerprüfungen und Ausgaben (z.B. `try-catch`-Blöcke).
+   - Erweitere das Skript um eine umfassende Hilfe-Funktion, die über `Get-Help` und '-?' aufgerufen werden kann.  Diese Hilfe sollte die Parameter, deren Verwendung und Beispiele erläutern.
+
+3. **Ausführliche Ausgaben (Verbose):**
+   - Integriere `Write-Verbose`-Anweisungen im gesamten Skript, um detaillierte Informationen über den Ablauf, Variablenwerte und Entscheidungen auszugeben.  Dies soll die Fehlersuche und das Verständnis des Skriptablaufs erleichtern.
+   - Verwende aussagekräftige Meldungen, die den Kontext der jeweiligen Aktion verdeutlichen.  Zum Beispiel: `Write-Verbose "Überprüfe, ob Benutzer '$Benutzername' bereits existiert..."`
+   - Stelle sicher, dass die Verbose-Ausgaben standardmäßig aktiviert sind und durch einen Parameter (z.B. `-Verbose`) (de-)aktiviert werden können.
+
+4. **Versionskontrolle (Optional):**
+   - Falls das Skript in einem Versionskontrollsystem (z.B. Git) verwaltet wird, analysiere den Verlauf (Blame) der Datei, um die Entwicklung des Skripts zu verstehen.  Nutze diese Informationen, um die bestmögliche Version des Skripts zu erstellen und alle relevanten Änderungen und Verbesserungen aus den vorherigen Iterationen zu berücksichtigen.  Erkläre kurz, welche Erkenntnisse aus der Analyse des Verlaufs gewonnen wurden.
+
+5. **Ausgabe:**
+   - Gib das vollständig überarbeitete und verbesserte Skript in einer einzigen Datei aus.  Vermeide Modularisierung (d.h. keine separaten Funktionsdateien), es sei denn, dies ist ausdrücklich erforderlich oder wird vom ursprünglichen Skript bereits verwendet.
+
+**Zusätzliche Hinweise:**
+
+* Achten Sie auf die Einhaltung von Sicherheitsrichtlinien bei der Entwicklung des Skripts.
+* Berücksichtigen Sie die Möglichkeit, das Skript so zu gestalten, dass es sowohl für Testumgebungen als auch für Produktionsumgebungen geeignet ist (z.B. durch Konfigurationsparameter).
+*  Identifiziere und behebe alle potenziellen Performance-Engpässe im Skript.
+*  Optimiere das Skript für eine effiziente Ressourcennutzung (z.B. Speicher, CPU).
+
+**Erwartete Ergebnisse:**
+
+* Ein vollständig kommentiertes und verbessertes PowerShell-Skript `<Dateiname>.ps1` mit integrierten `Write-Verbose`-Anweisungen.
+* Eine Erklärung der durchgeführten Änderungen und Verbesserungen.
+* Eine Zusammenfassung der Erkenntnisse aus der Analyse des Versionskontrollsystems (falls zutreffend).
+*  Beispiele für die Verwendung des Skripts in allen Varianten.
