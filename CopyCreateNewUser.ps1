@@ -1,176 +1,276 @@
-<#
-.SYNOPSIS
-    Erstellt AD-Benutzer aus CSV-Datei als Kopie eines Vorlagenbenutzers
-    
-.DESCRIPTION
-    Dieses Skript erstellt neue AD-Benutzer basierend auf:
-    - Einer CSV-Datei mit Benutzerdaten
-    - Einem Vorlagenbenutzer für Standardattribute
-    - Passwort-Compliance-Prüfungen
-    - Automatischer Gruppenübernahme
-    - Optionale Post-Erstellungsverifikation
+# Advanced AD User Management Script
+# Author: Bolt
+# Version: 2.0
+# Description: Creates new AD users based on template users with enhanced error handling and flexibility
+#requires -Module ActiveDirectory
 
-.PARAMETER TemplateUser
-    SAMAccountName des Vorlagenbenutzers
-
-.PARAMETER CsvPath
-    Pfad zur CSV-Datei mit folgenden Spalten:
-    NewUserName,NewUserPassword,FirstName,LastName,Department
-
-.PARAMETER Verify
-    Aktiviert die Überprüfung nach der Erstellung
-
-.EXAMPLE
-    .\Create-ADUsers.ps1 -TemplateUser "VorlagenUser" -CsvPath "users.csv" -Verify
-
-.NOTES
-    Version: 3.0 | Autor: IT-Team | Letzte Änderung: 2025-02-04
-#>
-
-[CmdletBinding(SupportsShouldProcess = $true)]
+[CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory=$false)]
     [string]$TemplateUser,
-
-    [Parameter(Mandatory = $true)]
-    [ValidateScript({Test-Path $_ -PathType Leaf})]
-    [string]$CsvPath,
-
-    [switch]$Verify
+    
+    [Parameter(Mandatory=$false)]
+    [string]$NewUserName,
+    
+    [Parameter(Mandatory=$false)]
+    [string]$CSV,
+    
+    [Parameter(Mandatory=$false)]
+    [switch]$ExportTemplate,
+    
+    [Parameter(Mandatory=$false)]
+    [string]$ExportPath
 )
 
-begin {
-    #region Hilfsfunktionen
-    
-    function Test-PasswordComplexity {
-        param([string]$Password)
-        $complexityRules = @(
-            { $Password.Length -ge 12 },
-            { $Password -match '[A-Z]' },
-            { $Password -match '[a-z]' },
-            { $Password -match '\d' },
-            { $Password -match '[\W_]' }
-        )
-        return ($complexityRules | Where-Object { -not (& $_) }).Count -eq 0
-    }
-
-    function Copy-ADGroupMembership {
-        param(
-            [string]$SourceUser,
-            [string]$TargetUser
-        )
-        try {
-            $groups = Get-ADUser -Identity $SourceUser -Properties MemberOf | 
-                     Select-Object -ExpandProperty MemberOf
-            foreach ($group in $groups) {
-                Add-ADGroupMember -Identity $group -Members $TargetUser -ErrorAction Stop
-            }
-            Write-Host "Gruppen kopiert: $($groups.Count)" -ForegroundColor Green
-        }
-        catch {
-            Write-Host "Fehler beim Gruppenkopieren: $_" -ForegroundColor Red
-            throw
-        }
-    }
-
-    function New-ADUserFromTemplate {
-        param(
-            [string]$TemplateSamAccountName,
-            [string]$NewSamAccountName,
-            [string]$Password,
-            [hashtable]$AdditionalAttributes
-        )
-        try {
-            # Vorlagenbenutzer laden
-            $template = Get-ADUser -Identity $TemplateSamAccountName -Properties *
-
-            # Benutzerparameter erstellen
-            $userParams = @{
-                Instance              = $template
-                SamAccountName       = $NewSamAccountName
-                UserPrincipalName    = "$NewSamAccountName@$((Get-ADDomain).DNSRoot)"
-                Name                 = $AdditionalAttributes.DisplayName
-                GivenName            = $AdditionalAttributes.FirstName
-                Surname              = $AdditionalAttributes.LastName
-                Department           = $AdditionalAttributes.Department
-                AccountPassword      = ConvertTo-SecureString $Password -AsPlainText -Force
-                Enabled              = $true
-                ChangePasswordAtLogon = $true
-                PassThru             = $true
-            }
-
-            # Benutzer erstellen
-            $newUser = New-ADUser @userParams -ErrorAction Stop
-            Write-Host "Benutzer $NewSamAccountName erstellt" -ForegroundColor Green
-
-            # Gruppen kopieren
-            Copy-ADGroupMembership -SourceUser $TemplateSamAccountName -TargetUser $NewSamAccountName
-
-            return $newUser
-        }
-        catch {
-            Write-Host "Fehler bei $NewSamAccountName: $_" -ForegroundColor Red
-            return $null
-        }
-    }
-    #endregion
+# Function to write verbose messages with timestamp
+function Write-VerboseWithTime {
+    param([string]$Message)
+    Write-Verbose "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss'): $Message"
 }
 
-process {
-    try {
-        # CSV-Daten importieren und validieren
-        $users = Import-Csv -Path $CsvPath -Encoding UTF8
-        $requiredColumns = @('NewUserName','NewUserPassword','FirstName','LastName','Department')
-        $missingColumns = $requiredColumns | Where-Object { $_ -notin $users[0].PSObject.Properties.Name }
-
-        if ($missingColumns) {
-            throw "Fehlende Spalten in CSV: $($missingColumns -join ', ')"
+# Function to validate mandatory user properties
+function Test-MandatoryProperties {
+    param(
+        [hashtable]$Properties
+    )
+    
+    $mandatoryProps = @('SamAccountName', 'UserPrincipalName', 'GivenName', 'Surname')
+    $missingProps = @()
+    
+    foreach ($prop in $mandatoryProps) {
+        if (-not $Properties.ContainsKey($prop) -or [string]::IsNullOrWhiteSpace($Properties[$prop])) {
+            $missingProps += $prop
         }
+    }
+    
+    return $missingProps
+}
 
-        # Hauptverarbeitung
-        $createdUsers = @()
+# Function to get user input with validation
+function Get-ValidatedInput {
+    param(
+        [string]$Prompt,
+        [switch]$Required
+    )
+    
+    do {
+        $input = Read-Host -Prompt $Prompt
+        if ($Required -and [string]::IsNullOrWhiteSpace($input)) {
+            Write-Warning "This field is required. Please enter a value."
+            $valid = $false
+        } else {
+            $valid = $true
+        }
+    } while (-not $valid)
+    
+    return $input
+}
+
+# Function to export user template to CSV
+function Export-UserTemplate {
+    param(
+        [string]$Username,
+        [string]$ExportPath
+    )
+    
+    Write-VerboseWithTime "Exporting template user '$Username' to CSV"
+    
+    try {
+        $user = Get-ADUser -Identity $Username -Properties *
+        if (-not $user) {
+            throw "Template user not found"
+        }
+        
+        $exportProperties = @(
+            'SamAccountName',
+            'UserPrincipalName',
+            'GivenName',
+            'Surname',
+            'DisplayName',
+            'Description',
+            'Office',
+            'Department',
+            'Company',
+            'Title',
+            'Manager',
+            'StreetAddress',
+            'City',
+            'State',
+            'PostalCode',
+            'Country',
+            'HomePhone',
+            'MobilePhone',
+            'OfficePhone',
+            'Fax',
+            'EmailAddress'
+        )
+        
+        $userProps = [PSCustomObject]@{}
+        foreach ($prop in $exportProperties) {
+            $userProps | Add-Member -MemberType NoteProperty -Name $prop -Value $user.$prop
+        }
+        
+        $fileName = if ([string]::IsNullOrWhiteSpace($ExportPath)) {
+            "UserTemplate_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+        } else {
+            $ExportPath
+        }
+        
+        $userProps | Export-Csv -Path $fileName -NoTypeInformation -Encoding UTF8
+        Write-VerboseWithTime "Template exported successfully to: $fileName"
+    }
+    catch {
+        Write-Error "Failed to export template: $_"
+        return $false
+    }
+    
+    return $true
+}
+
+# Function to create new user from template
+function New-UserFromTemplate {
+    param(
+        [string]$TemplateUser,
+        [hashtable]$NewUserProperties
+    )
+    
+    Write-VerboseWithTime "Creating new user based on template: $TemplateUser"
+    
+    try {
+        # Get template user
+        $template = Get-ADUser -Identity $TemplateUser -Properties *
+        if (-not $template) {
+            throw "Template user not found"
+        }
+        
+        # Create new user properties
+        $userProps = @{
+            Instance = $template
+            Enabled = $true
+            ChangePasswordAtLogon = $true
+        }
+        
+        # Add all new user properties
+        foreach ($key in $NewUserProperties.Keys) {
+            $userProps[$key] = $NewUserProperties[$key]
+        }
+        
+        # Create the new user
+        New-ADUser @userProps
+        
+        Write-VerboseWithTime "Successfully created user: $($NewUserProperties.SamAccountName)"
+        return $true
+    }
+    catch {
+        Write-Error "Failed to create user: $_"
+        return $false
+    }
+}
+
+# Function to process CSV file
+function Process-CSVFile {
+    param(
+        [string]$CSVPath,
+        [string]$TemplateUser
+    )
+    
+    Write-VerboseWithTime "Processing CSV file: $CSVPath"
+    
+    try {
+        $users = Import-Csv -Path $CSVPath
         foreach ($user in $users) {
-            # Passwortvalidierung
-            if (-not (Test-PasswordComplexity -Password $user.NewUserPassword)) {
-                Write-Host "Passwort für $($user.NewUserName) entspricht nicht den Richtlinien" -ForegroundColor Red
+            $userProps = @{}
+            foreach ($prop in $user.PSObject.Properties) {
+                if (-not [string]::IsNullOrWhiteSpace($prop.Value)) {
+                    $userProps[$prop.Name] = $prop.Value
+                }
+            }
+            
+            $missingProps = Test-MandatoryProperties -Properties $userProps
+            if ($missingProps.Count -gt 0) {
+                Write-Warning "Missing mandatory properties for user: $($missingProps -join ', ')"
                 continue
             }
-
-            # Benutzererstellung
-            $additionalAttributes = @{
-                FirstName   = $user.FirstName
-                LastName    = $user.LastName
-                Department  = $user.Department
-                DisplayName = "$($user.FirstName) $($user.LastName)"
-            }
-
-            $newUser = New-ADUserFromTemplate -TemplateSamAccountName $TemplateUser `
-                                             -NewSamAccountName $user.NewUserName `
-                                             -Password $user.NewUserPassword `
-                                             -AdditionalAttributes $additionalAttributes
             
-            if ($newUser) {
-                $createdUsers += $newUser
-            }
-        }
-
-        # Verifikation
-        if ($Verify -and $createdUsers.Count -gt 0) {
-            Write-Host "`nVerifikation der erstellten Benutzer:" -ForegroundColor Cyan
-            $createdUsers | ForEach-Object {
-                $user = Get-ADUser -Identity $_.SamAccountName -Properties Department,MemberOf
-                Write-Host "`nBenutzer: $($user.SamAccountName)"
-                Write-Host "Abteilung: $($user.Department)"
-                Write-Host "Gruppen: $($user.MemberOf.Count)"
-            }
+            New-UserFromTemplate -TemplateUser $TemplateUser -NewUserProperties $userProps
         }
     }
     catch {
-        Write-Host "KRITISCHER FEHLER: $_" -ForegroundColor Red
-        exit 1
+        Write-Error "Failed to process CSV file: $_"
+        return $false
     }
+    
+    return $true
 }
 
-end {
-    Write-Host "`nProzess abgeschlossen. Erstellte Benutzer: $($createdUsers.Count)" -ForegroundColor Cyan
+# Main script logic
+try {
+    # Set verbose output
+    $VerbosePreference = "Continue"
+    
+    Write-VerboseWithTime "Starting AD User Management Script"
+    
+    # Handle template export
+    if ($ExportTemplate) {
+        if ([string]::IsNullOrWhiteSpace($TemplateUser)) {
+            $TemplateUser = Get-ValidatedInput -Prompt "Enter template username" -Required
+        }
+        Export-UserTemplate -Username $TemplateUser -ExportPath $ExportPath
+        return
+    }
+    
+    # Interactive mode if no parameters provided
+    if (-not $TemplateUser -and -not $CSV) {
+        Write-VerboseWithTime "Starting interactive mode"
+        $TemplateUser = Get-ValidatedInput -Prompt "Enter template username" -Required
+        
+        $mode = Get-ValidatedInput -Prompt "Enter mode (single/csv)" -Required
+        if ($mode -eq "csv") {
+            $CSV = Get-ValidatedInput -Prompt "Enter CSV path" -Required
+        } else {
+            $userProps = @{
+                SamAccountName = Get-ValidatedInput -Prompt "Enter new username (SAMAccountName)" -Required
+                UserPrincipalName = Get-ValidatedInput -Prompt "Enter UserPrincipalName" -Required
+                GivenName = Get-ValidatedInput -Prompt "Enter first name" -Required
+                Surname = Get-ValidatedInput -Prompt "Enter last name" -Required
+                DisplayName = Get-ValidatedInput -Prompt "Enter display name"
+                Description = Get-ValidatedInput -Prompt "Enter description"
+            }
+            
+            New-UserFromTemplate -TemplateUser $TemplateUser -NewUserProperties $userProps
+        }
+    }
+    # CSV mode
+    elseif ($CSV) {
+        if (-not $TemplateUser) {
+            $TemplateUser = Get-ValidatedInput -Prompt "Enter template username" -Required
+        }
+        Process-CSVFile -CSVPath $CSV -TemplateUser $TemplateUser
+    }
+    # Parameter mode
+    else {
+        if (-not $NewUserName) {
+            $NewUserName = Get-ValidatedInput -Prompt "Enter new username (SAMAccountName)" -Required
+        }
+        
+        $userProps = @{
+            SamAccountName = $NewUserName
+            UserPrincipalName = Get-ValidatedInput -Prompt "Enter UserPrincipalName" -Required
+            GivenName = Get-ValidatedInput -Prompt "Enter first name" -Required
+            Surname = Get-ValidatedInput -Prompt "Enter last name" -Required
+            DisplayName = Get-ValidatedInput -Prompt "Enter display name"
+            Description = Get-ValidatedInput -Prompt "Enter description"
+        }
+        
+        New-UserFromTemplate -TemplateUser $TemplateUser -NewUserProperties $userProps
+    }
+    
+    Write-VerboseWithTime "Script completed successfully"
+}
+catch {
+    Write-Error "Script failed: $_"
+    Write-VerboseWithTime "Script terminated with errors"
+}
+finally {
+    $VerbosePreference = "SilentlyContinue"
 }
