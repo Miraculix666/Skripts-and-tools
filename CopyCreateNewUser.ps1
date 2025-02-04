@@ -1,382 +1,264 @@
-# Advanced AD User Management Script
-# Author: Bolt
-# Version: 3.3
-# Description: Creates new AD users based on template users with complete attribute copying
-#requires -Module ActiveDirectory
+<#
+.SYNOPSIS
+    Erstellt neue AD-Benutzer als exakte Kopien eines Vorlagenbenutzers.
 
-[CmdletBinding()]
-param(
-    [Parameter(Mandatory=$false)]
+.DESCRIPTION
+    Dieses Skript erstellt einen oder mehrere neue Active Directory Benutzer, indem es einen vorhandenen Vorlagenbenutzer kopiert.
+    Es übernimmt alle kopierbaren Attribute, z. B. Gruppenmitgliedschaften, OU‑Platzierung, AD‑Rechte und optional weitere 
+    benutzerdefinierte Werte. Dabei werden zwingend neue Attribute (SAMAccountName, AccountPassword, Name) von optionalen 
+    Attributen (GivenName, Surname, DisplayName, Abteilung, Office, etc.) unterschieden.
+    
+    Das Skript unterstützt drei Aufrufvarianten:
+      • Keine Parameter: Interaktiver Modus – es werden alle fehlenden Parameter abgefragt.
+      • Einzelbenutzer: Alle nötigen Parameter (TemplateUser, NewUserName, NewUserPassword) werden übergeben.
+      • CSV-Batch: Mit dem Parameter –CsvPath (Die CSV-Datei verwendet in der deutschen Version den Semikolon‑Delimiter).
+        
+    WICHTIG: Im CSV‑Modus müssen folgende Spalten vorhanden sein (mit Semikolon als Trenner):
+        TemplateUser;NewUserName;NewUserPassword;GivenName;Surname;Department;Office;WeitereAttribute...
+        
+    Das Skript wandelt Plaintext ‑ Kennwörter in SecureStrings um und gibt detaillierte Log‑ und “verbose” Ausgaben aus.
+
+.PARAMETER CsvPath
+    (Optional) Pfad zu einer CSV-Datei, in der die neuen Benutzer definiert sind. 
+    Die CSV muss die Pflichtspalten TemplateUser, NewUserName und NewUserPassword enthalten,
+    optional werden weitere Spalten wie GivenName, Surname, Department, Office etc. unterstützt.
+
+.PARAMETER TemplateUser
+    (Optional, außer CSV‑Modus) Der SAMAccountName des Vorlagenbenutzers.
+
+.PARAMETER NewUserName
+    (Optional, außer CSV‑Modus) Der SAMAccountName des neuen AD-Benutzers.
+
+.PARAMETER NewUserPassword
+    (Optional, außer CSV‑Modus) Das Plaintext‑Kennwort für den neuen Benutzer.
+    Das Skript konvertiert es in einen SecureString. (Fehler, "could not convert system.string to system.security.securestring" 
+    werden vermieden.)
+
+.PARAMETER Verify
+    Schalter zur Aktivierung einer abschließenden Verifikation der erstellten Benutzer (z. B. Attributvergleich und Gruppen).
+
+.EXAMPLE
+    # Interaktiver Modus:
+    PS C:\> .\CopyCreateNewUser.ps1
+
+.EXAMPLE
+    # Einzelbenutzermodus:
+    PS C:\> .\CopyCreateNewUser.ps1 -TemplateUser "Vorlage01" -NewUserName "NeuerUser" -NewUserPassword "SicheresP@ssw0rd!123" -Verify
+
+.EXAMPLE
+    # Batch-Erstellung via CSV (Delimiter ;):
+    PS C:\> .\CopyCreateNewUser.ps1 -CsvPath "C:\Pfad\zu\users.csv" -Verify
+
+.NOTES
+    Version: 4.0
+    Autor: IT-Abteilung
+    Letzte Änderung: 2024-10-15
+#>
+
+[CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'Interactive')]
+param (
+    [Parameter(ParameterSetName = 'CSV')]
+    [ValidateScript({Test-Path $_ -PathType Leaf})]
+    [string]$CsvPath,
+    
+    [Parameter(ParameterSetName = 'Single')]
     [string]$TemplateUser,
     
-    [Parameter(Mandatory=$false)]
+    [Parameter(ParameterSetName = 'Single')]
     [string]$NewUserName,
     
-    [Parameter(Mandatory=$false)]
-    [string]$CSV,
+    [Parameter(ParameterSetName = 'Single')]
+    [string]$NewUserPassword,
     
-    [Parameter(Mandatory=$false)]
-    [switch]$ExportTemplate,
-    
-    [Parameter(Mandatory=$false)]
-    [string]$ExportPath,
-    
-    [Parameter(Mandatory=$false)]
-    [SecureString]$Password,
-    
-    [Parameter(Mandatory=$false)]
-    [string]$TargetOU
+    [Parameter()]
+    [switch]$Verify
 )
 
-# Always enable verbose output
-$VerbosePreference = "Continue"
+#region Initialisierung & Hilfsfunktionen
 
-# Function to write verbose messages with timestamp
-function Write-VerboseWithTime {
-    param([string]$Message)
-    Write-Verbose "$(Get-Date -Format 'dd.MM.yyyy HH:mm:ss'): $Message"
+# AD-Modul importieren (Abbruch bei Fehler)
+try {
+    Import-Module ActiveDirectory -ErrorAction Stop
+}
+catch {
+    Write-Error "Active Directory Modul konnte nicht geladen werden. Bitte RSAT installieren."
+    exit 1
 }
 
-# Function to get secure password
-function Get-SecurePassword {
-    Write-VerboseWithTime "Fordere Passwort an"
-    $securePassword = Read-Host -Prompt "Passwort eingeben" -AsSecureString
-    return $securePassword
+# Logging-Funktion – schreibt sowohl in die Konsole (mit Farbausgabe) als auch in eine Log-Datei
+$LogFile = Join-Path $PSScriptRoot "ADUserCreation_Log_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+
+function Write-Log {
+    param(
+        [string]$Message,
+        [ValidateSet("INFO","WARNING","ERROR","SUCCESS")]
+        [string]$Level = "INFO"
+    )
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $entry = "[$timestamp][$Level] $Message"
+    Add-Content -Path $LogFile -Value $entry
+    $color = switch ($Level) {
+        "INFO"    { "Gray" }
+        "WARNING" { "Yellow" }
+        "ERROR"   { "Red" }
+        "SUCCESS" { "Green" }
+    }
+    Write-Verbose $entry
+    Write-Host $entry -ForegroundColor $color
 }
 
-# Function to get all group memberships
-function Get-UserGroupMemberships {
-    param([string]$Username)
-    
-    Write-VerboseWithTime "Retrieving group memberships for user: $Username"
+# Testet, ob ein Kennwort komplex genug ist (Mindestlänge, Groß-/Kleinschreibung, Ziffern, Sonderzeichen)
+function Test-PasswordComplexity {
+    param([string]$Password)
+    $rules = @(
+        { $Password.Length -ge 12 },
+        { $Password -match '[A-Z]' },
+        { $Password -match '[a-z]' },
+        { $Password -match '\d' },
+        { $Password -match '[\W_]' }
+    )
+    foreach ($rule in $rules) {
+        if (-not (& $rule)) { return $false }
+    }
+    return $true
+}
+
+# Kopiert Gruppenmitgliedschaften vom Quellbenutzer zum Zielbenutzer
+function Copy-ADGroupMembership {
+    param(
+        [string]$SourceUser,
+        [string]$TargetUser
+    )
     try {
-        $groups = Get-ADPrincipalGroupMembership -Identity $Username | Select-Object -ExpandProperty Name
-        return $groups
+        # Hole die Gruppen (MemberOf) aus dem Template
+        $groups = Get-ADUser -Identity $SourceUser -Properties MemberOf | Select-Object -ExpandProperty MemberOf
+        foreach ($groupDN in $groups) {
+            if ($PSCmdlet.ShouldProcess($groupDN, "Mitgliedschaft hinzufügen")) {
+                Add-ADGroupMember -Identity $groupDN -Members $TargetUser -ErrorAction Stop
+            }
+        }
+        Write-Log "Gruppenmitgliedschaften (Anzahl: $($groups.Count)) kopiert." -Level SUCCESS
     }
     catch {
-        Write-Warning "Failed to get group memberships: $_"
-        return @()
+        Write-Log "Fehler beim Kopieren der Gruppen: $_" -Level ERROR
+        throw $_
     }
 }
 
-# Function to get user's OU path
-function Get-UserOUPath {
+# Erstellt einen neuen AD-Benutzer anhand eines Vorlagenbenutzers,
+# unterscheidet hierbei erforderliche (z.B. SAMAccountName, AccountPassword, Name)
+# von optionalen Attributen (GivenName, Surname, Department etc.).
+# Kopiert zusätzlich OU-Platzierung und weitere kopierbare AD-Eigenschaften.
+function New-ADUserFromTemplate {
     param(
-        [string]$Username,
-        [string]$TargetOU
+        [string]$TemplateSam,
+        [string]$NewSam,
+        [string]$Password,  # als Klartext, wird intern in SecureString konvertiert
+        [hashtable]$OptionalAttributes
     )
-    
-    Write-VerboseWithTime "Retrieving OU path for user: $Username"
     try {
-        if ($TargetOU) {
-            # Validate and return target OU
-            $ou = Get-ADOrganizationalUnit -Identity $TargetOU
-            return $ou.DistinguishedName
-        } else {
-            # Get OU from template user
-            $user = Get-ADUser -Identity $Username -Properties DistinguishedName
-            $ouPath = ($user.DistinguishedName -split ',', 2)[1]
-            return $ouPath
+        # Lade den Vorlagenbenutzer (alle kopierbaren Attribute)
+        $template = Get-ADUser -Identity $TemplateSam -Properties *
+        if (-not $template) {
+            throw "Vorlagenbenutzer $TemplateSam nicht gefunden."
+        }
+        
+        # Bestimme das Ziel-OU aus dem DistinguishedName der Vorlage
+        $templateDNParts = $template.DistinguishedName -split ',',2
+        $ouPath = $templateDNParts[1]  # z.B.: OU=Benutzer,DC=domain,DC=local
+        
+        # Konvertiere das Plaintext-Passwort in einen SecureString
+        $securePass = ConvertTo-SecureString $Password -AsPlainText -Force
+        
+        # Erstelle ein Hashtable für die zwingend neu zu setzenden Parameter
+        $userParams = @{
+            SamAccountName        = $NewSam
+            Name                  = $NewSam  # Standardmäßig: neuer Benutzername (kann evtl. in OptionalAttributes überschrieben werden)
+            AccountPassword       = $securePass
+            Enabled               = $true
+            ChangePasswordAtLogon = $true
+            Path                  = $ouPath
+            UserPrincipalName     = "$NewSam@$((Get-ADDomain).DNSRoot)"
+        }
+        
+        # Optional werden Attribute aus dem OptionalAttributes Hashtable übernommen.
+        # Wichtige Attribute wie GivenName, Surname, DisplayName etc. können hier gesetzt werden.
+        foreach ($key in $OptionalAttributes.Keys) {
+            # Nur Attribute übernehmen, die nicht zwingend aus der Vorlage verwendet werden sollen, z.B. wenn sie individuell sein müssen:
+            $userParams[$key] = $OptionalAttributes[$key]
+        }
+        
+        # Das Klonen der Vorlageneigenschaften mit -Instance kopiert viele AD Attribute,
+        # aber zwingend neu zu setzende Parameter (wie Kennwort, SAMAccountName etc.) werden überschrieben.
+        if ($PSCmdlet.ShouldProcess($NewSam, "Erstelle neuen Benutzer basierend auf Vorlage $TemplateSam")) {
+            $newUser = New-ADUser -Instance $template @userParams -PassThru -ErrorAction Stop
+            Write-Log "Neuer Benutzer $NewSam wurde erstellt (OU: $ouPath)." -Level SUCCESS
+            return $newUser
         }
     }
     catch {
-        Write-Warning "Failed to get OU path: $_"
+        Write-Log "Fehler beim Erstellen des Benutzers $NewSam: $_" -Level ERROR
         return $null
     }
 }
+#endregion
 
-# Function to validate mandatory user properties
-function Test-MandatoryProperties {
-    param(
-        [hashtable]$Properties
-    )
-    
-    # Based on Petri article mandatory fields
-    $mandatoryProps = @(
-        'SamAccountName',
-        'UserPrincipalName',
-        'GivenName',
-        'Surname',
-        'Name',
-        'DisplayName',
-        'EmailAddress',
-        'Department',
-        'Title'
-    )
-    $missingProps = @()
-    
-    foreach ($prop in $mandatoryProps) {
-        if (-not $Properties.ContainsKey($prop) -or [string]::IsNullOrWhiteSpace($Properties[$prop])) {
-            $missingProps += $prop
-        }
-    }
-    
-    return $missingProps
-}
+#region Verarbeitungslogik
 
-# Function to get user input with validation
-function Get-ValidatedInput {
-    param(
-        [string]$Prompt,
-        [switch]$Required
-    )
-    
-    do {
-        $input = Read-Host -Prompt $Prompt
-        if ($Required -and [string]::IsNullOrWhiteSpace($input)) {
-            Write-Warning "Dieses Feld ist erforderlich. Bitte geben Sie einen Wert ein."
-            $valid = $false
-        } else {
-            $valid = $true
-        }
-    } while (-not $valid)
-    
-    return $input
-}
+# Initialisiere leere Liste für erstellte Benutzer
+$createdUsers = @()
 
-# Function to get target OU
-function Get-TargetOUPath {
-    Write-VerboseWithTime "Fordere Ziel-OU an"
-    do {
-        $ouPath = Get-ValidatedInput -Prompt "Ziel-OU eingeben (Distinguished Name)" -Required
-        try {
-            $ou = Get-ADOrganizationalUnit -Identity $ouPath
-            $valid = $true
-        }
-        catch {
-            Write-Warning "Ungültige OU. Bitte geben Sie einen gültigen Distinguished Name ein."
-            $valid = $false
-        }
-    } while (-not $valid)
-    return $ouPath
-}
-
-# Function to export user template to CSV
-function Export-UserTemplate {
-    param(
-        [string]$Username,
-        [string]$ExportPath
-    )
-    
-    Write-VerboseWithTime "Exportiere Benutzervorlage für: $Username"
+if ($PSBoundParameters.ContainsKey("CsvPath")) {
+    # ===============================
+    # CSV-Batch-Modus (deutsche CSV: Delimiter ;)
+    # ===============================
+    Write-Log "Starte Batch-Erstellung via CSV: $CsvPath" -Level INFO
     try {
-        # Get all user properties
-        $user = Get-ADUser -Identity $Username -Properties *
-        
-        # Get group memberships
-        $groups = Get-UserGroupMemberships -Username $Username
-        
-        # Create custom object with relevant properties
-        $exportObject = [PSCustomObject]@{
-            SamAccountName = $user.SamAccountName
-            UserPrincipalName = $user.UserPrincipalName
-            GivenName = $user.GivenName
-            Surname = $user.Surname
-            Name = $user.Name
-            DisplayName = $user.DisplayName
-            EmailAddress = $user.EmailAddress
-            Department = $user.Department
-            Title = $user.Title
-            Description = $user.Description
-            Groups = $groups -join ';'
-            OU = $user.DistinguishedName -replace '^[^,]*,',''
-        }
-        
-        # Set default export path if not provided
-        if (-not $ExportPath) {
-            $ExportPath = ".\$($Username)_template.csv"
-        }
-        
-        # Export to CSV with German locale (semicolon separator)
-        $exportObject | Export-Csv -Path $ExportPath -NoTypeInformation -Delimiter ';' -Encoding UTF8
-        Write-VerboseWithTime "Template exported to: $ExportPath"
+        $users = Import-Csv -Path $CsvPath -Delimiter ";" -Encoding UTF8
     }
     catch {
-        Write-Error "Failed to export template: $_"
+        Write-Error "CSV-Datei konnte nicht geladen werden: $_"
+        exit 1
     }
-}
-
-# Function to process CSV file
-function Process-CSVFile {
-    param(
-        [string]$CSVPath,
-        [string]$TemplateUser,
-        [SecureString]$Password,
-        [string]$TargetOU
-    )
     
-    Write-VerboseWithTime "Verarbeite CSV-Datei: $CSVPath"
-    try {
-        # Import CSV with German locale (semicolon separator)
-        $users = Import-Csv -Path $CSVPath -Delimiter ';' -Encoding UTF8
+    # Prüfe, ob alle Pflichtspalten vorhanden sind
+    $requiredCols = @("TemplateUser", "NewUserName", "NewUserPassword")
+    $csvCols = $users[0].PSObject.Properties.Name
+    $missing = $requiredCols | Where-Object {$_ -notin $csvCols}
+    if ($missing) {
+        Write-Error "Fehlende Pflichtspalten in CSV: $($missing -join ', ')"
+        exit 1
+    }
+    
+    # Für jeden Eintrag in der CSV
+    foreach ($u in $users) {
+        Write-Log "Verarbeite Benutzer: $($u.NewUserName)" -Level INFO
         
-        foreach ($user in $users) {
-            $userProps = @{
-                SamAccountName = $user.SamAccountName
-                UserPrincipalName = $user.UserPrincipalName
-                GivenName = $user.GivenName
-                Surname = $user.Surname
-                Name = $user.Name
-                DisplayName = $user.DisplayName
-                EmailAddress = $user.EmailAddress
-                Department = $user.Department
-                Title = $user.Title
-                Description = $user.Description
+        # Passwort-Komplexitätsprüfung
+        if (-not (Test-PasswordComplexity -Password $u.NewUserPassword)) {
+            Write-Log "Passwort für $($u.NewUserName) entspricht nicht den Richtlinien." -Level ERROR
+            continue
+        }
+        
+        # Optional: Erlaube Überschreibung einzelner Attribute (z. B. GivenName, Surname, Department, Office)
+        $optAttrs = @{}
+        if ($u.PSObject.Properties.Name -contains "GivenName") { $optAttrs["GivenName"] = $u.GivenName }
+        if ($u.PSObject.Properties.Name -contains "Surname")  { $optAttrs["Surname"] = $u.Surname }
+        if ($u.PSObject.Properties.Name -contains "DisplayName") { $optAttrs["DisplayName"] = $u.DisplayName }
+        if ($u.PSObject.Properties.Name -contains "Department") { $optAttrs["Department"] = $u.Department }
+        if ($u.PSObject.Properties.Name -contains "Office")     { $optAttrs["Office"] = $u.Office }
+        
+        # Ggf. kann in der CSV auch der TemplateUser überschrieben werden; ansonsten Standard:
+        $templateForUser = if ($u.TemplateUser) { $u.TemplateUser } else { $TemplateUser }
+        
+        $newUser = New-ADUserFromTemplate -TemplateSam $templateForUser `
+                                          -NewSam $u.NewUserName `
+                                          -Password $u.NewUserPassword `
+                                          -OptionalAttributes $optAttrs
+        if ($newUser) {
+            # Kopiere Gruppenmitgliedschaften vom Template
+            try {
+                Copy-ADGroupMembership -SourceUser $templateForUser -TargetUser $u.NewUserName
             }
-            
-            # Validate mandatory properties
-            $missingProps = Test-MandatoryProperties -Properties $userProps
-            if ($missingProps.Count -gt 0) {
-                Write-Warning "Skipping user $($user.SamAccountName): Missing mandatory properties: $($missingProps -join ', ')"
-                continue
-            }
-            
-            New-UserFromTemplate -TemplateUser $TemplateUser -NewUserProperties $userProps -Password $Password -TargetOU $TargetOU
-        }
-    }
-    catch {
-        Write-Error "Failed to process CSV file: $_"
-    }
-}
-
-# Function to create new user from template
-function New-UserFromTemplate {
-    param(
-        [string]$TemplateUser,
-        [hashtable]$NewUserProperties,
-        [SecureString]$Password,
-        [string]$TargetOU
-    )
-    
-    Write-VerboseWithTime "Erstelle neuen Benutzer basierend auf Vorlage: $TemplateUser"
-    try {
-        # Get template user properties
-        $templateUserObj = Get-ADUser -Identity $TemplateUser -Properties *
-        
-        # Get group memberships
-        $groups = Get-UserGroupMemberships -Username $TemplateUser
-        
-        # Create new user
-        $newUserParams = @{
-            Instance = $templateUserObj
-            Path = $TargetOU
-            AccountPassword = $Password
-            Enabled = $true
-        }
-        
-        # Add all new user properties
-        foreach ($prop in $NewUserProperties.GetEnumerator()) {
-            $newUserParams[$prop.Key] = $prop.Value
-        }
-        
-        # Create the user
-        New-ADUser @newUserParams
-        
-        # Add group memberships
-        foreach ($group in $groups) {
-            Add-ADGroupMember -Identity $group -Members $NewUserProperties.SamAccountName
-        }
-        
-        Write-VerboseWithTime "Benutzer $($NewUserProperties.SamAccountName) erfolgreich erstellt"
-    }
-    catch {
-        Write-Error "Failed to create user: $_"
-    }
-}
-
-# Main script logic
-try {
-    Write-VerboseWithTime "Starte AD-Benutzerverwaltungsskript"
-    
-    # Handle template export
-    if ($ExportTemplate) {
-        if ([string]::IsNullOrWhiteSpace($TemplateUser)) {
-            $TemplateUser = Get-ValidatedInput -Prompt "Benutzername der Vorlage eingeben" -Required
-        }
-        Export-UserTemplate -Username $TemplateUser -ExportPath $ExportPath
-        return
-    }
-    
-    # Get password if not provided
-    if (-not $Password) {
-        $Password = Get-SecurePassword
-    }
-    
-    # Get target OU if not provided
-    if (-not $TargetOU) {
-        $TargetOU = Get-TargetOUPath
-    }
-    
-    # Interactive mode if no parameters provided
-    if (-not $TemplateUser -and -not $CSV) {
-        Write-VerboseWithTime "Starte interaktiven Modus"
-        $TemplateUser = Get-ValidatedInput -Prompt "Benutzername der Vorlage eingeben" -Required
-        
-        $mode = Get-ValidatedInput -Prompt "Modus wählen (single/csv)" -Required
-        if ($mode -eq "csv") {
-            $CSV = Get-ValidatedInput -Prompt "CSV-Dateipfad eingeben" -Required
-            Process-CSVFile -CSVPath $CSV -TemplateUser $TemplateUser -Password $Password -TargetOU $TargetOU
-        } else {
-            $userProps = @{
-                SamAccountName = Get-ValidatedInput -Prompt "Neuen Benutzernamen eingeben (SAMAccountName)" -Required
-                UserPrincipalName = Get-ValidatedInput -Prompt "UserPrincipalName eingeben" -Required
-                GivenName = Get-ValidatedInput -Prompt "Vorname eingeben" -Required
-                Surname = Get-ValidatedInput -Prompt "Nachname eingeben" -Required
-                Name = Get-ValidatedInput -Prompt "Name eingeben" -Required
-                DisplayName = Get-ValidatedInput -Prompt "Anzeigenamen eingeben" -Required
-                EmailAddress = Get-ValidatedInput -Prompt "E-Mail-Adresse eingeben" -Required
-                Department = Get-ValidatedInput -Prompt "Abteilung eingeben" -Required
-                Title = Get-ValidatedInput -Prompt "Position eingeben" -Required
-                Description = Get-ValidatedInput -Prompt "Beschreibung eingeben"
-            }
-            
-            New-UserFromTemplate -TemplateUser $TemplateUser -NewUserProperties $userProps -Password $Password -TargetOU $TargetOU
-        }
-    }
-    # CSV mode
-    elseif ($CSV) {
-        if (-not $TemplateUser) {
-            $TemplateUser = Get-ValidatedInput -Prompt "Benutzername der Vorlage eingeben" -Required
-        }
-        Process-CSVFile -CSVPath $CSV -TemplateUser $TemplateUser -Password $Password -TargetOU $TargetOU
-    }
-    # Parameter mode - only prompt for missing mandatory parameters
-    else {
-        $userProps = @{}
-        
-        # Add provided parameters
-        if ($NewUserName) {
-            $userProps['SamAccountName'] = $NewUserName
-        }
-        
-        # Check for missing mandatory parameters
-        $mandatoryProps = @{
-            'UserPrincipalName' = 'UserPrincipalName eingeben'
-            'GivenName' = 'Vorname eingeben'
-            'Surname' = 'Nachname eingeben'
-            'Name' = 'Name eingeben'
-            'SamAccountName' = 'Neuen Benutzernamen eingeben (SAMAccountName)'
-            'DisplayName' = 'Anzeigenamen eingeben'
-            'EmailAddress' = 'E-Mail-Adresse eingeben'
-            'Department' = 'Abteilung eingeben'
-            'Title' = 'Position eingeben'
-        }
-        
-        foreach ($prop in $mandatoryProps.GetEnumerator()) {
-            if (-not $userProps.ContainsKey($prop.Key)) {
-                $userProps[$prop.Key] = Get-ValidatedInput -Prompt $prop.Value -Required
-            }
-        }
-        
-        # Optional parameters
-        $userProps['Description'] = Get-ValidatedInput -Prompt "Beschreibung eingeben"
-        
-        New-UserFromTemplate -TemplateUser $TemplateUser -NewUserProperties $userProps -Password $Password -TargetOU $TargetOU
-    }
-    
-    Write-VerboseWithTime "Skript erfolgreich beendet"
-}
-catch {
-    Write-Error "Skriptfehler: $_"
-    Write-VerboseWithTime "Skript mit Fehlern beendet"
-}
+            catch { Write-Log "Fehler beim Kopieren der Gruppen für $($u.NewUserName)" -Level ERROR }
+            $createdUsers
