@@ -1,65 +1,57 @@
 <#
 .SYNOPSIS
-    Erstellt AD-Benutzer als exakte Kopien von Vorlagenbenutzern.
-
+    Erstellt AD-Benutzer aus CSV-Datei als Kopie eines Vorlagenbenutzers
+    
 .DESCRIPTION
-    Dieses Skript erstellt neue AD-Benutzer als Klone vorhandener Vorlagen,
-    inklusive aller Attribute und Gruppenmitgliedschaften.
+    Dieses Skript erstellt neue AD-Benutzer basierend auf:
+    - Einer CSV-Datei mit Benutzerdaten
+    - Einem Vorlagenbenutzer für Standardattribute
+    - Passwort-Compliance-Prüfungen
+    - Automatischer Gruppenübernahme
+    - Optionale Post-Erstellungsverifikation
 
 .PARAMETER TemplateUser
     SAMAccountName des Vorlagenbenutzers
 
-.PARAMETER NewUserName
-    SAMAccountName für den neuen Benutzer
-
-.PARAMETER NewUserPassword
-    Initialpasswort für den neuen Benutzer
+.PARAMETER CsvPath
+    Pfad zur CSV-Datei mit folgenden Spalten:
+    NewUserName,NewUserPassword,FirstName,LastName,Department
 
 .PARAMETER Verify
     Aktiviert die Überprüfung nach der Erstellung
 
 .EXAMPLE
-    .\CopyCreateNewUser.ps1 -TemplateUser "L7111101" -NewUserName "L7111115" -NewUserPassword "P2f2aL5!01" -Verify
+    .\Create-ADUsers.ps1 -TemplateUser "VorlagenUser" -CsvPath "users.csv" -Verify
+
+.NOTES
+    Version: 3.0 | Autor: IT-Team | Letzte Änderung: 2025-02-04
 #>
 
 [CmdletBinding(SupportsShouldProcess = $true)]
-param (
+param(
     [Parameter(Mandatory = $true)]
     [string]$TemplateUser,
 
     [Parameter(Mandatory = $true)]
-    [string]$NewUserName,
+    [ValidateScript({Test-Path $_ -PathType Leaf})]
+    [string]$CsvPath,
 
-    [Parameter(Mandatory = $true)]
-    [string]$NewUserPassword,
-
-    [Parameter()]
     [switch]$Verify
 )
 
 begin {
-    # Logging-Konfiguration
-    $logFile = Join-Path $PSScriptRoot "ADUserCreation_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+    #region Hilfsfunktionen
     
-    function Write-Log {
-        param(
-            [string]$Message,
-            [ValidateSet('INFO','WARNING','ERROR','SUCCESS')]
-            [string]$Level = 'INFO'
+    function Test-PasswordComplexity {
+        param([string]$Password)
+        $complexityRules = @(
+            { $Password.Length -ge 12 },
+            { $Password -match '[A-Z]' },
+            { $Password -match '[a-z]' },
+            { $Password -match '\d' },
+            { $Password -match '[\W_]' }
         )
-        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-        $logEntry = "[$timestamp][$Level] $Message"
-        Add-Content -Path $logFile -Value $logEntry
-        
-        # Farbauswahl
-        $color = switch ($Level) {
-            'INFO'    { 'Gray' }
-            'WARNING' { 'Yellow' }
-            'ERROR'   { 'Red' }
-            'SUCCESS' { 'Green' }
-        }
-        
-        Write-Host ("{0}: {1}" -f $Level.PadRight(7), $Message) -ForegroundColor $color
+        return ($complexityRules | Where-Object { -not (& $_) }).Count -eq 0
     }
 
     function Copy-ADGroupMembership {
@@ -73,74 +65,112 @@ begin {
             foreach ($group in $groups) {
                 Add-ADGroupMember -Identity $group -Members $TargetUser -ErrorAction Stop
             }
-            Write-Log "Gruppenmitgliedschaften kopiert" -Level SUCCESS
+            Write-Host "Gruppen kopiert: $($groups.Count)" -ForegroundColor Green
         }
         catch {
-            Write-Log "Fehler beim Gruppenkopieren: $_" -Level ERROR
+            Write-Host "Fehler beim Gruppenkopieren: $_" -ForegroundColor Red
             throw
         }
     }
+
+    function New-ADUserFromTemplate {
+        param(
+            [string]$TemplateSamAccountName,
+            [string]$NewSamAccountName,
+            [string]$Password,
+            [hashtable]$AdditionalAttributes
+        )
+        try {
+            # Vorlagenbenutzer laden
+            $template = Get-ADUser -Identity $TemplateSamAccountName -Properties *
+
+            # Benutzerparameter erstellen
+            $userParams = @{
+                Instance              = $template
+                SamAccountName       = $NewSamAccountName
+                UserPrincipalName    = "$NewSamAccountName@$((Get-ADDomain).DNSRoot)"
+                Name                 = $AdditionalAttributes.DisplayName
+                GivenName            = $AdditionalAttributes.FirstName
+                Surname              = $AdditionalAttributes.LastName
+                Department           = $AdditionalAttributes.Department
+                AccountPassword      = ConvertTo-SecureString $Password -AsPlainText -Force
+                Enabled              = $true
+                ChangePasswordAtLogon = $true
+                PassThru             = $true
+            }
+
+            # Benutzer erstellen
+            $newUser = New-ADUser @userParams -ErrorAction Stop
+            Write-Host "Benutzer $NewSamAccountName erstellt" -ForegroundColor Green
+
+            # Gruppen kopieren
+            Copy-ADGroupMembership -SourceUser $TemplateSamAccountName -TargetUser $NewSamAccountName
+
+            return $newUser
+        }
+        catch {
+            Write-Host "Fehler bei $NewSamAccountName: $_" -ForegroundColor Red
+            return $null
+        }
+    }
+    #endregion
 }
 
 process {
     try {
-        # Vorlagenbenutzer überprüfen
-        $template = Get-ADUser -Identity $TemplateUser -Properties *
-        if (-not $template) {
-            throw "Vorlagenbenutzer $TemplateUser nicht gefunden"
+        # CSV-Daten importieren und validieren
+        $users = Import-Csv -Path $CsvPath -Encoding UTF8
+        $requiredColumns = @('NewUserName','NewUserPassword','FirstName','LastName','Department')
+        $missingColumns = $requiredColumns | Where-Object { $_ -notin $users[0].PSObject.Properties.Name }
+
+        if ($missingColumns) {
+            throw "Fehlende Spalten in CSV: $($missingColumns -join ', ')"
         }
 
-        # Duplikatsprüfung
-        if (Get-ADUser -Filter "SamAccountName -eq '$NewUserName'") {
-            throw "Benutzer $NewUserName existiert bereits"
-        }
+        # Hauptverarbeitung
+        $createdUsers = @()
+        foreach ($user in $users) {
+            # Passwortvalidierung
+            if (-not (Test-PasswordComplexity -Password $user.NewUserPassword)) {
+                Write-Host "Passwort für $($user.NewUserName) entspricht nicht den Richtlinien" -ForegroundColor Red
+                continue
+            }
 
-        # Passwortvalidierung
-        if ($NewUserPassword.Length -lt 12 -or 
-            -not ($NewUserPassword -match '\d') -or
-            -not ($NewUserPassword -match '[A-Z]') -or
-            -not ($NewUserPassword -match '[a-z]')) {
-            throw "Passwort entspricht nicht den Sicherheitsrichtlinien"
-        }
+            # Benutzererstellung
+            $additionalAttributes = @{
+                FirstName   = $user.FirstName
+                LastName    = $user.LastName
+                Department  = $user.Department
+                DisplayName = "$($user.FirstName) $($user.LastName)"
+            }
 
-        # Benutzer erstellen
-        $newUserParams = @{
-            Instance              = $template
-            SamAccountName        = $NewUserName
-            UserPrincipalName     = "$NewUserName@$((Get-ADDomain).DNSRoot)"
-            Name                  = $NewUserName
-            AccountPassword       = ConvertTo-SecureString $NewUserPassword -AsPlainText -Force
-            Enabled               = $true
-            ChangePasswordAtLogon = $true
-        }
-
-        if ($PSCmdlet.ShouldProcess($NewUserName, "AD-Benutzer erstellen")) {
-            $newUser = New-ADUser @newUserParams -PassThru
-            Copy-ADGroupMembership -SourceUser $TemplateUser -TargetUser $NewUserName
-            Write-Log "Benutzer $NewUserName erfolgreich erstellt" -Level SUCCESS
+            $newUser = New-ADUserFromTemplate -TemplateSamAccountName $TemplateUser `
+                                             -NewSamAccountName $user.NewUserName `
+                                             -Password $user.NewUserPassword `
+                                             -AdditionalAttributes $additionalAttributes
+            
+            if ($newUser) {
+                $createdUsers += $newUser
+            }
         }
 
         # Verifikation
-        if ($Verify) {
-            $newUser = Get-ADUser -Identity $NewUserName -Properties *
-            $comparisonProps = @(
-                'Department', 'Title', 'Office', 
-                'Company', 'Manager', 'Enabled'
-            )
-
-            foreach ($prop in $comparisonProps) {
-                if ($newUser.$prop -ne $template.$prop) {
-                    Write-Log "Abweichung bei $prop: Vorlage[$($template.$prop)] Neu[$($newUser.$prop)]" -Level WARNING
-                }
+        if ($Verify -and $createdUsers.Count -gt 0) {
+            Write-Host "`nVerifikation der erstellten Benutzer:" -ForegroundColor Cyan
+            $createdUsers | ForEach-Object {
+                $user = Get-ADUser -Identity $_.SamAccountName -Properties Department,MemberOf
+                Write-Host "`nBenutzer: $($user.SamAccountName)"
+                Write-Host "Abteilung: $($user.Department)"
+                Write-Host "Gruppen: $($user.MemberOf.Count)"
             }
         }
     }
     catch {
-        Write-Log "FEHLER: $_" -Level ERROR
+        Write-Host "KRITISCHER FEHLER: $_" -ForegroundColor Red
         exit 1
     }
 }
 
 end {
-    Write-Log "Prozess abgeschlossen. Log-Datei: $logFile" -Level INFO
+    Write-Host "`nProzess abgeschlossen. Erstellte Benutzer: $($createdUsers.Count)" -ForegroundColor Cyan
 }
