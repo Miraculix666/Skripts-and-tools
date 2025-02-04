@@ -1,6 +1,6 @@
 # Advanced AD User Management Script
 # Author: Bolt
-# Version: 3.2
+# Version: 3.3
 # Description: Creates new AD users based on template users with complete attribute copying
 #requires -Module ActiveDirectory
 
@@ -39,18 +39,8 @@ function Write-VerboseWithTime {
 
 # Function to get secure password
 function Get-SecurePassword {
-    Write-VerboseWithTime "Fordere sicheres Passwort an"
-    do {
-        $securePassword = Read-Host -Prompt "Passwort eingeben (mindestens 8 Zeichen)" -AsSecureString
-        $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
-        $plainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-        if ($plainPassword.Length -lt 8) {
-            Write-Warning "Das Passwort muss mindestens 8 Zeichen lang sein."
-            $valid = $false
-        } else {
-            $valid = $true
-        }
-    } while (-not $valid)
+    Write-VerboseWithTime "Fordere Passwort an"
+    $securePassword = Read-Host -Prompt "Passwort eingeben" -AsSecureString
     return $securePassword
 }
 
@@ -161,7 +151,138 @@ function Get-TargetOUPath {
     return $ouPath
 }
 
-[... Rest of the script remains the same but with updated mandatory properties in the interactive mode and CSV processing ...]
+# Function to export user template to CSV
+function Export-UserTemplate {
+    param(
+        [string]$Username,
+        [string]$ExportPath
+    )
+    
+    Write-VerboseWithTime "Exportiere Benutzervorlage für: $Username"
+    try {
+        # Get all user properties
+        $user = Get-ADUser -Identity $Username -Properties *
+        
+        # Get group memberships
+        $groups = Get-UserGroupMemberships -Username $Username
+        
+        # Create custom object with relevant properties
+        $exportObject = [PSCustomObject]@{
+            SamAccountName = $user.SamAccountName
+            UserPrincipalName = $user.UserPrincipalName
+            GivenName = $user.GivenName
+            Surname = $user.Surname
+            Name = $user.Name
+            DisplayName = $user.DisplayName
+            EmailAddress = $user.EmailAddress
+            Department = $user.Department
+            Title = $user.Title
+            Description = $user.Description
+            Groups = $groups -join ';'
+            OU = $user.DistinguishedName -replace '^[^,]*,',''
+        }
+        
+        # Set default export path if not provided
+        if (-not $ExportPath) {
+            $ExportPath = ".\$($Username)_template.csv"
+        }
+        
+        # Export to CSV with German locale (semicolon separator)
+        $exportObject | Export-Csv -Path $ExportPath -NoTypeInformation -Delimiter ';' -Encoding UTF8
+        Write-VerboseWithTime "Template exported to: $ExportPath"
+    }
+    catch {
+        Write-Error "Failed to export template: $_"
+    }
+}
+
+# Function to process CSV file
+function Process-CSVFile {
+    param(
+        [string]$CSVPath,
+        [string]$TemplateUser,
+        [SecureString]$Password,
+        [string]$TargetOU
+    )
+    
+    Write-VerboseWithTime "Verarbeite CSV-Datei: $CSVPath"
+    try {
+        # Import CSV with German locale (semicolon separator)
+        $users = Import-Csv -Path $CSVPath -Delimiter ';' -Encoding UTF8
+        
+        foreach ($user in $users) {
+            $userProps = @{
+                SamAccountName = $user.SamAccountName
+                UserPrincipalName = $user.UserPrincipalName
+                GivenName = $user.GivenName
+                Surname = $user.Surname
+                Name = $user.Name
+                DisplayName = $user.DisplayName
+                EmailAddress = $user.EmailAddress
+                Department = $user.Department
+                Title = $user.Title
+                Description = $user.Description
+            }
+            
+            # Validate mandatory properties
+            $missingProps = Test-MandatoryProperties -Properties $userProps
+            if ($missingProps.Count -gt 0) {
+                Write-Warning "Skipping user $($user.SamAccountName): Missing mandatory properties: $($missingProps -join ', ')"
+                continue
+            }
+            
+            New-UserFromTemplate -TemplateUser $TemplateUser -NewUserProperties $userProps -Password $Password -TargetOU $TargetOU
+        }
+    }
+    catch {
+        Write-Error "Failed to process CSV file: $_"
+    }
+}
+
+# Function to create new user from template
+function New-UserFromTemplate {
+    param(
+        [string]$TemplateUser,
+        [hashtable]$NewUserProperties,
+        [SecureString]$Password,
+        [string]$TargetOU
+    )
+    
+    Write-VerboseWithTime "Erstelle neuen Benutzer basierend auf Vorlage: $TemplateUser"
+    try {
+        # Get template user properties
+        $templateUserObj = Get-ADUser -Identity $TemplateUser -Properties *
+        
+        # Get group memberships
+        $groups = Get-UserGroupMemberships -Username $TemplateUser
+        
+        # Create new user
+        $newUserParams = @{
+            Instance = $templateUserObj
+            Path = $TargetOU
+            AccountPassword = $Password
+            Enabled = $true
+        }
+        
+        # Add all new user properties
+        foreach ($prop in $NewUserProperties.GetEnumerator()) {
+            $newUserParams[$prop.Key] = $prop.Value
+        }
+        
+        # Create the user
+        New-ADUser @newUserParams
+        
+        # Add group memberships
+        foreach ($group in $groups) {
+            Add-ADGroupMember -Identity $group -Members $NewUserProperties.SamAccountName
+        }
+        
+        Write-VerboseWithTime "Benutzer $($NewUserProperties.SamAccountName) erfolgreich erstellt"
+    }
+    catch {
+        Write-Error "Failed to create user: $_"
+    }
+}
 
 # Main script logic
 try {
@@ -176,12 +297,12 @@ try {
         return
     }
     
-    # Get password if not provided (now mandatory)
+    # Get password if not provided
     if (-not $Password) {
         $Password = Get-SecurePassword
     }
     
-    # Get target OU if not provided (now mandatory)
+    # Get target OU if not provided
     if (-not $TargetOU) {
         $TargetOU = Get-TargetOUPath
     }
