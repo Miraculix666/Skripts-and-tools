@@ -1,207 +1,299 @@
 <#
 .SYNOPSIS
-Erstellt neue AD-Benutzer basierend auf vorhandenen Vorlagen und überprüft optional die Erstellung.
+    Erstellt AD-Benutzer als exakte Kopien von Vorlagenbenutzern mit automatischer Gruppenübernahme.
 
 .DESCRIPTION
-Dieses Skript erstellt neue AD-Benutzer, indem es vorhandene Benutzer als Vorlagen verwendet und deren Attribute und Berechtigungen kopiert. Optional kann es die erfolgreiche Erstellung und korrekte Verrechtung überprüfen.
+    Dieses Skript ermöglicht die Massenerstellung von AD-Benutzern basierend auf vorhandenen Vorlagen.
+    Es kopiert:
+    - Alle Standardattribute (außer systemeigene Eigenschaften)
+    - Gruppenmitgliedschaften
+    - Organisational Unit (OU)
+    - Benutzerkonto-Einstellungen
 
-.PARAMETER CSV
-Der Pfad zur CSV-Datei mit den Benutzerdaten.
+    Unterstützte Modi:
+    - Interaktive Eingabe
+    - Parameterbasierte Einzelerstellung
+    - CSV-Batch-Verarbeitung
+
+.PARAMETER CsvPath
+    Pfad zur CSV-Datei mit Batch-Erstellungsdaten (Format siehe NOTES)
 
 .PARAMETER TemplateUser
-Der Benutzername des Vorlagenbenutzers.
+    SAMAccountName des Vorlagenbenutzers
 
 .PARAMETER NewUserName
-Der Benutzername für den neuen AD-Benutzer.
+    SAMAccountName für den neuen Benutzer
 
 .PARAMETER NewUserPassword
-Das Passwort für den neuen AD-Benutzer.
+    Initialpasswort für den neuen Benutzer
 
 .PARAMETER Verify
-Schalter zur Aktivierung der Überprüfung nach der Benutzererstellung.
+    Aktiviert die Post-Erstellungsüberprüfung
+
+.PARAMETER WhatIf
+    Simuliert die Aktionen ohne Änderungen am AD
 
 .EXAMPLE
-.\New-ADUserFromTemplate.ps1
-.\New-ADUserFromTemplate.ps1 -CSV "C:\Pfad\zu\ad_user_creation_template.csv"
-.\New-ADUserFromTemplate.ps1 -TemplateUser "john.doe" -NewUserName "jane.smith" -NewUserPassword "P@ssw0rd123!" -Verify
+    # Interaktiver Modus
+    .\New-ADUserClone.ps1
+
+    # CSV-Batch-Modus mit Überprüfung
+    .\New-ADUserClone.ps1 -CsvPath .\users.csv -Verify
+
+    # Einzelerstellung mit Parameter
+    .\New-ADUserClone.ps1 -TemplateUser "jdoe" -NewUserName "asmith" -NewUserPassword "P@ssw0rd123!"
 
 .NOTES
-Beispiel-CSV-Inhalt:
-TemplateUser,NewUserName,NewUserPassword,FirstName,LastName,Department,Title,Email
-john.doe,max.mustermann,Willkommen2025!,Max,Mustermann,IT,Junior Entwickler,max.mustermann@unternehmen.de
-jane.smith,anna.schmidt,Neustart2025!,Anna,Schmidt,Marketing,Marketing Spezialist,anna.schmidt@unternehmen.de
+    Erforderliche CSV-Struktur:
+    TemplateUser,NewUserName,NewUserPassword,Description,Department,Title
+    jdoe,asmith,P@ssw0rd123!,Developer,IT,Junior Developer
+    msmith,bjones,SecurePwd456!,Manager,Sales,Sales Lead
+
+    Version: 2.1
+    Autor: IT-Abteilung
+    Letzte Änderung: 2024-03-15
 #>
 
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Interactive', SupportsShouldProcess = $true)]
 param (
-    [Parameter(Mandatory=$false)]
-    [string]$CSV,
+    [Parameter(ParameterSetName = 'CSV', Mandatory = $true)]
+    [ValidateScript({
+        if (-not (Test-Path $_)) { throw "CSV-Datei nicht gefunden" }
+        $true
+    })]
+    [string]$CsvPath,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(ParameterSetName = 'Single', Mandatory = $true)]
     [string]$TemplateUser,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(ParameterSetName = 'Single', Mandatory = $true)]
     [string]$NewUserName,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(ParameterSetName = 'Single')]
     [string]$NewUserPassword,
 
-    [Parameter(Mandatory=$false)]
-    [switch]$Verify
+    [Parameter()]
+    [switch]$Verify,
+
+    [Parameter()]
+    [switch]$WhatIf
 )
 
-# Importiere das Active Directory-Modul
-Import-Module ActiveDirectory
+begin {
+    #region Modulimport und Initialisierung
+    Import-Module ActiveDirectory -ErrorAction Stop
 
-# Funktion zum Kopieren der Gruppenmitgliedschaften
-function Copy-ADGroupMembership {
-    param (
-        [string]$SourceUser,
-        [string]$TargetUser
-    )
+    # Logging-Konfiguration
+    $logFile = Join-Path $PSScriptRoot "ADUserClone_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
     
-    $groups = Get-ADUser -Identity $SourceUser -Properties MemberOf | Select-Object -ExpandProperty MemberOf
-    foreach ($group in $groups) {
-        Add-ADGroupMember -Identity $group -Members $TargetUser
+    function Write-Log {
+        param(
+            [string]$Message,
+            [ValidateSet('INFO','WARNING','ERROR','SUCCESS')]
+            [string]$Level = 'INFO'
+        )
+        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        $logEntry = "[$timestamp][$Level] $Message"
+        Add-Content -Path $logFile -Value $logEntry
+        Write-Host ("{0}: {1}" -f $Level.PadRight(7), $Message) -ForegroundColor (
+            switch ($Level) {
+                'INFO'    { 'Gray' }
+                'WARNING' { 'Yellow' }
+                'ERROR'   { 'Red' }
+                'SUCCESS' { 'Green' }
+            }
+        )
     }
-}
+    #endregion
 
-# Funktion zum Erstellen eines neuen Benutzers basierend auf einer Vorlage
-function New-ADUserFromTemplate {
-    param (
-        [string]$TemplateUser,
-        [string]$NewUserName,
-        [string]$NewUserPassword,
-        [hashtable]$AdditionalProperties
-    )
-    
-    $template = Get-ADUser -Identity $TemplateUser -Properties *
-    $newUserParams = @{
-        Instance = $template
-        Name = $NewUserName
-        SamAccountName = $NewUserName
-        UserPrincipalName = "$NewUserName@$((Get-ADDomain).DNSRoot)"
-        Enabled = $true
-        AccountPassword = (ConvertTo-SecureString -AsPlainText $NewUserPassword -Force)
-    }
-    
-    # Füge zusätzliche Eigenschaften hinzu, falls vorhanden
-    foreach ($key in $AdditionalProperties.Keys) {
-        $newUserParams[$key] = $AdditionalProperties[$key]
-    }
-    
-    try {
-        $newUser = New-ADUser @newUserParams -PassThru
-        Copy-ADGroupMembership -SourceUser $TemplateUser -TargetUser $newUser.SamAccountName
-        Write-Host "Benutzer $NewUserName wurde erfolgreich erstellt." -ForegroundColor Green
-        return $newUser
-    }
-    catch {
-        Write-Host "Fehler beim Erstellen des Benutzers $NewUserName: $_" -ForegroundColor Red
-        return $null
-    }
-}
-
-# Funktion zur Überprüfung der Benutzererstellung und Verrechtung
-function Verify-ADUser {
-    param (
-        [string]$TemplateUser,
-        [string]$NewUserName
-    )
-
-    $template = Get-ADUser -Identity $TemplateUser -Properties *
-    $newUser = Get-ADUser -Identity $NewUserName -Properties *
-
-    Write-Host "Überprüfe Benutzer $NewUserName..."
-
-    # Überprüfe, ob der Benutzer existiert
-    if ($null -eq $newUser) {
-        Write-Host "Fehler: Benutzer $NewUserName wurde nicht erstellt." -ForegroundColor Red
-        return
-    }
-
-    Write-Host "Benutzer $NewUserName existiert." -ForegroundColor Green
-
-    # Überprüfe Gruppenmitgliedschaften
-    $templateGroups = Get-ADUser -Identity $TemplateUser -Properties MemberOf | Select-Object -ExpandProperty MemberOf
-    $newUserGroups = Get-ADUser -Identity $NewUserName -Properties MemberOf | Select-Object -ExpandProperty MemberOf
-
-    $missingGroups = Compare-Object -ReferenceObject $templateGroups -DifferenceObject $newUserGroups | Where-Object { $_.SideIndicator -eq '<=' } | Select-Object -ExpandProperty InputObject
-
-    if ($missingGroups) {
-        Write-Host "Warnung: Folgende Gruppen fehlen beim neuen Benutzer:" -ForegroundColor Yellow
-        $missingGroups | ForEach-Object { Write-Host "- $($_ -split ',')[0]" -ForegroundColor Yellow }
-    } else {
-        Write-Host "Gruppenmitgliedschaften sind korrekt." -ForegroundColor Green
-    }
-
-    # Überprüfe andere relevante Attribute
-    $relevantAttributes = @('Department', 'Title', 'Email', 'GivenName', 'Surname', 'DisplayName')
-    foreach ($attr in $relevantAttributes) {
-        if ($newUser.$attr -ne $template.$attr) {
-            Write-Host "Warnung: $attr stimmt nicht überein. Vorlage: $($template.$attr), Neu: $($newUser.$attr)" -ForegroundColor Yellow
-        } else {
-            Write-Host "$attr ist korrekt." -ForegroundColor Green
+    #region Hilfsfunktionen
+    function Get-ADUserSafe {
+        param([string]$SamAccountName)
+        try {
+            Get-ADUser -Identity $SamAccountName -Properties * -ErrorAction Stop
+        }
+        catch {
+            Write-Log "Benutzer $SamAccountName nicht gefunden: $_" -Level ERROR
+            return $null
         }
     }
+
+    function Copy-ADGroupMembership {
+        param(
+            [string]$SourceUser,
+            [string]$TargetUser
+        )
+        try {
+            $groups = Get-ADUser -Identity $SourceUser -Properties MemberOf | 
+                     Select-Object -ExpandProperty MemberOf
+            $count = 0
+            
+            foreach ($group in $groups) {
+                if ($PSCmdlet.ShouldProcess($group, "Add group membership")) {
+                    Add-ADGroupMember -Identity $group -Members $TargetUser -ErrorAction Stop
+                    $count++
+                }
+            }
+            Write-Log "$count Gruppenmitgliedschaften kopiert" -Level SUCCESS
+        }
+        catch {
+            Write-Log "Fehler beim Gruppenkopieren: $_" -Level ERROR
+            throw
+        }
+    }
+    #endregion
 }
 
-# Hauptskript
-$createdUsers = @()
+process {
+    #region Hauptverarbeitung
+    try {
+        $createdUsers = @()
 
-if ($CSV) {
-    # CSV-Modus
-    $users = Import-Csv $CSV
-    foreach ($user in $users) {
-        $additionalProps = @{}
-        foreach ($prop in $user.PSObject.Properties) {
-            if ($prop.Name -notin @('TemplateUser', 'NewUserName', 'NewUserPassword')) {
-                $additionalProps[$prop.Name] = $prop.Value
+        # CSV-Batch-Verarbeitung
+        if ($PSCmdlet.ParameterSetName -eq 'CSV') {
+            Write-Log "Starte CSV-Modus mit Datei: $CsvPath" -Level INFO
+            $users = Import-Csv -Path $CsvPath -Encoding UTF8
+
+            # CSV-Validierung
+            $requiredColumns = @('TemplateUser', 'NewUserName', 'NewUserPassword')
+            $missingColumns = $requiredColumns | Where-Object { $_ -notin $users[0].PSObject.Properties.Name }
+            if ($missingColumns) {
+                throw "Fehlende Spalten in CSV: $($missingColumns -join ', ')"
+            }
+
+            foreach ($user in $users) {
+                # Duplikatsprüfung
+                if (Get-ADUserSafe -SamAccountName $user.NewUserName) {
+                    Write-Log "Überspringe vorhandenen Benutzer: $($user.NewUserName)" -Level WARNING
+                    continue
+                }
+
+                # Passwortvalidierung
+                if ($user.NewUserPassword.Length -lt 12 -or 
+                    -not ($user.NewUserPassword -match '\d') -or
+                    -not ($user.NewUserPassword -match '[A-Z]') -or
+                    -not ($user.NewUserPassword -match '[a-z]')) {
+                    Write-Log "Passwort für $($user.NewUserName) entspricht nicht den Richtlinien" -Level ERROR
+                    continue
+                }
+
+                # Benutzererstellung
+                $template = Get-ADUserSafe -SamAccountName $user.TemplateUser
+                if (-not $template) {
+                    continue
+                }
+
+                $userParams = @{
+                    Instance           = $template
+                    SamAccountName     = $user.NewUserName
+                    UserPrincipalName  = "$($user.NewUserName)@$((Get-ADDomain).DNSRoot)"
+                    Name               = $user.NewUserName
+                    AccountPassword    = ConvertTo-SecureString $user.NewUserPassword -AsPlainText -Force
+                    Enabled            = $true
+                    ChangePasswordAtLogon = $true
+                }
+
+                if ($PSCmdlet.ShouldProcess($user.NewUserName, "Create AD User")) {
+                    $newUser = New-ADUser @userParams -PassThru
+                    Copy-ADGroupMembership -SourceUser $user.TemplateUser -TargetUser $user.NewUserName
+                    $createdUsers += $newUser
+                    Write-Log "Benutzer $($user.NewUserName) erfolgreich erstellt" -Level SUCCESS
+                }
             }
         }
-        $newUser = New-ADUserFromTemplate -TemplateUser $user.TemplateUser -NewUserName $user.NewUserName -NewUserPassword $user.NewUserPassword -AdditionalProperties $additionalProps
-        if ($newUser) {
-            $createdUsers += @{TemplateUser = $user.TemplateUser; NewUserName = $user.NewUserName}
+        # Einzelbenutzer-Modus
+        else {
+            # Interaktive Abfrage fehlender Parameter
+            if ([string]::IsNullOrEmpty($TemplateUser)) {
+                $TemplateUser = Read-Host "Vorlagenbenutzer (SAMAccountName)"
+            }
+            
+            if ([string]::IsNullOrEmpty($NewUserName)) {
+                $NewUserName = Read-Host "Neuer Benutzername (SAMAccountName)"
+            }
+
+            if ([string]::IsNullOrEmpty($NewUserPassword)) {
+                $securePass = Read-Host "Passwort" -AsSecureString
+                $NewUserPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
+                    [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePass)
+                )
+            }
+
+            # Validierungen
+            $template = Get-ADUserSafe -SamAccountName $TemplateUser
+            if (-not $template) {
+                throw "Vorlagenbenutzer nicht gefunden"
+            }
+
+            if (Get-ADUserSafe -SamAccountName $NewUserName) {
+                throw "Benutzer $NewUserName existiert bereits"
+            }
+
+            # Benutzererstellung
+            $userParams = @{
+                Instance           = $template
+                SamAccountName     = $NewUserName
+                UserPrincipalName  = "$NewUserName@$((Get-ADDomain).DNSRoot)"
+                Name               = $NewUserName
+                AccountPassword    = ConvertTo-SecureString $NewUserPassword -AsPlainText -Force
+                Enabled            = $true
+                ChangePasswordAtLogon = $true
+            }
+
+            if ($PSCmdlet.ShouldProcess($NewUserName, "Create AD User")) {
+                $newUser = New-ADUser @userParams -PassThru
+                Copy-ADGroupMembership -SourceUser $TemplateUser -TargetUser $NewUserName
+                $createdUsers += $newUser
+                Write-Log "Benutzer $NewUserName erfolgreich erstellt" -Level SUCCESS
+            }
         }
     }
-}
-elseif ($TemplateUser -or $NewUserName -or $NewUserPassword) {
-    # Überprüfung und Abfrage fehlender Parameter
-    if (-not $TemplateUser) {
-        $TemplateUser = Read-Host "Geben Sie den Benutzernamen der Vorlage ein"
+    catch {
+        Write-Log "KRITISCHER FEHLER: $_" -Level ERROR
+        exit 1
     }
-    if (-not $NewUserName) {
-        $NewUserName = Read-Host "Geben Sie den Benutzernamen des neuen Benutzers ein"
-    }
-    if (-not $NewUserPassword) {
-        $NewUserPassword = Read-Host "Geben Sie das Passwort für den neuen Benutzer ein" -AsSecureString
-        $NewUserPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($NewUserPassword))
-    }
-    
-    $additionalProps = @{}
-    $newUser = New-ADUserFromTemplate -TemplateUser $TemplateUser -NewUserName $NewUserName -NewUserPassword $NewUserPassword -AdditionalProperties $additionalProps
-    if ($newUser) {
-        $createdUsers += @{TemplateUser = $TemplateUser; NewUserName = $NewUserName}
-    }
-}
-else {
-    # Interaktiver Modus
-    $TemplateUser = Read-Host "Geben Sie den Benutzernamen der Vorlage ein"
-    $NewUserName = Read-Host "Geben Sie den Benutzernamen des neuen Benutzers ein"
-    $NewUserPassword = Read-Host "Geben Sie das Passwort für den neuen Benutzer ein" -AsSecureString
-    $NewUserPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($NewUserPassword))
-    
-    $additionalProps = @{}
-    $newUser = New-ADUserFromTemplate -TemplateUser $TemplateUser -NewUserName $NewUserName -NewUserPassword $NewUserPassword -AdditionalProperties $additionalProps
-    if ($newUser) {
-        $createdUsers += @{TemplateUser = $TemplateUser; NewUserName = $NewUserName}
-    }
+    #endregion
 }
 
-Write-Host "Erstellung der neuen Benutzer abgeschlossen."
+end {
+    #region Post-Processing
+    if ($Verify -and $createdUsers.Count -gt 0) {
+        Write-Log "Starte Verifikation der erstellten Benutzer" -Level INFO
+        foreach ($user in $createdUsers) {
+            try {
+                $adUser = Get-ADUser -Identity $user.SamAccountName -Properties *
+                $template = Get-ADUser -Identity $userParams.Instance.SamAccountName -Properties *
 
-if ($Verify -or ($createdUsers.Count -gt 0 -and (Read-Host "Möchten Sie die erstellten Benutzer überprüfen? (J/N)") -eq 'J')) {
-    foreach ($user in $createdUsers) {
-        Verify-ADUser -TemplateUser $user.TemplateUser -NewUserName $user.NewUserName
+                # Attributvergleich
+                $compareProps = @(
+                    'Enabled', 'AccountExpirationDate', 'PasswordNeverExpires',
+                    'Department', 'Title', 'Office', 'Manager'
+                )
+                
+                foreach ($prop in $compareProps) {
+                    if ($adUser.$prop -ne $template.$prop) {
+                        Write-Log "Abweichung bei $prop: Vorlage[$($template.$prop)] Neu[$($adUser.$prop)]" -Level WARNING
+                    }
+                }
+
+                # Gruppenvergleich
+                $templateGroups = Get-ADUser -Identity $template.SamAccountName -Properties MemberOf | 
+                                 Select-Object -ExpandProperty MemberOf
+                $newGroups = Get-ADUser -Identity $adUser.SamAccountName -Properties MemberOf | 
+                            Select-Object -ExpandProperty MemberOf
+
+                $diff = Compare-Object -ReferenceObject $templateGroups -DifferenceObject $newGroups
+                if ($diff) {
+                    Write-Log "Gruppenabweichungen gefunden: $($diff | Out-String)" -Level WARNING
+                }
+            }
+            catch {
+                Write-Log "Verifikationsfehler bei $($user.SamAccountName): $_" -Level ERROR
+            }
+        }
     }
+
+    Write-Log "Prozess abgeschlossen. Log-Datei: $logFile" -Level INFO
+    Invoke-Item $logFile
+    #endregion
 }
