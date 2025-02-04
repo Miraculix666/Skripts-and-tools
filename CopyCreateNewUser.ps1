@@ -1,6 +1,6 @@
 # Advanced AD User Management Script
 # Author: Bolt
-# Version: 3.0
+# Version: 3.1
 # Description: Creates new AD users based on template users with complete attribute copying
 #requires -Module ActiveDirectory
 
@@ -19,13 +19,26 @@ param(
     [switch]$ExportTemplate,
     
     [Parameter(Mandatory=$false)]
-    [string]$ExportPath
+    [string]$ExportPath,
+    
+    [Parameter(Mandatory=$false)]
+    [SecureString]$Password
 )
+
+# Always enable verbose output
+$VerbosePreference = "Continue"
 
 # Function to write verbose messages with timestamp
 function Write-VerboseWithTime {
     param([string]$Message)
     Write-Verbose "$(Get-Date -Format 'dd.MM.yyyy HH:mm:ss'): $Message"
+}
+
+# Function to get secure password
+function Get-SecurePassword {
+    Write-VerboseWithTime "Fordere sicheres Passwort an"
+    $securePassword = Read-Host -Prompt "Passwort eingeben" -AsSecureString
+    return $securePassword
 }
 
 # Function to get all group memberships
@@ -174,7 +187,8 @@ function Export-UserTemplate {
 function New-UserFromTemplate {
     param(
         [string]$TemplateUser,
-        [hashtable]$NewUserProperties
+        [hashtable]$NewUserProperties,
+        [SecureString]$Password
     )
     
     Write-VerboseWithTime "Erstelle neuen Benutzer basierend auf Vorlage: $TemplateUser"
@@ -194,6 +208,7 @@ function New-UserFromTemplate {
             Enabled = $true
             ChangePasswordAtLogon = $true
             Path = $ouPath
+            AccountPassword = $Password
         }
         
         # Add all new user properties
@@ -230,7 +245,8 @@ function New-UserFromTemplate {
 function Process-CSVFile {
     param(
         [string]$CSVPath,
-        [string]$TemplateUser
+        [string]$TemplateUser,
+        [SecureString]$Password
     )
     
     Write-VerboseWithTime "Verarbeite CSV-Datei: $CSVPath"
@@ -251,7 +267,7 @@ function Process-CSVFile {
                 continue
             }
             
-            New-UserFromTemplate -TemplateUser $TemplateUser -NewUserProperties $userProps
+            New-UserFromTemplate -TemplateUser $TemplateUser -NewUserProperties $userProps -Password $Password
         }
     }
     catch {
@@ -264,9 +280,6 @@ function Process-CSVFile {
 
 # Main script logic
 try {
-    # Set verbose output
-    $VerbosePreference = "Continue"
-    
     Write-VerboseWithTime "Starte AD-Benutzerverwaltungsskript"
     
     # Handle template export
@@ -278,6 +291,11 @@ try {
         return
     }
     
+    # Get password if not provided
+    if (-not $Password) {
+        $Password = Get-SecurePassword
+    }
+    
     # Interactive mode if no parameters provided
     if (-not $TemplateUser -and -not $CSV) {
         Write-VerboseWithTime "Starte interaktiven Modus"
@@ -286,6 +304,7 @@ try {
         $mode = Get-ValidatedInput -Prompt "Modus wählen (single/csv)" -Required
         if ($mode -eq "csv") {
             $CSV = Get-ValidatedInput -Prompt "CSV-Dateipfad eingeben" -Required
+            Process-CSVFile -CSVPath $CSV -TemplateUser $TemplateUser -Password $Password
         } else {
             $userProps = @{
                 SamAccountName = Get-ValidatedInput -Prompt "Neuen Benutzernamen eingeben (SAMAccountName)" -Required
@@ -296,7 +315,7 @@ try {
                 Description = Get-ValidatedInput -Prompt "Beschreibung eingeben"
             }
             
-            New-UserFromTemplate -TemplateUser $TemplateUser -NewUserProperties $userProps
+            New-UserFromTemplate -TemplateUser $TemplateUser -NewUserProperties $userProps -Password $Password
         }
     }
     # CSV mode
@@ -304,24 +323,36 @@ try {
         if (-not $TemplateUser) {
             $TemplateUser = Get-ValidatedInput -Prompt "Benutzername der Vorlage eingeben" -Required
         }
-        Process-CSVFile -CSVPath $CSV -TemplateUser $TemplateUser
+        Process-CSVFile -CSVPath $CSV -TemplateUser $TemplateUser -Password $Password
     }
-    # Parameter mode
+    # Parameter mode - only prompt for missing mandatory parameters
     else {
-        if (-not $NewUserName) {
-            $NewUserName = Get-ValidatedInput -Prompt "Neuen Benutzernamen eingeben (SAMAccountName)" -Required
+        $userProps = @{}
+        
+        # Add provided parameters
+        if ($NewUserName) {
+            $userProps['SamAccountName'] = $NewUserName
         }
         
-        $userProps = @{
-            SamAccountName = $NewUserName
-            UserPrincipalName = Get-ValidatedInput -Prompt "UserPrincipalName eingeben" -Required
-            GivenName = Get-ValidatedInput -Prompt "Vorname eingeben" -Required
-            Surname = Get-ValidatedInput -Prompt "Nachname eingeben" -Required
-            DisplayName = Get-ValidatedInput -Prompt "Anzeigenamen eingeben"
-            Description = Get-ValidatedInput -Prompt "Beschreibung eingeben"
+        # Check for missing mandatory parameters
+        $mandatoryProps = @{
+            'UserPrincipalName' = 'UserPrincipalName eingeben'
+            'GivenName' = 'Vorname eingeben'
+            'Surname' = 'Nachname eingeben'
+            'SamAccountName' = 'Neuen Benutzernamen eingeben (SAMAccountName)'
         }
         
-        New-UserFromTemplate -TemplateUser $TemplateUser -NewUserProperties $userProps
+        foreach ($prop in $mandatoryProps.GetEnumerator()) {
+            if (-not $userProps.ContainsKey($prop.Key)) {
+                $userProps[$prop.Key] = Get-ValidatedInput -Prompt $prop.Value -Required
+            }
+        }
+        
+        # Optional parameters
+        $userProps['DisplayName'] = Get-ValidatedInput -Prompt "Anzeigenamen eingeben"
+        $userProps['Description'] = Get-ValidatedInput -Prompt "Beschreibung eingeben"
+        
+        New-UserFromTemplate -TemplateUser $TemplateUser -NewUserProperties $userProps -Password $Password
     }
     
     Write-VerboseWithTime "Skript erfolgreich beendet"
@@ -329,7 +360,4 @@ try {
 catch {
     Write-Error "Skriptfehler: $_"
     Write-VerboseWithTime "Skript mit Fehlern beendet"
-}
-finally {
-    $VerbosePreference = "SilentlyContinue"
 }
