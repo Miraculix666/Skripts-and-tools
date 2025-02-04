@@ -35,6 +35,8 @@ john.doe,max.mustermann,Willkommen2025!,Max,Mustermann,IT,Junior Entwickler,max.
 jane.smith,anna.schmidt,Neustart2025!,Anna,Schmidt,Marketing,Marketing Spezialist,anna.schmidt@unternehmen.de
 #>
 
+Import-Module ActiveDirectory
+
 param (
     [Parameter(Mandatory=$false)]
     [ValidateSet("Interactive", "Predefined", "CSV")]
@@ -154,9 +156,9 @@ switch ($InputMethod) {
     "Interactive" {
         $TemplateUser = Read-Host "Geben Sie den Benutzernamen der Vorlage ein"
         $NewUserName = Read-Host "Geben Sie den Benutzernamen des neuen Benutzers ein"
-        $NewUserPassword = Read-Host "Geben Sie das Passwort für den neuen Benutzer ein" -AsSecureString
+        $NewUserPassword = Read-Host "Geben Sie das Passwort für den neuen Benutzer ein" | ConvertTo-SecureString -AsPlainText -Force
         $additionalProps = @{}
-        $newUser = New-ADUserFromTemplate -TemplateUser $TemplateUser -NewUserName $NewUserName -NewUserPassword ([System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($NewUserPassword))) -AdditionalProperties $additionalProps
+        $newUser = New-ADUserFromTemplate -TemplateUser $TemplateUser -NewUserName $NewUserName -NewUserPassword $NewUserPassword -AdditionalProperties $additionalProps
         $createdUsers += @{TemplateUser = $TemplateUser; NewUserName = $NewUserName}
     }
     "Predefined" {
