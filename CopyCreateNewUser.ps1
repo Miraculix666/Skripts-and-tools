@@ -52,7 +52,7 @@
     PS C:\> .\CopyCreateNewUser.ps1 -CsvPath "C:\Pfad\zu\users.csv" -Verify -Verbose
 
 .NOTES
-    Version: 5.2
+    Version: 5.3
     Autor: IT-Abteilung / basierend auf dem Script von Miraculix666 und den Beispielen von Petri.com
     Letzte Änderung: 2024-10-27
 #>
@@ -265,7 +265,7 @@ Write\-Log "Attribut '</span>($property.Name)' stimmt nicht überein. Vorlage: '
 Write\-Log "Attribut '</span>($property.Name)' stimmt überein." -Level SUCCESS
                     }
                 }
-            } 
+            }
 
             # Gruppenmitgliedschaften überprüfen
             Write-Log "Überprüfe Gruppenmitgliedschaften..." -Level INFO
@@ -283,7 +283,7 @@ Write\-Log "Attribut '</span>($property.Name)' stimmt überein." -Level SUCCESS
                 Write-Log "Gruppenmitgliedschaften stimmen überein." -Level SUCCESS
             }
 
-        } else { 
+        } else {
             Write-Log "Verifikation: Benutzer '$UserName' oder Vorlagenbenutzer '$TemplateUser' nicht gefunden." -Level ERROR
         }
     }
@@ -359,7 +359,3 @@ if ($NewUserPassword) {
 if ($PSBoundParameters.ContainsKey("CsvPath")) {
     # ===============================
     # CSV-Batch-Modus (deutsche CSV: Delimiter ;)
-    # ===============================
-    Write-Log "Starte Batch-Erstellung via CSV: '$CsvPath'" -Level INFO
-    try {
-        # Importiere CSV mit deutschem Lokalisierung
