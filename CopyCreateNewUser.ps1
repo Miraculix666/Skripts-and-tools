@@ -4,22 +4,22 @@
 
 .DESCRIPTION
     Dieses Skript erstellt einen oder mehrere neue Active Directory Benutzer, indem es einen vorhandenen Vorlagenbenutzer kopiert.
-    Es übernimmt alle kopierbaren Attribute, z.B. Gruppenmitgliedschaften, OU‑Platzierung, AD‑Rechte und optional weitere 
-    benutzerdefinierte Werte. Dabei werden zwingend neue Attribute (SAMAccountName, AccountPassword, Name) von optionalen 
+    Es übernimmt alle kopierbaren Attribute, z.B. Gruppenmitgliedschaften, OU‑Platzierung, AD‑Rechte und optional weitere
+    benutzerdefinierte Werte. Dabei werden zwingend neue Attribute (SAMAccountName, AccountPassword, Name) von optionalen
     Attributen (GivenName, Surname, DisplayName, Abteilung, Office, etc.) unterschieden.
-    
+
     Das Skript unterstützt drei Aufrufvarianten:
       • Keine Parameter: Interaktiver Modus – es werden alle fehlenden Parameter abgefragt.
       • Einzelbenutzer: Alle nötigen Parameter (TemplateUser, NewUserName, NewUserPassword) werden übergeben.
       • CSV-Batch: Mit dem Parameter –CsvPath (Die CSV-Datei verwendet in der deutschen Version den Semikolon‑Delimiter).
-        
+
     WICHTIG: Im CSV‑Modus müssen folgende Spalten vorhanden sein (mit Semikolon als Trenner):
         TemplateUser;NewUserName;NewUserPassword;GivenName;Surname;DisplayName;Department;Office;... (Weitere optionale Attribute)
-        
+
     Das Skript wandelt Plaintext ‑ Kennwörter in SecureStrings um und gibt detaillierte Log‑ und “verbose” Ausgaben aus.
 
 .PARAMETER CsvPath
-    (Optional) Pfad zu einer CSV-Datei, in der die neuen Benutzer definiert sind. 
+    (Optional) Pfad zu einer CSV-Datei, in der die neuen Benutzer definiert sind.
     Die CSV muss die Pflichtspalten TemplateUser, NewUserName und NewUserPassword enthalten,
     optional werden weitere Spalten wie GivenName, Surname, DisplayName, Department, Office etc. unterstützt.
 
@@ -52,7 +52,7 @@
     PS C:\> .\CopyCreateNewUser.ps1 -CsvPath "C:\Pfad\zu\users.csv" -Verify -Verbose
 
 .NOTES
-    Version: 5.1
+    Version: 5.2
     Autor: IT-Abteilung / basierend auf dem Script von Miraculix666 und den Beispielen von Petri.com
     Letzte Änderung: 2024-10-27
 #>
@@ -62,19 +62,19 @@ param (
     [Parameter(ParameterSetName = 'CSV')]
     [ValidateScript({Test-Path $_ -PathType Leaf})]
     [string]$CsvPath,
-    
+
     [Parameter(ParameterSetName = 'Single')]
     [Parameter(ParameterSetName = 'Interactive')]
     [string]$TemplateUser,
-    
+
     [Parameter(ParameterSetName = 'Single')]
     [Parameter(ParameterSetName = 'Interactive')]
     [string]$NewUserName,
-    
+
     [Parameter(ParameterSetName = 'Single')]
     [Parameter(ParameterSetName = 'Interactive')]
     [string]$NewUserPassword,
-    
+
     [Parameter()]
     [switch]$Verify,
 
@@ -103,7 +103,7 @@ function Write-Log {
         [ValidateSet("INFO","WARNING","ERROR","SUCCESS")]
         [string]$Level = "INFO"
     )
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss" # Deutsches Datumsformat
     $entry = "[$timestamp][$Level] $Message"
     Add-Content -Path $LogFile -Value $entry -Encoding UTF8
     $color = switch ($Level) {
@@ -130,9 +130,9 @@ function Test-PasswordComplexity {
         { $Password -match '[\W_]' }               # Mindestens ein Sonderzeichen
     )
     foreach ($rule in $rules) {
-        if (-not (& $rule)) { 
+        if (-not (& $rule)) {
             Write-Verbose "Passwortregel nicht erfüllt: $($rule -replace '^.*\{|\}.*$')"
-            return $false 
+            return $false
         }
     }
     Write-Verbose "Passwortkomplexität ausreichend."
@@ -237,7 +237,7 @@ function Verify-UserCreation {
         [string]$UserName,
         [string]$TemplateUser
     )
-    
+
     Write-Log "Starte Verifikation für Benutzer: $UserName" -Level INFO
 
     try {
@@ -255,24 +255,25 @@ function Verify-UserCreation {
 
             foreach ($property in $templateProperties) {
                 if ($property.Name -notin ("SamAccountName", "Name", "ObjectGUID", "SID", "DistinguishedName", "UserPrincipalName", "PasswordLastSet", "PasswordNeverExpires", "Enabled", "msDS-UserPasswordExpiryTimeComputed")) {
-                    $newValue = $userProperties | Where-Object {$_.Name -eq $property.Name} | Select-Object -ExpandProperty Value
+                    $newValue = ($userProperties | Where-Object {$_.Name -eq $property.Name}).Value
                     $templateValue = $property.Value
 
+                    # Vergleich durchführen
                     if ($newValue -ne <span class="math-inline">templateValue\) \{
 Write\-Log "Attribut '</span>($property.Name)' stimmt nicht überein. Vorlage: '$templateValue', Benutzer: '<span class="math-inline">newValue'" \-Level WARNING
 \} else \{
 Write\-Log "Attribut '</span>($property.Name)' stimmt überein." -Level SUCCESS
                     }
                 }
-            }
-            
+            } 
+
             # Gruppenmitgliedschaften überprüfen
             Write-Log "Überprüfe Gruppenmitgliedschaften..." -Level INFO
             $userGroups = Get-ADUser $UserName -Properties MemberOf | Select-Object -ExpandProperty MemberOf
             $templateGroups = Get-ADUser $TemplateUser -Properties MemberOf | Select-Object -ExpandProperty MemberOf
-            
+
             $missingGroups = Compare-Object -ReferenceObject $templateGroups -DifferenceObject $userGroups | Where-Object {$_.SideIndicator -eq "<="}
-            
+
             if ($missingGroups) {
                 foreach ($group in $missingGroups) {
                     $groupName = (Get-ADGroup -Identity $group.InputObject).Name
@@ -282,7 +283,7 @@ Write\-Log "Attribut '</span>($property.Name)' stimmt überein." -Level SUCCESS
                 Write-Log "Gruppenmitgliedschaften stimmen überein." -Level SUCCESS
             }
 
-        } else {
+        } else { 
             Write-Log "Verifikation: Benutzer '$UserName' oder Vorlagenbenutzer '$TemplateUser' nicht gefunden." -Level ERROR
         }
     }
@@ -304,7 +305,7 @@ Write-Verbose "Aktueller Parametersatz: $paramSetName"
 
 if ($paramSetName -eq 'Interactive') {
     Write-Log "Starte interaktiven Modus." -Level INFO
-    
+
     if (-not $TemplateUser) {
         $TemplateUser = Read-Host "Bitte geben Sie den SAMAccountName des Vorlagenbenutzers ein"
     }
@@ -320,7 +321,7 @@ if ($paramSetName -eq 'Interactive') {
 # dann wechsle in den interaktiven Modus für die fehlenden Parameter.
 if ($TemplateUser -and (-not $NewUserName -or -not $NewUserPassword)) {
     Write-Log "Wechsle in den interaktiven Modus für fehlende Parameter." -Level INFO
-    
+
     if (-not $NewUserName) {
         $NewUserName = Read-Host "Bitte geben Sie den SAMAccountName des neuen Benutzers ein"
     }
@@ -361,5 +362,4 @@ if ($PSBoundParameters.ContainsKey("CsvPath")) {
     # ===============================
     Write-Log "Starte Batch-Erstellung via CSV: '$CsvPath'" -Level INFO
     try {
-        # Importiere CSV mit deutschem Lokalisierungsprofil (Semikolon-Trenner, UTF8-Encoding)
-        $users = Import
+        # Importiere CSV mit deutschem Lokalisierung
