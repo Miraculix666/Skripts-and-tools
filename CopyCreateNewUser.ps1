@@ -4,19 +4,19 @@
 
 .DESCRIPTION
     Dieses Skript erstellt einen oder mehrere neue Active Directory Benutzer, indem es einen vorhandenen Vorlagenbenutzer kopiert.
-    Es übernimmt alle kopierbaren Attribute, z.B. Gruppenmitgliedschaften, OU‑Platzierung, AD‑Rechte und optional weitere
+    Es übernimmt alle kopierbaren Attribute, z.B. Gruppenmitgliedschaften, OU-Platzierung und optional weitere
     benutzerdefinierte Werte. Dabei werden zwingend neue Attribute (SAMAccountName, AccountPassword, Name) von optionalen
     Attributen (GivenName, Surname, DisplayName, Abteilung, Office, etc.) unterschieden.
 
     Das Skript unterstützt drei Aufrufvarianten:
       • Keine Parameter: Interaktiver Modus – es werden alle fehlenden Parameter abgefragt.
       • Einzelbenutzer: Alle nötigen Parameter (TemplateUser, NewUserName, NewUserPassword) werden übergeben.
-      • CSV-Batch: Mit dem Parameter –CsvPath (Die CSV-Datei verwendet in der deutschen Version den Semikolon‑Delimiter).
+      • CSV-Batch: Mit dem Parameter –CsvPath (Die CSV-Datei verwendet in der deutschen Version den Semikolon-Delimiter).
 
-    WICHTIG: Im CSV‑Modus müssen folgende Spalten vorhanden sein (mit Semikolon als Trenner):
+    WICHTIG: Im CSV-Modus müssen folgende Spalten vorhanden sein (mit Semikolon als Trenner):
         TemplateUser;NewUserName;NewUserPassword;GivenName;Surname;DisplayName;Department;Office;... (Weitere optionale Attribute)
 
-    Das Skript wandelt Plaintext ‑ Kennwörter in SecureStrings um und gibt detaillierte Log‑ und “verbose” Ausgaben aus.
+    Das Skript wandelt Plaintext-Kennwörter in SecureStrings um und gibt detaillierte Log- und “verbose” Ausgaben aus.
 
 .PARAMETER CsvPath
     (Optional) Pfad zu einer CSV-Datei, in der die neuen Benutzer definiert sind.
@@ -24,13 +24,13 @@
     optional werden weitere Spalten wie GivenName, Surname, DisplayName, Department, Office etc. unterstützt.
 
 .PARAMETER TemplateUser
-    (Optional, außer CSV‑Modus) Der SAMAccountName des Vorlagenbenutzers.
+    (Optional, außer CSV-Modus) Der SAMAccountName des Vorlagenbenutzers.
 
 .PARAMETER NewUserName
-    (Optional, außer CSV‑Modus) Der SAMAccountName des neuen AD-Benutzers.
+    (Optional, außer CSV-Modus) Der SAMAccountName des neuen AD-Benutzers.
 
 .PARAMETER NewUserPassword
-    (Optional, außer CSV‑Modus) Das Plaintext‑Kennwort für den neuen Benutzer.
+    (Optional, außer CSV-Modus) Das Plaintext-Kennwort für den neuen Benutzer.
     Das Skript konvertiert es in einen SecureString.
 
 .PARAMETER Verify
@@ -52,9 +52,10 @@
     PS C:\> .\CopyCreateNewUser.ps1 -CsvPath "C:\Pfad\zu\users.csv" -Verify -Verbose
 
 .NOTES
-    Version: 5.3
+    Version: 5.4
     Autor: IT-Abteilung / basierend auf dem Script von Miraculix666 und den Beispielen von Petri.com
     Letzte Änderung: 2024-10-27
+    PowerShell Version: 5.1 kompatibel
 #>
 
 [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'Interactive')]
@@ -106,11 +107,12 @@ function Write-Log {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss" # Deutsches Datumsformat
     $entry = "[$timestamp][$Level] $Message"
     Add-Content -Path $LogFile -Value $entry -Encoding UTF8
-    $color = switch ($Level) {
+    $color = switch ($Level) { #PSv5.1 compatible switch
         "INFO"    { "Gray" }
         "WARNING" { "Yellow" }
         "ERROR"   { "Red" }
         "SUCCESS" { "Green" }
+        default {"Gray"}
     }
     if ($Verbose) {
         Write-Verbose $entry
@@ -122,21 +124,15 @@ function Write-Log {
 function Test-PasswordComplexity {
     param([string]$Password)
     Write-Verbose "Prüfe Passwortkomplexität für: $($Password -replace '.*','*')" # Maskiere das Passwort in der Ausgabe
-    $rules = @(
-        { $Password.Length -ge 12 }                # Mindestlänge 12 Zeichen
-        { $Password -match '[A-Z]' }               # Mindestens ein Großbuchstabe
-        { $Password -match '[a-z]' }               # Mindestens ein Kleinbuchstabe
-        { $Password -match '\d' }                  # Mindestens eine Ziffer
-        { $Password -match '[\W_]' }               # Mindestens ein Sonderzeichen
-    )
-    foreach ($rule in $rules) {
-        if (-not (& $rule)) {
-            Write-Verbose "Passwortregel nicht erfüllt: $($rule -replace '^.*\{|\}.*$')"
-            return $false
-        }
+     $regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{12,}$"
+    if($Password -match $regex){
+      Write-Verbose "Passwortkomplexität ausreichend."
+      return $true
     }
-    Write-Verbose "Passwortkomplexität ausreichend."
-    return $true
+    else{
+      Write-Verbose "Passwortregel nicht erfüllt"
+      return $false
+    }
 }
 
 # Kopiert Gruppenmitgliedschaften vom Quellbenutzer zum Zielbenutzer
@@ -359,3 +355,13 @@ if ($NewUserPassword) {
 if ($PSBoundParameters.ContainsKey("CsvPath")) {
     # ===============================
     # CSV-Batch-Modus (deutsche CSV: Delimiter ;)
+    # ===============================
+    Write-Log "Starte Batch-Erstellung via CSV: '$CsvPath'" -Level INFO
+    try {
+        # Importiere CSV mit deutschem Lokalisierungsprofil (Semikolon-Trenner, UTF8-Encoding)
+        $users = Import-Csv -Path $CsvPath -Delimiter ";" -Encoding UTF8
+        Write-Verbose "CSV-Datei '$CsvPath' erfolgreich importiert."
+    }
+    catch {
+        Write-Error "Fehler beim Laden der CSV-Datei: $_"
+        exit
