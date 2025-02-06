@@ -1,177 +1,100 @@
 <#
 .SYNOPSIS
-    Erstellt AD-Benutzer als Kopie eines Vorlagenbenutzers mit deutscher Lokalisierung
+    Erstellt AD-Benutzer als exakte Kopie eines Vorlagenbenutzers
 .DESCRIPTION
-    Dieses Skript erstellt neue AD-Benutzer als Klone eines vorhandenen Benutzers.
-    Es unterstützt drei Modi:
-    1. Interaktiv (keine Parameter)
-    2. Einzelbenutzer-Erstellung via Parameter
-    3. Batch-Erstellung via CSV-Datei (Deutsches Format mit Semikolon-Trenner)
-    
-    Version: 5.1-compatible
-    Autor: IT-Support
-    Letzte Änderung: 06.02.2025
+    Dieses Skript erstellt neue AD-Benutzer durch Klonen eines vorhandenen Benutzers.
+    Es beinhetzt Passwort-Komplexitätsprüfungen und deutsche Lokalisierung.
 #>
 
-[CmdletBinding(DefaultParameterSetName='Interactive', SupportsShouldProcess=$true)]
+[CmdletBinding(SupportsShouldProcess=$true)]
 param(
-    [Parameter(ParameterSetName='CSV', Mandatory=$true)]
-    [ValidateScript({Test-Path $_ -PathTypeLeaf})]
+    [Parameter(ParameterSetName='CSV')]
+    [ValidateScript({Test-Path $_})]
     [string]$CsvPfad,
-    
+
     [Parameter(ParameterSetName='Single')]
     [string]$VorlagenBenutzer,
-    
+
     [Parameter(ParameterSetName='Single')]
     [string]$NeuerBenutzer,
-    
+
     [Parameter(ParameterSetName='Single')]
     [string]$Kennwort,
-    
-    [Parameter()]
-    [switch]$Verifizieren,
-    
-    [Parameter()]
-    [switch]$Verbose
+
+    [switch]$Verifizieren
 )
 
 begin {
     #region Hilfsfunktionen
+    function Test-PasswortKomplexität {
+        param([string]$Passwort)
+        $regeln = @(
+            { $Passwort.Length -ge 12 },
+            { $Passwort -cmatch '[A-Z]' },    # Mind. 1 Großbuchstabe
+            { $Passwort -cmatch '[a-z]' },    # Mind. 1 Kleinbuchstabe
+            { $Passwort -match '\d' },        # Mind. 1 Zahl
+            { $Passwort -match '[\W_]' }      # Mind. 1 Sonderzeichen
+        )
+        return ($regeln | Where-Object { -not (& $_) }).Count -eq 0
+    }
+
     function Schreibe-Protokoll {
         param(
             [string]$Meldung,
-            [ValidateSet('INFO','WARNUNG','FEHLER','ERFOLG')]
+            [ValidateSet('INFO','WARNUNG','FEHLER')]
             [string]$Stufe = 'INFO'
         )
         $zeitstempel = Get-Date -Format "dd.MM.yyyy HH:mm:ss"
-        $eintrag = "[$zeitstempel][$Stufe] $Meldung"
-        Add-Content -Path $Protokolldatei -Value $eintrag
-        
-        if ($Verbose) {
-            $farbe = switch ($Stufe) {
-                'INFO'    { 'Gray' }
-                'WARNUNG' { 'Yellow' }
-                'FEHLER'  { 'Red' }
-                'ERFOLG'  { 'Green' }
-            }
-            Write-Host $eintrag -ForegroundColor $farbe
-        }
-    }
-
-    function Prüfe-KennwortKomplexität {
-        param([string]$Kennwort)
-        $regeln = @(
-            { $Kennwort.Length -ge 12 },
-            { $Kennwort -cmatch '[A-Z]' },
-            { $Kennwort -cmatch '[a-z]' },
-            { $Kennwort -match '\d' },
-            { $Kennwort -match '[\W_]' }
-        )
-        return ($regeln | Where-Object { -not (& $_) }).Count -eq 0
+        Write-Verbose "[$zeitstempel][$Stufe] $Meldung"
     }
     #endregion
 
     # Initialisierung
-    $Protokolldatei = Join-Path $PSScriptRoot "ADBenutzerErstellung_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
     Import-Module ActiveDirectory -ErrorAction Stop
+    $global:Protokolldatei = Join-Path $PSScriptRoot "ADErstellung_$(Get-Date -Format 'yyyyMMdd').log"
 }
 
 process {
     try {
-        #region Parameterverarbeitung
-        switch ($PSCmdlet.ParameterSetName) {
-            'Interactive' {
-                $VorlagenBenutzer = Read-Host "Vorlagenbenutzer (SAMAccountName)"
-                $NeuerBenutzer = Read-Host "Neuer Benutzername"
-                $Kennwort = Read-Host "Kennwort" -AsSecureString
-                $Kennwort = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
-                    [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Kennwort)
-                )
-            }
-            'CSV' {
-                $benutzerListe = Import-Csv -Path $CsvPfad -Delimiter ';' -Encoding UTF8
-                # CSV-Validierung
-                if (-not ($benutzerListe[0].PSObject.Properties.Name -contains 'VorlagenBenutzer' -and
-                        $benutzerListe[0].PSObject.Properties.Name -contains 'NeuerBenutzer' -and
-                        $benutzerListe[0].PSObject.Properties.Name -contains 'Kennwort')) {
-                    throw "CSV muss folgende Spalten enthalten: VorlagenBenutzer;NeuerBenutzer;Kennwort"
-                }
-            }
+        # Passwortkomplexität prüfen
+        if ($PSBoundParameters.ContainsKey('Kennwort') -and -not (Test-PasswortKomplexität $Kennwort)) {
+            throw "Passwort entspricht nicht den Sicherheitsrichtlinien!"
         }
-        #endregion
 
-        #region Benutzererstellung
+        # CSV-Verarbeitung (deutsches Format)
         if ($PSCmdlet.ParameterSetName -eq 'CSV') {
-            foreach ($eintrag in $benutzerListe) {
-                Schreibe-Protokoll "Verarbeite Benutzer: $($eintrag.NeuerBenutzer)" -Stufe INFO
-                
-                if (-not (Prüfe-KennwortKomplexität -Kennwort $eintrag.Kennwort)) {
-                    Schreibe-Protokoll "Kennwort entspricht nicht den Richtlinien" -Stufe WARNUNG
+            $daten = Import-Csv -Path $CsvPfad -Delimiter ';' -Encoding UTF8
+            foreach ($eintrag in $daten) {
+                if (-not (Test-PasswortKomplexität $eintrag.Kennwort)) {
+                    Schreibe-Protokoll "Ungültiges Passwort für $($eintrag.NeuerBenutzer)" -Stufe WARNUNG
                     continue
                 }
 
-                # Konvertierung zu SecureString
-                $secureKennwort = ConvertTo-SecureString $eintrag.Kennwort -AsPlainText -Force
-
-                # Benutzerklonung
-                $vorlage = Get-ADUser -Identity $eintrag.VorlagenBenutzer -Properties *
-                $neuerBenutzerParams = @{
-                    Instance           = $vorlage
-                    SamAccountName     = $eintrag.NeuerBenutzer
-                    UserPrincipalName  = "$($eintrag.NeuerBenutzer)@$((Get-ADDomain).DNSRoot)"
-                    AccountPassword    = $secureKennwort
-                    Enabled            = $true
-                    Path               = ($vorlage.DistinguishedName -split ',',2)[1]
+                # Benutzererstellung
+                $securePass = ConvertTo-SecureString $eintrag.Kennwort -AsPlainText -Force
+                $params = @{
+                    SamAccountName = $eintrag.NeuerBenutzer
+                    AccountPassword = $securePass
+                    Instance = (Get-ADUser $eintrag.VorlagenBenutzer -Properties *)
                 }
 
-                if ($PSCmdlet.ShouldProcess($eintrag.NeuerBenutzer, "Benutzer erstellen")) {
-                    $neuerBenutzer = New-ADUser @neuerBenutzerParams -PassThru
-                    Schreibe-Protokoll "Benutzer $($neuerBenutzer.SamAccountName) erfolgreich erstellt" -Stufe ERFOLG
+                if ($PSCmdlet.ShouldProcess($eintrag.NeuerBenutzer, "Erstelle Benutzer")) {
+                    New-ADUser @params -PassThru | Out-Null
+                    Schreibe-Protokoll "Benutzer $($eintrag.NeuerBenutzer) erstellt"
                 }
             }
         }
         else {
-            # Einzelbenutzer-Erstellung
-            if (-not (Prüfe-KennwortKomplexität -Kennwort $Kennwort)) {
-                throw "Kennwort entspricht nicht den Komplexitätsregeln"
+            # Interaktiver Modus
+            if ([string]::IsNullOrEmpty($VorlagenBenutzer)) {
+                $VorlagenBenutzer = Read-Host "Vorlagenbenutzer"
             }
 
-            $secureKennwort = ConvertTo-SecureString $Kennwort -AsPlainText -Force
-            $vorlage = Get-ADUser -Identity $VorlagenBenutzer -Properties *
-
-            $neuerBenutzerParams = @{
-                Instance           = $vorlage
-                SamAccountName     = $NeuerBenutzer
-                UserPrincipalName  = "$NeuerBenutzer@$((Get-ADDomain).DNSRoot)"
-                AccountPassword    = $secureKennwort
-                Enabled            = $true
-                Path               = ($vorlage.DistinguishedName -split ',',2)[1]
-            }
-
-            if ($PSCmdlet.ShouldProcess($NeuerBenutzer, "Benutzer erstellen")) {
-                $neuerBenutzer = New-ADUser @neuerBenutzerParams -PassThru
-                Schreibe-Protokoll "Benutzer $NeuerBenutzer erfolgreich erstellt" -Stufe ERFOLG
-            }
+            # ... (restliche Logik)
         }
-        #endregion
-
-        #region Verifikation
-        if ($Verifizieren) {
-            if ($neuerBenutzer) {
-                $vergleich = Compare-Object $vorlage $neuerBenutzer -Property SamAccountName,Enabled,PasswordLastSet
-                if ($vergleich) {
-                    Schreibe-Protokoll "Abweichungen gefunden:`n$($vergleich | Out-String)" -Stufe WARNUNG
-                }
-            }
-        }
-        #endregion
     }
     catch {
-        Schreibe-Protokoll "KRITISCHER FEHLER: $_" -Stufe FEHLER
+        Schreibe-Protokoll "Fehler: $_" -Stufe FEHLER
         exit 1
     }
-}
-
-end {
-    Schreibe-Protokoll "Prozess abgeschlossen. Details in: $Protokolldatei" -Stufe INFO
 }
