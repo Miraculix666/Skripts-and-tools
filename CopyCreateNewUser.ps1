@@ -1,41 +1,40 @@
 # Copy-ADUserTemplate.ps1
 #
 # .SYNOPSIS
-# Creates new Active Directory users based on a template user account.
+# Erstellt neue Active Directory Benutzer basierend auf einem Vorlagenbenutzer.
 #
 # .DESCRIPTION
-# This script clones an existing Active Directory user as a template for creating new users.
-# It can operate in interactive mode or batch mode using a CSV file.
-# All AD properties, group memberships, and privileges are copied from the template user.
+# Dieses Skript erstellt einen oder mehrere neue Active Directory Benutzer durch Kopieren eines vorhandenen Vorlagenbenutzers.
+# Es unterstützt sowohl interaktive als auch Batch-Verarbeitung via CSV und kopiert alle relevanten AD-Attribute und Gruppenmitgliedschaften.
 #
 # .PARAMETER TemplateUserDN
-# Distinguished Name of the template user to copy from
+# Distinguished Name des Vorlagenbenutzers
 #
 # .PARAMETER CsvPath
-# Optional path to CSV file containing new user information
+# (Optional) Pfad zur CSV-Datei mit neuen Benutzerdaten (Semikolon als Trennzeichen)
 #
 # .PARAMETER TargetOU
-# Optional Distinguished Name of target OU for new users
+# (Optional) Distinguished Name der Ziel-OU für neue Benutzer
 #
 # .PARAMETER LogPath
-# Path for log file. Defaults to ".\ADUserClone_<timestamp>.log"
+# Pfad für die Logdatei. Standard: ".\ADUserClone_<Zeitstempel>.log"
 #
 # .EXAMPLE
-# .\Copy-ADUserTemplate.ps1 -TemplateUserDN "CN=Template User,OU=Users,DC=contoso,DC=com"
-# Creates new users interactively based on the specified template
+# .\Copy-ADUserTemplate.ps1 -TemplateUserDN "CN=Musterbenutzer,OU=Benutzer,DC=firma,DC=local"
+# Erstellt neue Benutzer interaktiv basierend auf der angegebenen Vorlage
 #
 # .EXAMPLE
-# .\Copy-ADUserTemplate.ps1 -TemplateUserDN "CN=Template User,OU=Users,DC=contoso,DC=com" -CsvPath ".\new_users.csv"
-# Creates multiple users from CSV file using the specified template
+# .\Copy-ADUserTemplate.ps1 -TemplateUserDN "CN=Musterbenutzer,OU=Benutzer,DC=firma,DC=local" -CsvPath ".\neue_benutzer.csv"
+# Erstellt mehrere Benutzer aus CSV-Datei mit der angegebenen Vorlage
 #
 # .NOTES
-# Version: 1.0
-# Author: Bolt
-# Requires: Active Directory PowerShell Module
-# Compatible with PowerShell 5.1
+# Version: 2.0
+# Autor: Bolt
+# Benötigt: Active Directory PowerShell Modul
+# Kompatibel mit PowerShell 5.1
 #>
 
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
     [Parameter(Mandatory = $true)]
     [string]$TemplateUserDN,
@@ -50,28 +49,45 @@ param(
     [string]$LogPath = ".\ADUserClone_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
 )
 
-# Import required module
-Import-Module ActiveDirectory
+# Setze deutsche Kultureinstellungen
+$culture = [System.Globalization.CultureInfo]::GetCultureInfo("de-DE")
+[System.Threading.Thread]::CurrentThread.CurrentCulture = $culture
+[System.Threading.Thread]::CurrentThread.CurrentUICulture = $culture
 
-# Initialize logging
-function Write-Log {
-    param($Message)
-    $logMessage = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss'): $Message"
-    Write-Verbose $logMessage
-    Add-Content -Path $LogPath -Value $logMessage
+# Import des AD-Moduls
+try {
+    Import-Module ActiveDirectory -ErrorAction Stop
+    Write-Verbose "Active Directory Modul erfolgreich geladen."
+}
+catch {
+    Write-Error "Active Directory Modul konnte nicht geladen werden: $_"
+    exit 1
 }
 
-# Mandatory attributes that must be unique for each user
+# Logging-Funktion
+function Write-Log {
+    param(
+        [string]$Message,
+        [ValidateSet("INFO", "WARNUNG", "FEHLER", "ERFOLG")]
+        [string]$Level = "INFO"
+    )
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$timestamp][$Level] $Message"
+    Write-Verbose $logMessage
+    Add-Content -Path $LogPath -Value $logMessage -Encoding UTF8
+}
+
+# Pflichtattribute für neue Benutzer
 $mandatoryAttributes = @(
     'sAMAccountName',
     'userPrincipalName',
     'givenName',
-    'sn'
+    'sn',
+    'displayName'
 )
 
-# Optional attributes to copy from template
+# Optionale Attribute zum Kopieren
 $optionalAttributes = @(
-    'displayName',
     'description',
     'mail',
     'physicalDeliveryOfficeName',
@@ -89,181 +105,180 @@ $optionalAttributes = @(
     'employeeID'
 )
 
-function Get-SecurePassword {
-    $password = Read-Host "Enter password for new user" -AsSecureString
-    return $password
+# Passwort-Komplexitätsprüfung
+function Test-PasswordComplexity {
+    param([string]$Password)
+    
+    $rules = @(
+        { $Password.Length -ge 12 }                # Mindestlänge 12 Zeichen
+        { $Password -match '[A-Z]' }               # Großbuchstabe
+        { $Password -match '[a-z]' }               # Kleinbuchstabe
+        { $Password -match '\d' }                  # Ziffer
+        { $Password -match '[\W_]' }               # Sonderzeichen
+    )
+    
+    $valid = $true
+    foreach ($rule in $rules) {
+        if (-not (& $rule)) {
+            $valid = $false
+            break
+        }
+    }
+    
+    Write-Verbose "Passwort-Komplexität: $(if($valid){'OK'}else{'Nicht ausreichend'})"
+    return $valid
 }
 
+# Vorlagenbenutzer abrufen
 function Get-TemplateUser {
     param([string]$DN)
     try {
-        Write-Log "Retrieving template user: $DN"
+        Write-Log "Rufe Vorlagenbenutzer ab: $DN"
         $user = Get-ADUser -Identity $DN -Properties *
         if (-not $user) {
-            throw "Template user not found"
+            throw "Vorlagenbenutzer nicht gefunden"
         }
         return $user
     }
     catch {
-        Write-Log "Error retrieving template user: $_"
+        Write-Log "Fehler beim Abrufen des Vorlagenbenutzers: $_" -Level "FEHLER"
         throw
     }
 }
 
-function Get-UserGroups {
-    param($TemplateUser)
+# Gruppenmitgliedschaften kopieren
+function Copy-UserGroups {
+    param(
+        $SourceUser,
+        $TargetUser
+    )
     try {
-        Write-Log "Retrieving group memberships for template user"
-        return Get-ADUser $TemplateUser -Properties MemberOf | Select-Object -ExpandProperty MemberOf
+        Write-Log "Kopiere Gruppenmitgliedschaften"
+        $groups = Get-ADUser $SourceUser -Properties MemberOf | 
+            Select-Object -ExpandProperty MemberOf
+        
+        foreach ($group in $groups) {
+            Add-ADGroupMember -Identity $group -Members $TargetUser
+            Write-Log "Gruppe hinzugefügt: $group" -Level "INFO"
+        }
     }
     catch {
-        Write-Log "Error retrieving group memberships: $_"
+        Write-Log "Fehler beim Kopieren der Gruppenmitgliedschaften: $_" -Level "FEHLER"
         throw
     }
 }
 
+# Neuen Benutzer erstellen
 function New-ClonedUser {
     param(
         $TemplateUser,
         $NewUserProps,
-        $Groups,
         $TargetOU
     )
     
     try {
-        Write-Log "Creating new user with sAMAccountName: $($NewUserProps.sAMAccountName)"
+        Write-Log "Erstelle neuen Benutzer: $($NewUserProps.sAMAccountName)"
         
-        # Prepare user properties
+        # Basisparameter
         $userParams = @{
             Instance = $TemplateUser
             Path = if ($TargetOU) { $TargetOU } else { ($TemplateUser.DistinguishedName -split ',', 2)[1] }
             Enabled = $true
+            ChangePasswordAtLogon = $true
         }
         
-        # Add mandatory properties
+        # Pflichtattribute
         foreach ($attr in $mandatoryAttributes) {
             if ($NewUserProps.$attr) {
                 $userParams[$attr] = $NewUserProps.$attr
             }
         }
         
-        # Add optional properties
+        # Optionale Attribute
         foreach ($attr in $optionalAttributes) {
             if ($NewUserProps.$attr) {
                 $userParams[$attr] = $NewUserProps.$attr
             }
         }
         
-        # Create user
+        # Benutzer erstellen
         $newUser = New-ADUser @userParams -PassThru
         
-        # Set password
+        # Passwort setzen
         $password = if ($NewUserProps.Password) {
             ConvertTo-SecureString $NewUserProps.Password -AsPlainText -Force
-        } else {
-            Get-SecurePassword
         }
+        else {
+            Read-Host "Passwort für $($NewUserProps.sAMAccountName)" -AsSecureString
+        }
+        
         Set-ADAccountPassword -Identity $newUser -NewPassword $password
         
-        # Add group memberships
-        foreach ($group in $Groups) {
-            Add-ADGroupMember -Identity $group -Members $newUser
-            Write-Log "Added user to group: $group"
-        }
-        
-        Write-Log "Successfully created user: $($NewUserProps.sAMAccountName)"
+        Write-Log "Benutzer erfolgreich erstellt: $($NewUserProps.sAMAccountName)" -Level "ERFOLG"
         return $newUser
     }
     catch {
-        Write-Log "Error creating user: $_"
+        Write-Log "Fehler beim Erstellen des Benutzers: $_" -Level "FEHLER"
         throw
     }
 }
 
-function Process-InteractiveMode {
-    param(
-        $TemplateUser,
-        $Groups
-    )
+# Hauptausführung
+try {
+    Write-Log "Skript gestartet"
     
-    try {
-        Write-Log "Starting interactive mode"
+    # Vorlagenbenutzer laden
+    $templateUser = Get-TemplateUser -DN $TemplateUserDN
+    Write-Log "Vorlagenbenutzer gefunden: $($templateUser.sAMAccountName)"
+    
+    if ($CsvPath) {
+        # CSV-Modus
+        Write-Log "Verarbeite CSV-Datei: $CsvPath"
+        $users = Import-Csv -Path $CsvPath -Delimiter ';' -Encoding UTF8
+        
+        foreach ($user in $users) {
+            # Pflichtattribute prüfen
+            $missingAttrs = $mandatoryAttributes | Where-Object { -not $user.$_ }
+            if ($missingAttrs) {
+                Write-Log "Fehlende Pflichtattribute für Benutzer: $($missingAttrs -join ', ')" -Level "FEHLER"
+                continue
+            }
+            
+            # Passwort-Komplexität prüfen
+            if ($user.Password -and -not (Test-PasswordComplexity $user.Password)) {
+                Write-Log "Passwort entspricht nicht den Anforderungen für: $($user.sAMAccountName)" -Level "FEHLER"
+                continue
+            }
+            
+            $newUser = New-ClonedUser -TemplateUser $templateUser -NewUserProps $user -TargetOU $TargetOU
+            Copy-UserGroups -SourceUser $templateUser -TargetUser $newUser
+        }
+    }
+    else {
+        # Interaktiver Modus
+        Write-Log "Starte interaktiven Modus"
         
         $newUserProps = @{}
         
-        # Get mandatory properties
+        # Pflichtattribute abfragen
         foreach ($attr in $mandatoryAttributes) {
-            $newUserProps[$attr] = Read-Host "Enter $attr"
+            $newUserProps[$attr] = Read-Host "Bitte $attr eingeben"
         }
         
-        # Get optional properties (with default from template)
+        # Optionale Attribute mit Vorlagewerten
         foreach ($attr in $optionalAttributes) {
-            $default = $TemplateUser.$attr
-            $input = Read-Host "Enter $attr (default: $default)"
+            $default = $templateUser.$attr
+            $input = Read-Host "Bitte $attr eingeben (Standard: $default)"
             $newUserProps[$attr] = if ($input) { $input } else { $default }
         }
         
-        New-ClonedUser -TemplateUser $TemplateUser -NewUserProps $newUserProps -Groups $Groups -TargetOU $TargetOU
-    }
-    catch {
-        Write-Log "Error in interactive mode: $_"
-        throw
-    }
-}
-
-function Process-CsvMode {
-    param(
-        $TemplateUser,
-        $Groups,
-        $CsvPath
-    )
-    
-    try {
-        Write-Log "Starting CSV mode with file: $CsvPath"
-        
-        # Import CSV with German locale (semicolon separator)
-        $users = Import-Csv -Path $CsvPath -Delimiter ';'
-        
-        foreach ($user in $users) {
-            # Verify mandatory attributes
-            foreach ($attr in $mandatoryAttributes) {
-                if (-not $user.$attr) {
-                    throw "Missing mandatory attribute '$attr' in CSV for user"
-                }
-            }
-            
-            New-ClonedUser -TemplateUser $TemplateUser -NewUserProps $user -Groups $Groups -TargetOU $TargetOU
-        }
-    }
-    catch {
-        Write-Log "Error in CSV mode: $_"
-        throw
-    }
-}
-
-# Main script execution
-try {
-    Write-Log "Script started"
-    
-    # Get template user
-    $templateUser = Get-TemplateUser -DN $TemplateUserDN
-    Write-Log "Template user found: $($templateUser.sAMAccountName)"
-    
-    # Get group memberships
-    $groups = Get-UserGroups -TemplateUser $templateUser
-    Write-Log "Retrieved ${groups.Count} group memberships"
-    
-    # Process users
-    if ($CsvPath) {
-        Process-CsvMode -TemplateUser $templateUser -Groups $groups -CsvPath $CsvPath
-    }
-    else {
-        Process-InteractiveMode -TemplateUser $templateUser -Groups $groups
+        $newUser = New-ClonedUser -TemplateUser $templateUser -NewUserProps $newUserProps -TargetOU $TargetOU
+        Copy-UserGroups -SourceUser $templateUser -TargetUser $newUser
     }
     
-    Write-Log "Script completed successfully"
+    Write-Log "Skript erfolgreich beendet" -Level "ERFOLG"
 }
 catch {
-    Write-Log "Fatal error: $_"
+    Write-Log "Fataler Fehler: $_" -Level "FEHLER"
     throw
 }
