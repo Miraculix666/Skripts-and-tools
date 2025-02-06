@@ -7,8 +7,14 @@
 # Dieses Skript erstellt einen oder mehrere neue Active Directory Benutzer durch Kopieren eines vorhandenen Vorlagenbenutzers.
 # Es unterstützt sowohl interaktive als auch Batch-Verarbeitung via CSV und kopiert alle relevanten AD-Attribute und Gruppenmitgliedschaften.
 #
-# .PARAMETER TemplateUserDN
-# Distinguished Name des Vorlagenbenutzers
+# .PARAMETER TemplateUser
+# SAMAccountName des Vorlagenbenutzers
+#
+# .PARAMETER NewUser
+# SAMAccountName des neuen Benutzers
+#
+# .PARAMETER Password
+# Passwort für den neuen Benutzer
 #
 # .PARAMETER CsvPath
 # (Optional) Pfad zur CSV-Datei mit neuen Benutzerdaten (Semikolon als Trennzeichen)
@@ -20,12 +26,12 @@
 # Pfad für die Logdatei. Standard: ".\ADUserClone_<Zeitstempel>.log"
 #
 # .EXAMPLE
-# .\Copy-ADUserTemplate.ps1 -TemplateUserDN "CN=Musterbenutzer,OU=Benutzer,DC=firma,DC=local"
-# Erstellt neue Benutzer interaktiv basierend auf der angegebenen Vorlage
+# .\Copy-ADUserTemplate.ps1 -TemplateUser "muster" -NewUser "neueruser" -Password "Sicheres!Pw123"
+# Erstellt einen neuen Benutzer basierend auf dem Vorlagenbenutzer
 #
 # .EXAMPLE
-# .\Copy-ADUserTemplate.ps1 -TemplateUserDN "CN=Musterbenutzer,OU=Benutzer,DC=firma,DC=local" -CsvPath ".\neue_benutzer.csv"
-# Erstellt mehrere Benutzer aus CSV-Datei mit der angegebenen Vorlage
+# .\Copy-ADUserTemplate.ps1 -CsvPath ".\neue_benutzer.csv"
+# Erstellt mehrere Benutzer aus CSV-Datei
 #
 # .NOTES
 # Version: 2.0
@@ -36,10 +42,16 @@
 
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [Parameter(Mandatory = $true)]
-    [string]$TemplateUserDN,
+    [Parameter(Mandatory = $false, ParameterSetName = 'Single')]
+    [string]$TemplateUser,
     
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Single')]
+    [string]$NewUser,
+    
+    [Parameter(Mandatory = $false, ParameterSetName = 'Single')]
+    [string]$Password,
+    
+    [Parameter(Mandatory = $false, ParameterSetName = 'CSV')]
     [string]$CsvPath,
     
     [Parameter(Mandatory = $false)]
@@ -131,10 +143,10 @@ function Test-PasswordComplexity {
 
 # Vorlagenbenutzer abrufen
 function Get-TemplateUser {
-    param([string]$DN)
+    param([string]$SamAccountName)
     try {
-        Write-Log "Rufe Vorlagenbenutzer ab: $DN"
-        $user = Get-ADUser -Identity $DN -Properties *
+        Write-Log "Rufe Vorlagenbenutzer ab: $SamAccountName"
+        $user = Get-ADUser -Identity $SamAccountName -Properties *
         if (-not $user) {
             throw "Vorlagenbenutzer nicht gefunden"
         }
@@ -185,34 +197,16 @@ function New-ClonedUser {
             Path = if ($TargetOU) { $TargetOU } else { ($TemplateUser.DistinguishedName -split ',', 2)[1] }
             Enabled = $true
             ChangePasswordAtLogon = $true
-        }
-        
-        # Pflichtattribute
-        foreach ($attr in $mandatoryAttributes) {
-            if ($NewUserProps.$attr) {
-                $userParams[$attr] = $NewUserProps.$attr
-            }
-        }
-        
-        # Optionale Attribute
-        foreach ($attr in $optionalAttributes) {
-            if ($NewUserProps.$attr) {
-                $userParams[$attr] = $NewUserProps.$attr
-            }
+            SamAccountName = $NewUserProps.sAMAccountName
+            UserPrincipalName = "$($NewUserProps.sAMAccountName)@$((Get-ADDomain).DNSRoot)"
         }
         
         # Benutzer erstellen
         $newUser = New-ADUser @userParams -PassThru
         
         # Passwort setzen
-        $password = if ($NewUserProps.Password) {
-            ConvertTo-SecureString $NewUserProps.Password -AsPlainText -Force
-        }
-        else {
-            Read-Host "Passwort für $($NewUserProps.sAMAccountName)" -AsSecureString
-        }
-        
-        Set-ADAccountPassword -Identity $newUser -NewPassword $password
+        $securePassword = ConvertTo-SecureString $NewUserProps.Password -AsPlainText -Force
+        Set-ADAccountPassword -Identity $newUser -NewPassword $securePassword
         
         Write-Log "Benutzer erfolgreich erstellt: $($NewUserProps.sAMAccountName)" -Level "ERFOLG"
         return $newUser
@@ -227,53 +221,58 @@ function New-ClonedUser {
 try {
     Write-Log "Skript gestartet"
     
-    # Vorlagenbenutzer laden
-    $templateUser = Get-TemplateUser -DN $TemplateUserDN
-    Write-Log "Vorlagenbenutzer gefunden: $($templateUser.sAMAccountName)"
-    
-    if ($CsvPath) {
+    if ($PSCmdlet.ParameterSetName -eq 'Single') {
+        # Einzelbenutzer-Modus
+        if (-not $TemplateUser -or -not $NewUser -or -not $Password) {
+            Write-Error "Für Einzelbenutzer-Modus werden TemplateUser, NewUser und Password benötigt"
+            exit 1
+        }
+        
+        # Vorlagenbenutzer laden
+        $templateUserObj = Get-TemplateUser -SamAccountName $TemplateUser
+        Write-Log "Vorlagenbenutzer gefunden: $TemplateUser"
+        
+        # Passwort-Komplexität prüfen
+        if (-not (Test-PasswordComplexity $Password)) {
+            Write-Error "Passwort entspricht nicht den Anforderungen"
+            exit 1
+        }
+        
+        # Neuen Benutzer erstellen
+        $newUserProps = @{
+            sAMAccountName = $NewUser
+            Password = $Password
+        }
+        
+        $newUser = New-ClonedUser -TemplateUser $templateUserObj -NewUserProps $newUserProps -TargetOU $TargetOU
+        Copy-UserGroups -SourceUser $templateUserObj -TargetUser $newUser
+    }
+    elseif ($PSCmdlet.ParameterSetName -eq 'CSV') {
         # CSV-Modus
+        if (-not $CsvPath) {
+            Write-Error "Für CSV-Modus wird CsvPath benötigt"
+            exit 1
+        }
+        
         Write-Log "Verarbeite CSV-Datei: $CsvPath"
         $users = Import-Csv -Path $CsvPath -Delimiter ';' -Encoding UTF8
         
         foreach ($user in $users) {
-            # Pflichtattribute prüfen
-            $missingAttrs = $mandatoryAttributes | Where-Object { -not $user.$_ }
-            if ($missingAttrs) {
-                Write-Log "Fehlende Pflichtattribute für Benutzer: $($missingAttrs -join ', ')" -Level "FEHLER"
+            $templateUserObj = Get-TemplateUser -SamAccountName $user.TemplateUser
+            
+            if (-not (Test-PasswordComplexity $user.Password)) {
+                Write-Log "Passwort entspricht nicht den Anforderungen für: $($user.NewUser)" -Level "FEHLER"
                 continue
             }
             
-            # Passwort-Komplexität prüfen
-            if ($user.Password -and -not (Test-PasswordComplexity $user.Password)) {
-                Write-Log "Passwort entspricht nicht den Anforderungen für: $($user.sAMAccountName)" -Level "FEHLER"
-                continue
+            $newUserProps = @{
+                sAMAccountName = $user.NewUser
+                Password = $user.Password
             }
             
-            $newUser = New-ClonedUser -TemplateUser $templateUser -NewUserProps $user -TargetOU $TargetOU
-            Copy-UserGroups -SourceUser $templateUser -TargetUser $newUser
+            $newUser = New-ClonedUser -TemplateUser $templateUserObj -NewUserProps $newUserProps -TargetOU $TargetOU
+            Copy-UserGroups -SourceUser $templateUserObj -TargetUser $newUser
         }
-    }
-    else {
-        # Interaktiver Modus
-        Write-Log "Starte interaktiven Modus"
-        
-        $newUserProps = @{}
-        
-        # Pflichtattribute abfragen
-        foreach ($attr in $mandatoryAttributes) {
-            $newUserProps[$attr] = Read-Host "Bitte $attr eingeben"
-        }
-        
-        # Optionale Attribute mit Vorlagewerten
-        foreach ($attr in $optionalAttributes) {
-            $default = $templateUser.$attr
-            $input = Read-Host "Bitte $attr eingeben (Standard: $default)"
-            $newUserProps[$attr] = if ($input) { $input } else { $default }
-        }
-        
-        $newUser = New-ClonedUser -TemplateUser $templateUser -NewUserProps $newUserProps -TargetOU $TargetOU
-        Copy-UserGroups -SourceUser $templateUser -TargetUser $newUser
     }
     
     Write-Log "Skript erfolgreich beendet" -Level "ERFOLG"
