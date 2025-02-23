@@ -3,32 +3,42 @@
 # Version: 2.4
 # PowerShell Version: 5.1
 # Description:
-#   - Creates new AD users from a CSV file
-#   - Assigns groups based on CSV data
-#   - Supports comprehensive logging and verbose output
-#   - Implements German localization
+# - Exports existing AD users to CSV based on a template user's OUs
+# - Creates new users interactively, via parameters, or from CSV
+# - Assigns groups based on template user
+# - Supports comprehensive logging and verbose output
+# - Implements German localization
 
 [CmdletBinding(SupportsShouldProcess = $true)]
 param (
+    [Parameter(Mandatory = $false, HelpMessage = "Template user for group assignments")]
+    [string]$TemplateUser,
+
+    [Parameter(Mandatory = $false, HelpMessage = "Path for exporting user data (CSV)")]
+    [string]$ExportPath = "ADBenutzerExport.csv",
+
     [Parameter(Mandatory = $false, HelpMessage = "Path to CSV file for user import")]
-    [string]$CsvPath = "neue_benutzer.csv",
-    
-    [Parameter(Mandatory = $false, HelpMessage = "Default password for new users")]
-    [SecureString]$DefaultPassword = (ConvertTo-SecureString "Willkommen2024!" -AsPlainText -Force),
-    
-    [Parameter(Mandatory = $false, HelpMessage = "Default OU for new users")]
-    [string]$DefaultOU,
-    
+    [string]$CsvPath,
+
     [Parameter(Mandatory = $false, HelpMessage = "Log file path")]
     [string]$LogPath = "ADBenutzerVerwaltung.log",
-    
-    [Parameter(Mandatory = $false, HelpMessage = "Enable verbose output")]
-    [switch]$Verbose
+
+    [Parameter(Mandatory = $false, HelpMessage = "Default password for new users")]
+    [SecureString]$DefaultPassword = (ConvertTo-SecureString "Willkommen2024!" -AsPlainText -Force),
+
+    [Parameter(Mandatory = $false, HelpMessage = "Default OU for new users")]
+    [string]$DefaultOU,
+
+    [Parameter(Mandatory = $false, HelpMessage = "Custom password for new users")]
+    [SecureString]$CustomPassword
 )
 
 # Set German culture for proper date/number formatting
 $previousCulture = [System.Threading.Thread]::CurrentThread.CurrentCulture
 [System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::GetCultureInfo("de-DE")
+
+# Set verbose preference to always show verbose output
+$VerbosePreference = "Continue"
 
 # Import required modules with error handling
 try {
@@ -44,18 +54,18 @@ function Write-CustomLog {
     param (
         [Parameter(Mandatory = $true)]
         [string]$Message,
-        
+
         [Parameter(Mandatory = $false)]
         [ValidateSet("INFO", "WARNUNG", "FEHLER", "DEBUG")]
         [string]$Level = "INFO"
     )
-    
+
     $Timestamp = Get-Date -Format "dd.MM.yyyy HH:mm:ss"
     $LogMessage = "$Timestamp [$Level] $Message"
-    
+
     # Write to log file
     Add-Content -Path $LogPath -Value $LogMessage -Encoding UTF8
-    
+
     # Console output with color coding
     $Color = switch ($Level) {
         "INFO"    { "White" }
@@ -64,13 +74,12 @@ function Write-CustomLog {
         "DEBUG"   { "Cyan" }
     }
     Write-Host $LogMessage -ForegroundColor $Color
-    
+
     # Additional verbose output for debugging
     if ($Level -eq "DEBUG") {
         Write-Verbose $Message
     }
 }
-
 # Function to create new AD user
 function New-CustomADUser {
     [CmdletBinding(SupportsShouldProcess = $true)]
