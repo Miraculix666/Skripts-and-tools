@@ -1,30 +1,50 @@
 # Active Directory Benutzerverwaltungsskript
 # Autor: [Ihr Name]
 # Beschreibung:
-# - Exportiert bestehende AD-Benutzer in eine CSV-Datei
-# - Erstellt neue Benutzer entweder interaktiv, mit Parametern oder per CSV
-# - Setzt Benutzergruppen basierend auf Vorlage
+# - Exportiert bestehende AD-Benutzer in eine CSV-Datei basierend auf einem Template-Benutzer
+# - Erstellt neue Benutzer interaktiv, mit Parametern oder per CSV-Datei
+# - Weist Gruppen basierend auf dem Template-Benutzer zu
+# - Unterstützt Logging, Fehlermeldungen und ausführliche Ausgabe (Verbose)
 
 Import-Module ActiveDirectory
 
-function Export-ADUsers {
-    param (
-        [string]$ExportPath = "ADUsersExport.csv"
-    )
-    
-    Write-Host "Exportiere Benutzer aus dem Active Directory..." -ForegroundColor Cyan
-    
-    try {
-        Get-ADUser -Filter * -Properties SamAccountName, UserPrincipalName, Name, MemberOf |
-        Select-Object SamAccountName, UserPrincipalName, Name, @{Name='Groups'; Expression={$_.MemberOf -join ';'}} |
-        Export-Csv -Path $ExportPath -NoTypeInformation
+param (
+    [string]$TemplateUser,
+    [string]$ExportPath = "ADUsersExport.csv",
+    [string]$CsvPath,
+    [switch]$Verbose
+)
 
-        Write-Host "Benutzerdaten erfolgreich exportiert: $ExportPath" -ForegroundColor Green
+# Logging-Funktion
+function Write-Log {
+    param (
+        [string]$Message,
+        [string]$Level = "INFO"
+    )
+    $Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    "$Timestamp [$Level] $Message" | Out-File -Append -FilePath "ADUserManagement.log"
+    if ($Verbose) { Write-Host "$Timestamp [$Level] $Message" -ForegroundColor Yellow }
+}
+
+# Funktion zum Exportieren von AD-Benutzern basierend auf einem Template-User
+function Export-ADUsers {
+    Write-Log "Starte Benutzerexport basierend auf Template: $TemplateUser"
+    try {
+        $Template = Get-ADUser -Identity $TemplateUser -Properties MemberOf
+        if (-not $Template) { throw "Template-Benutzer nicht gefunden!" }
+        
+        Get-ADUser -Filter * -Properties SamAccountName, UserPrincipalName, Name, MemberOf |
+        Where-Object { $_.MemberOf -contains $Template.MemberOf } |
+        Select-Object SamAccountName, UserPrincipalName, Name, @{Name='Groups'; Expression={$_.MemberOf -join ';'}} |
+        Export-Csv -Path $ExportPath -Delimiter ";" -NoTypeInformation -Encoding UTF8
+        
+        Write-Log "Benutzerdaten erfolgreich exportiert: $ExportPath"
     } catch {
-        Write-Host "Fehler beim Export: $_" -ForegroundColor Red
+        Write-Log "Fehler beim Export: $_" "ERROR"
     }
 }
 
+# Funktion zur Erstellung neuer Benutzer mit Gruppen des Template-Benutzers
 function Create-ADUser {
     param (
         [string]$SamAccountName,
@@ -34,9 +54,7 @@ function Create-ADUser {
         [string[]]$Groups,
         [string]$Password = "Passwort123!"
     )
-
-    Write-Host "Erstelle Benutzer: $Name ($SamAccountName)..." -ForegroundColor Cyan
-    
+    Write-Log "Erstelle Benutzer: $Name ($SamAccountName)"
     try {
         New-ADUser -Name $Name `
                    -SamAccountName $SamAccountName `
@@ -49,25 +67,21 @@ function Create-ADUser {
             Add-ADGroupMember -Identity $group -Members $SamAccountName
         }
 
-        Write-Host "Benutzer $Name wurde erfolgreich erstellt." -ForegroundColor Green
+        Write-Log "Benutzer $Name erfolgreich erstellt"
     } catch {
-        Write-Host "Fehler beim Erstellen von $Name: $_" -ForegroundColor Red
+        Write-Log "Fehler beim Erstellen von $Name: $_" "ERROR"
     }
 }
 
+# Funktion zur Erstellung mehrerer Benutzer aus CSV
 function Create-ADUsersFromCSV {
-    param (
-        [string]$CsvPath
-    )
-    
-    Write-Host "Erstelle Benutzer aus CSV: $CsvPath..." -ForegroundColor Cyan
-    
+    Write-Log "Erstelle Benutzer aus CSV: $CsvPath"
     if (-Not (Test-Path $CsvPath)) {
-        Write-Host "Fehler: Datei $CsvPath nicht gefunden!" -ForegroundColor Red
+        Write-Log "Fehler: Datei $CsvPath nicht gefunden!" "ERROR"
         return
     }
     
-    $users = Import-Csv -Path $CsvPath
+    $users = Import-Csv -Path $CsvPath -Delimiter ";"
     foreach ($user in $users) {
         Create-ADUser -SamAccountName $user.SamAccountName `
                       -UserPrincipalName $user.UserPrincipalName `
@@ -78,36 +92,10 @@ function Create-ADUsersFromCSV {
     }
 }
 
-function Show-Menu {
-    Write-Host "==================================" -ForegroundColor Yellow
-    Write-Host " Active Directory Benutzerverwaltung " -ForegroundColor Yellow
-    Write-Host "==================================" -ForegroundColor Yellow
-    Write-Host "[1] Exportiere AD-Benutzer nach CSV"
-    Write-Host "[2] Erstelle Benutzer interaktiv"
-    Write-Host "[3] Erstelle Benutzer per CSV"
-    Write-Host "[0] Beenden"
-}
-
 # Hauptprogramm
-while ($true) {
-    Show-Menu
-    $choice = Read-Host "Bitte eine Option wählen"
-    switch ($choice) {
-        "1" { Export-ADUsers }
-        "2" {
-            $SamAccountName = Read-Host "SamAccountName"
-            $UserPrincipalName = Read-Host "UserPrincipalName"
-            $Name = Read-Host "Vollständiger Name"
-            $OU = Read-Host "Organizational Unit (OU)"
-            $Groups = Read-Host "Gruppen (mit ; trennen)" -split ';'
-            $Password = Read-Host "Passwort (leer für Standard)" -AsSecureString
-            Create-ADUser -SamAccountName $SamAccountName -UserPrincipalName $UserPrincipalName -Name $Name -OU $OU -Groups $Groups -Password $Password
-        }
-        "3" {
-            $CsvPath = Read-Host "Pfad zur CSV-Datei"
-            Create-ADUsersFromCSV -CsvPath $CsvPath
-        }
-        "0" { break }
-        default { Write-Host "Ungültige Auswahl!" -ForegroundColor Red }
-    }
+if ($TemplateUser) {
+    Export-ADUsers
+}
+if ($CsvPath) {
+    Create-ADUsersFromCSV
 }
