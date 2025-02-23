@@ -37,6 +37,20 @@ function Write-Log {
     Write-Host "$Timestamp [$Level] $Message" -ForegroundColor Yellow
 }
 
+# Funktion zur Ermittlung der OU des Template-Benutzers
+function Get-TemplateUserOU {
+    param (
+        [string]$TemplateUser
+    )
+    try {
+        $user = Get-ADUser -Identity $TemplateUser -Properties DistinguishedName
+        return ($user.DistinguishedName -split ",",2)[1]  # Entfernt den CN-Teil
+    } catch {
+        Write-Log "Fehler beim Abrufen der OU des Template-Benutzers: $_" -Level "ERROR"
+        return $null
+    }
+}
+
 # Funktion zum Exportieren von AD-Benutzern basierend auf einem Template-User
 function Export-ADUsers {
     $TemplateUser = Get-ParameterIfMissing -ParameterName "TemplateUser" -PromptMessage "Geben Sie den Template-Benutzer an"
@@ -99,7 +113,7 @@ function Create-ADUsersFromCSV {
         Create-ADUser -SamAccountName $user.SamAccountName `
                       -UserPrincipalName $user.UserPrincipalName `
                       -Name $user.Name `
-                      -OU $user.OU `
+                      -OU ($user.OU ?: Get-TemplateUserOU -TemplateUser $TemplateUser) `
                       -Groups ($user.Groups -split ';') `
                       -Password $user.Password
     }
