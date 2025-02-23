@@ -1,171 +1,150 @@
-[CmdletBinding()]
-param (
-    [Parameter(Mandatory=$false)]
-    [string]$CSVPath,
-    
-    [Parameter(Mandatory=$false)]
-    [string]$TemplateUser,
-    
-    [Parameter(Mandatory=$false)]
-    [switch]$ExportTemplateOnly,
-    
-    [Parameter(Mandatory=$false)]
-    [switch]$NoConfirmation,
-    
-    [Parameter(Mandatory=$false)]
-    [string]$TargetOU,
-    
-    [Parameter(Mandatory=$false)]
-    [switch]$Interactive
-)
+# Funktion zum Erstellen von Benutzern aus CSV
+function Import-ADUsersFromCSV {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$CsvPath,
+        [Parameter(Mandatory = $false)]
+        [SecureString]$DefaultPassword = (ConvertTo-SecureString "Willkommen2024!" -AsPlainText -Force)
+    )
 
-# Funktionen für Logging und Ausgabe
-function Write-LogMessage {
-    param($Message, $Type = "Info")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] [$Type] $Message"
-    
-    switch ($Type) {
-        "Error"   { Write-Host $logMessage -ForegroundColor Red }
-        "Warning" { Write-Host $logMessage -ForegroundColor Yellow }
-        "Success" { Write-Host $logMessage -ForegroundColor Green }
-        default   { Write-Host $logMessage -ForegroundColor Cyan }
+    # Überprüfe, ob die CSV-Datei existiert
+    if (-not (Test-Path $CsvPath)) {
+        Write-CustomLog "CSV-Datei nicht gefunden: $CsvPath" -Level "FEHLER"
+        return
     }
-    
-    Add-Content -Path ".\ADUser_Creation_Log.txt" -Value $logMessage
-}
 
-# Funktion zum Exportieren der Template-Daten
-function Export-TemplateUser {
-    param([string]$Username)
-    
+    Write-CustomLog "Importiere Benutzer aus CSV: $CsvPath" -Level "INFO"
+
     try {
-        $user = Get-ADUser -Identity $Username -Properties *
-        $properties = @{
-            "SamAccountName" = ""
-            "GivenName" = $user.GivenName
-            "Surname" = $user.Surname
-            "Password" = ""
-            "Department" = $user.Department
-            "Title" = $user.Title
-            "Company" = $user.Company
-            "Office" = $user.Office
-            "StreetAddress" = $user.StreetAddress
-            "City" = $user.City
-            "PostalCode" = $user.PostalCode
-            "Country" = $user.Country
-            "TelephoneNumber" = $user.TelephoneNumber
-        }
-        
-        $exportPath = ".\TemplateUser_Export.csv"
-        [PSCustomObject]$properties | Export-Csv -Path $exportPath -NoTypeInformation -Encoding UTF8
-        Write-LogMessage "Template-Benutzer wurde exportiert nach: $exportPath" -Type "Success"
-    }
-    catch {
-        Write-LogMessage "Fehler beim Exportieren des Template-Benutzers: $_" -Type "Error"
-        exit
-    }
-}
+        # Lese CSV-Datei
+        $users = Import-Csv -Path $CsvPath -Delimiter ";" -Encoding UTF8
 
-# Funktion zur Benutzervalidierung
-function Confirm-UserCreation {
-    param($UserData)
-    
-    Write-Host "`n=== Neue Benutzer-Details ===" -ForegroundColor Cyan
-    $UserData.PSObject.Properties | ForEach-Object {
-        Write-Host "$($_.Name): $($_.Value)" -ForegroundColor Yellow
-    }
-    
-    if (-not $NoConfirmation) {
-        $confirm = Read-Host "`nBenutzer erstellen? (J/N)"
-        return $confirm -eq "J"
-    }
-    return $true
-}
+        foreach ($user in $users) {
+            # Bestimme OU basierend auf CSV oder Standard-OU
+            $ou = if ($user.OU) { $user.OU } else { $DefaultOU }
 
-# Hauptfunktion zur Benutzererstellung
-function New-CustomADUser {
-    param($UserData)
-    
-    try {
-        $securePassword = ConvertTo-SecureString $UserData.Password -AsPlainText -Force
-        
-        $params = @{
-            SamAccountName = $UserData.SamAccountName
-            UserPrincipalName = "$($UserData.SamAccountName)@$((Get-ADDomain).DNSRoot)"
-            GivenName = $UserData.GivenName
-            Surname = $UserData.Surname
-            Name = "$($UserData.GivenName) $($UserData.Surname)"
-            DisplayName = "$($UserData.GivenName) $($UserData.Surname)"
-            AccountPassword = $securePassword
-            Enabled = $true
-            Path = $TargetOU
-        }
-        
-        # Optionale Parameter hinzufügen
-        @("Department", "Title", "Company", "Office", "StreetAddress", "City", "PostalCode", "Country", "TelephoneNumber") | ForEach-Object {
-            if ($UserData.$_) {
-                $params[$_] = $UserData.$_
+            if ($PSCmdlet.ShouldProcess($user.Name, "Benutzer aus CSV erstellen")) {
+                $params = @{
+                    SamAccountName = $user.Benutzername
+                    UserPrincipalName = $user.EMail
+                    Name = ($user.Vorname + " " + $user.Nachname)
+                    OU = $ou
+                    Groups = ($user.Gruppen -split ';')
+                    Password = $DefaultPassword
+                }
+
+                # Optional: Füge zusätzliche Attribute hinzu, wenn sie im CSV vorhanden sind
+                if ($user.Vorname) { $params.GivenName = $user.Vorname }
+                if ($user.Nachname) { $params.Surname = $user.Nachname }
+                if ($user.Abteilung) { $params.Department = $user.Abteilung }
+                if ($user.Position) { $params.Title = $user.Position }
+                if ($user.Vorgesetzter) { $params.Manager = $user.Vorgesetzter }
+                if ($user.Büro) { $params.Office = $user.Büro }
+                if ($user.Telefon) { $params.OfficePhone = $user.Telefon }
+                if ($user.Firma) { $params.Company = $user.Firma }
+                if ($user.Beschreibung) { $params.Description = $user.Beschreibung }
+
+                New-CustomADUser @params
             }
         }
-        
-        New-ADUser @params
-        Write-LogMessage "Benutzer $($UserData.SamAccountName) wurde erfolgreich erstellt" -Type "Success"
-    }
-    catch {
-        Write-LogMessage "Fehler bei der Erstellung von $($UserData.SamAccountName): $_" -Type "Error"
+    } catch {
+        Write-CustomLog "Fehler beim Import aus CSV: $_" -Level "FEHLER"
     }
 }
 
-# Hauptprogramm
-try {
-    # Modul-Check
-    if (-not (Get-Module -ListAvailable -Name ActiveDirectory)) {
-        Write-LogMessage "Active Directory PowerShell-Modul nicht gefunden!" -Type "Error"
-        exit
-    }
-    
-    # OU-Validierung
-    if (-not $TargetOU) {
-        $TargetOU = Read-Host "Bitte geben Sie die Ziel-OU an (z.B. 'OU=Users,DC=domain,DC=com')"
-    }
-    if (-not (Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$TargetOU'")) {
-        Write-LogMessage "Die angegebene OU existiert nicht!" -Type "Error"
-        exit
-    }
-    
-    # Template-Export
-    if ($TemplateUser -and $ExportTemplateOnly) {
-        Export-TemplateUser -Username $TemplateUser
-        exit
-    }
-    
-    # Benutzerverarbeitung
-    if ($CSVPath) {
-        $users = Import-Csv -Path $CSVPath -Encoding UTF8
-    }
-    elseif ($Interactive) {
-        # Interaktive Benutzereingabe
-        $userData = @{
-            SamAccountName = Read-Host "SamAccountName"
-            GivenName = Read-Host "Vorname"
-            Surname = Read-Host "Nachname"
-            Password = Read-Host "Passwort"
+# Funktion zum Erstellen eines neuen AD-Benutzers
+function New-CustomADUser {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SamAccountName,
+        [Parameter(Mandatory = $true)]
+        [string]$UserPrincipalName,
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+        [Parameter(Mandatory = $false)]
+        [string]$GivenName,
+        [Parameter(Mandatory = $false)]
+        [string]$Surname,
+        [Parameter(Mandatory = $false)]
+        [string]$Department,
+        [Parameter(Mandatory = $false)]
+        [string]$Title,
+        [Parameter(Mandatory = $false)]
+        [string]$Manager,
+        [Parameter(Mandatory = $false)]
+        [string]$Office,
+        [Parameter(Mandatory = $false)]
+        [string]$OfficePhone,
+        [Parameter(Mandatory = $false)]
+        [string]$Company,
+        [Parameter(Mandatory = $false)]
+        [string]$Description,
+        [Parameter(Mandatory = $true)]
+        [string]$OU,
+        [string[]]$Groups,
+        [SecureString]$Password
+    )
+
+    Write-Verbose "Erstelle neuen Benutzer: $Name in OU: $OU"
+
+    try {
+        if ($PSCmdlet.ShouldProcess($Name, "Benutzer erstellen")) {
+            # Überprüfe, ob die OU existiert
+            if (-not (Get-ADOrganizationalUnit -Filter { DistinguishedName -eq $OU })) {
+                throw "Die angegebene OU existiert nicht: $OU"
+            }
+
+            $userParams = @{
+                Name = $Name
+                SamAccountName = $SamAccountName
+                UserPrincipalName = $UserPrincipalName
+                Path = $OU
+                AccountPassword = $Password
+                Enabled = $true
+                ChangePasswordAtLogon = $false # Keine Passwortänderung erforderlich
+            }
+
+            # Optional: Füge zusätzliche Attribute hinzu, wenn sie angegeben sind
+            if ($GivenName) { $userParams.GivenName = $GivenName }
+            if ($Surname) { $userParams.Surname = $Surname }
+            if ($Department) { $userParams.Department = $Department }
+            if ($Title) { $userParams.Title = $Title }
+            if ($Manager) { $userParams.Manager = $Manager }
+            if ($Office) { $userParams.Office = $Office }
+            if ($OfficePhone) { $userParams.OfficePhone = $OfficePhone }
+            if ($Company) { $userParams.Company = $Company }
+            if ($Description) { $userParams.Description = $Description }
+
+            New-ADUser @userParams
+
+            foreach ($group in $Groups) {
+                Add-ADGroupMember -Identity $group -Members $SamAccountName
+                Write-Verbose "Gruppe '$group' dem Benutzer '$SamAccountName' zugewiesen"
+            }
+
+            Write-CustomLog "Benutzer '$Name' erfolgreich erstellt in OU: $OU" -Level "INFO"
         }
-        $users = @([PSCustomObject]$userData)
-    }
-    
-    foreach ($user in $users) {
-        if (-not $user.Password) {
-            Write-LogMessage "Kein Passwort für Benutzer $($user.SamAccountName) angegeben" -Type "Error"
-            continue
-        }
-        
-        if (Confirm-UserCreation -UserData $user) {
-            New-CustomADUser -UserData $user
-        }
+    } catch {
+        Write-CustomLog "Fehler beim Erstellen von Benutzer '$Name': $_" -Level "FEHLER"
     }
 }
-catch {
-    Write-LogMessage "Unerwarteter Fehler: $_" -Type "Error"
+
+# Hauptausführungsblock
+try {
+    Write-CustomLog "Skript-Ausführung gestartet" -Level "INFO"
+
+    # Interaktive Parameterabfrage, falls erforderlich
+    if (-not $CsvPath) {
+        $CsvPath = Read-Host "Bitte CSV-Dateipfad eingeben"
+    }
+
+    if ($CsvPath) {
+        Import-ADUsersFromCSV -CsvPath $CsvPath
+    }
+
+    Write-CustomLog "Skript-Ausführung erfolgreich beendet" -Level "INFO"
+} catch {
+    Write-CustomLog "Unerwarteter Fehler bei der Skript-Ausführung: $_" -Level "FEHLER"
 }
