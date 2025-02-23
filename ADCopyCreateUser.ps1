@@ -1,11 +1,14 @@
 # Active Directory Benutzerverwaltungsskript
 # Autor: [Ihr Name]
+# Version: 1.1
 # Beschreibung:
-# - Exportiert bestehende AD-Benutzer in eine CSV-Datei basierend auf einem Template-Benutzer
-# - Erstellt neue Benutzer interaktiv, mit Parametern oder per CSV-Datei
-# - Weist Gruppen basierend auf dem Template-Benutzer zu
-# - Unterstützt Logging, Fehlermeldungen und ausführliche Ausgabe (Verbose)
+# - Exportiert bestehende AD-Benutzer in eine CSV-Datei basierend auf einem Template-Benutzer.
+# - Erstellt neue Benutzer interaktiv, mit Parametern oder per CSV-Datei.
+# - Weist Gruppen basierend auf dem Template-Benutzer zu.
+# - Unterstützt Logging, Fehlermeldungen und ausführliche Ausgabe (Verbose).
+# - Lokalisierte CSV-Datei und Ausgabe (Deutsch).
 
+[CmdletBinding()]
 param (
     [string]$TemplateUser,
     [string]$ExportPath = "ADUsersExport.csv",
@@ -13,6 +16,13 @@ param (
     [switch]$Verbose
 )
 
+# Prüfen, ob das Active Directory Modul verfügbar ist
+if (-not (Get-Module -ListAvailable -Name ActiveDirectory)) {
+    Write-Host "Das Active Directory Modul ist nicht installiert. Bitte installieren Sie es zuerst." -ForegroundColor Red
+    exit 1
+}
+
+# Modul laden
 Import-Module ActiveDirectory
 
 # Funktion zur interaktiven Abfrage fehlender Parameter
@@ -21,7 +31,7 @@ function Get-ParameterIfMissing {
         [string]$ParameterName,
         [string]$PromptMessage
     )
-    if (-not (Get-Variable -Name $ParameterName -ValueOnly -ErrorAction SilentlyContinue)) {
+    if (-not $PSBoundParameters.ContainsKey($ParameterName)) {
         return Read-Host -Prompt $PromptMessage
     }
     return (Get-Variable -Name $ParameterName -ValueOnly)
@@ -77,7 +87,11 @@ function Create-ADUser {
                    -Enabled $true
 
         foreach ($group in $Groups) {
-            Add-ADGroupMember -Identity $group -Members $SamAccountName
+            if (Get-ADGroup -Filter { Name -eq $group }) {
+                Add-ADGroupMember -Identity $group -Members $SamAccountName
+            } else {
+                Write-Log "Gruppe nicht gefunden: $group" -Level "WARNING"
+            }
         }
 
         Write-Log "Benutzer $Name erfolgreich erstellt"
@@ -106,20 +120,23 @@ function Create-ADUsersFromCSV {
     }
 }
 
-# Hauptprogramm
-if (-not $TemplateUser) {
-    $TemplateUser = Get-ParameterIfMissing -ParameterName "TemplateUser" -PromptMessage "Geben Sie den Template-Benutzer an"
-}
-if (-not $ExportPath) {
-    $ExportPath = Get-ParameterIfMissing -ParameterName "ExportPath" -PromptMessage "Geben Sie den Exportpfad an"
-}
-if (-not $CsvPath) {
-    $CsvPath = Get-ParameterIfMissing -ParameterName "CsvPath" -PromptMessage "Geben Sie den Pfad zur CSV-Datei an"
+# Hilfe-Funktion
+function Show-Help {
+    Write-Host "AD Benutzerverwaltungsskript - Hilfe"
+    Write-Host "==================================="
+    Write-Host "Verwendung:"
+    Write-Host "  - Template-User exportieren: .\Script.ps1 -TemplateUser 'Mustermann'"
+    Write-Host "  - Benutzer aus CSV erstellen: .\Script.ps1 -CsvPath 'Users.csv'"
+    Write-Host "  - Interaktiver Modus: .\Script.ps1"
 }
 
+# Hauptprogramm
 if ($TemplateUser) {
     Export-ADUsers
 }
 if ($CsvPath) {
     Create-ADUsersFromCSV
+}
+if (-not $TemplateUser -and -not $CsvPath) {
+    Show-Help
 }
