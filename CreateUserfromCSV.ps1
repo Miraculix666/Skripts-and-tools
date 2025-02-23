@@ -80,6 +80,169 @@ function Write-CustomLog {
         Write-Verbose $Message
     }
 }
+
+# Function to validate and get AD user with extended properties
+function Get-ValidADUser {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Identity,
+        [string]$Operation = "Abfrage"
+    )
+
+    try {
+        $user = Get-ADUser -Identity $Identity -Properties MemberOf, DistinguishedName, GivenName, Surname, Department, Title, Manager, Office, OfficePhone, EmailAddress, Company, Description -ErrorAction Stop
+        Write-Verbose "Benutzer '$Identity' erfolgreich gefunden"
+        return $user
+    } catch {
+        Write-CustomLog "Fehler bei $Operation für Benutzer '$Identity': $_" -Level "FEHLER"
+        return $null
+    }
+}
+
+# Function to get all OUs from template user's path
+function Get-TemplateUserOUs {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$TemplateUser
+    )
+
+    $user = Get-ValidADUser -Identity $TemplateUser -Operation "OU-Ermittlung"
+    if ($user) {
+        try {
+            $ouPath = ($user.DistinguishedName -split ',', 2)[1]
+            Write-Verbose "Base OU path: $ouPath"
+
+            # Get all OUs from the path
+            $ous = @()
+            $ous += Get-ADOrganizationalUnit -Filter * -SearchBase $ouPath -SearchScope Subtree |
+                   Select-Object -ExpandProperty DistinguishedName
+
+            # Add the template user's direct OU
+            $ous += $ouPath
+
+            $uniqueOUs = $ous | Select-Object -Unique
+            Write-Verbose "Gefundene OUs: $($uniqueOUs.Count)"
+            Write-Verbose ($uniqueOUs -join "`n")
+
+            return $uniqueOUs
+        } catch {
+            Write-CustomLog "Fehler beim Abrufen der OUs: $_" -Level "FEHLER"
+            return @($ouPath)
+        }
+    }
+    return $null
+}
+
+# Function to compare group memberships
+function Compare-GroupMembership {
+    param (
+        [string[]]$TemplateGroups,
+        [string[]]$UserGroups
+    )
+
+    if (-not $TemplateGroups -or -not $UserGroups) {
+        return $false
+    }
+
+    $templateGroupNames = $TemplateGroups | ForEach-Object { $_.Split(',')[0] }
+    $userGroupNames = $UserGroups | ForEach-Object { $_.Split(',')[0] }
+
+    $commonGroups = Compare-Object -ReferenceObject $templateGroupNames -DifferenceObject $userGroupNames -IncludeEqual -ExcludeDifferent
+    return ($commonGroups.Count -gt 0)
+}
+
+# Function to export AD users
+function Export-ADUsers {
+    [CmdletBinding()]
+    param()
+
+    Write-CustomLog "Starte Benutzerexport basierend auf Template: $TemplateUser" -Level "INFO"
+
+    $Template = Get-ValidADUser -Identity $TemplateUser -Operation "Template-Validierung"
+    if (-not $Template) { return }
+
+    try {
+        Write-Verbose "Hole Template-Benutzer Gruppen und OUs"
+        $templateGroups = $Template.MemberOf
+        Write-Verbose "Template Gruppen: $($templateGroups.Count)"
+
+        $templateOUs = Get-TemplateUserOUs -TemplateUser $TemplateUser
+        if (-not $templateOUs) {
+            throw "Keine OUs für Template-Benutzer gefunden"
+        }
+
+        Write-Verbose "Suche Benutzer in allen relevanten OUs"
+        $allUsers = @()
+        foreach ($ou in $templateOUs) {
+            Write-Verbose "Durchsuche OU: $ou"
+            try {
+                $usersInOU = Get-ADUser -Filter * -SearchBase $ou -SearchScope OneLevel `
+                            -Properties SamAccountName, UserPrincipalName, Name, GivenName, Surname, `
+                                      Department, Title, Manager, Office, OfficePhone, EmailAddress, `
+                                      Company, Description, MemberOf, DistinguishedName
+
+                foreach ($user in $usersInOU) {
+                    if (Compare-GroupMembership -TemplateGroups $templateGroups -UserGroups $user.MemberOf) {
+                        $allUsers += $user
+                    }
+                }
+            } catch {
+                Write-CustomLog "Fehler beim Durchsuchen von OU '$ou': $_" -Level "WARNUNG"
+                continue
+            }
+        }
+
+        Write-Verbose "Gefundene Benutzer: $($allUsers.Count)"
+
+        if ($allUsers.Count -eq 0) {
+            Write-CustomLog "Keine Benutzer mit übereinstimmenden Gruppen gefunden" -Level "WARNUNG"
+            return
+        }
+
+        $exportData = $allUsers | Select-Object @{
+            Name='Benutzername'; Expression={$_.SamAccountName}
+        }, @{
+            Name='E-Mail'; Expression={$_.EmailAddress}
+        }, @{
+            Name='Vorname'; Expression={$_.GivenName}
+        }, @{
+            Name='Nachname'; Expression={$_.Surname}
+        }, @{
+            Name='Abteilung'; Expression={$_.Department}
+        }, @{
+            Name='Position'; Expression={$_.Title}
+        }, @{
+            Name='Vorgesetzter'; Expression={
+                if ($_.Manager) {
+                    try {
+                        (Get-ADUser $_.Manager).SamAccountName
+                    } catch {
+                        $_.Manager
+                    }
+                } else { "" }
+            }
+        }, @{
+            Name='Büro'; Expression={$_.Office}
+        }, @{
+            Name='Telefon'; Expression={$_.OfficePhone}
+        }, @{
+            Name='Firma'; Expression={$_.Company}
+        }, @{
+            Name='Beschreibung'; Expression={$_.Description}
+        }, @{
+            Name='OU'; Expression={($_.DistinguishedName -split ',',2)[1]}
+        }, @{
+            Name='Gruppen'; Expression={$_.MemberOf -join ';' }
+        }
+
+        $exportData | Export-Csv -Path $ExportPath -Delimiter ";" -NoTypeInformation -Encoding UTF8
+        Write-CustomLog "Benutzerdaten erfolgreich exportiert nach: $ExportPath" -Level "INFO"
+        Write-CustomLog "Anzahl exportierter Benutzer: $($exportData.Count)" -Level "INFO"
+    } catch {
+        Write-CustomLog "Fehler beim Exportieren der Benutzerdaten: $_" -Level "FEHLER"
+    }
+}
+
 # Function to create new AD user
 function New-CustomADUser {
     [CmdletBinding(SupportsShouldProcess = $true)]
@@ -113,16 +276,16 @@ function New-CustomADUser {
         [string[]]$Groups,
         [SecureString]$Password = $DefaultPassword
     )
-    
+
     Write-Verbose "Erstelle neuen Benutzer: $Name in OU: $OU"
-    
+
     try {
         if ($PSCmdlet.ShouldProcess($Name, "Benutzer erstellen")) {
             # Validate OU exists
             if (-not (Get-ADOrganizationalUnit -Filter {DistinguishedName -eq $OU})) {
                 throw "Die angegebene OU existiert nicht: $OU"
             }
-            
+
             $userParams = @{
                 Name = $Name
                 SamAccountName = $SamAccountName
@@ -130,118 +293,4 @@ function New-CustomADUser {
                 Path = $OU
                 AccountPassword = $Password
                 Enabled = $true
-                ChangePasswordAtLogon = $false # Kein Passwortwechsel erforderlich
-            }
-            
-            # Add optional parameters if provided
-            if ($GivenName) { $userParams.GivenName = $GivenName }
-            if ($Surname) { $userParams.Surname = $Surname }
-            if ($Department) { $userParams.Department = $Department }
-            if ($Title) { $userParams.Title = $Title }
-            if ($Manager) { $userParams.Manager = $Manager }
-            if ($Office) { $userParams.Office = $Office }
-            if ($OfficePhone) { $userParams.OfficePhone = $OfficePhone }
-            if ($Company) { $userParams.Company = $Company }
-            if ($Description) { $userParams.Description = $Description }
-            
-            New-ADUser @userParams
-            
-            foreach ($group in $Groups) {
-                Add-ADGroupMember -Identity $group -Members $SamAccountName
-                Write-Verbose "Gruppe '$group' dem Benutzer '$SamAccountName' zugewiesen"
-            }
-            
-            Write-CustomLog "Benutzer '$Name' erfolgreich erstellt in OU: $OU" -Level "INFO"
-        }
-    } catch {
-        Write-CustomLog "Fehler beim Erstellen von Benutzer '$Name': $_" -Level "FEHLER"
-    }
-}
-
-# Function to create users from CSV
-function Import-ADUsersFromCSV {
-    [CmdletBinding(SupportsShouldProcess = $true)]
-    param()
-    
-    if (-not (Test-Path $CsvPath)) {
-        Write-CustomLog "CSV-Datei nicht gefunden: $CsvPath" -Level "FEHLER"
-        return
-    }
-    
-    Write-CustomLog "Importiere Benutzer aus CSV: $CsvPath" -Level "INFO"
-    
-    try {
-        $users = Import-Csv -Path $CsvPath -Delimiter ";" -Encoding UTF8
-        
-        foreach ($user in $users) {
-            # Determine OU based on priority: CSV > DefaultOU
-            $ou = if ($user.OU) { 
-                $user.OU 
-            } elseif ($DefaultOU) { 
-                $DefaultOU 
-            } else { 
-                Write-CustomLog "Keine OU für Benutzer '$($user.Benutzername)' angegeben. Überspringe..." -Level "WARNUNG"
-                continue
-            }
-            
-            if ($PSCmdlet.ShouldProcess($user.Name, "Benutzer aus CSV erstellen")) {
-                $params = @{
-                    SamAccountName = $user.Benutzername
-                    UserPrincipalName = $user.EMail
-                    Name = if ($user.'Vollständiger Name') { $user.'Vollständiger Name' } else { "$($user.Vorname) $($user.Nachname)" }
-                    OU = $ou
-                    Groups = if ($user.Gruppen) { ($user.Gruppen -split ';') } else { @() }
-                }
-                
-                # Add optional parameters if they exist in CSV
-                if ($user.Vorname) { $params.GivenName = $user.Vorname }
-                if ($user.Nachname) { $params.Surname = $user.Nachname }
-                if ($user.Abteilung) { $params.Department = $user.Abteilung }
-                if ($user.Position) { $params.Title = $user.Position }
-                if ($user.Vorgesetzter) { $params.Manager = $user.Vorgesetzter }
-                if ($user.Büro) { $params.Office = $user.Büro }
-                if ($user.Telefon) { $params.OfficePhone = $user.Telefon }
-                if ($user.Firma) { $params.Company = $user.Firma }
-                if ($user.Beschreibung) { $params.Description = $user.Beschreibung }
-                
-                New-CustomADUser @params
-            }
-        }
-    } catch {
-        Write-CustomLog "Fehler beim Import aus CSV: $_" -Level "FEHLER"
-    }
-}
-
-# Main execution block
-try {
-    Write-CustomLog "Skript-Ausführung gestartet" -Level "INFO"
-    
-    Import-ADUsersFromCSV
-    
-    Write-CustomLog "Skript-Ausführung erfolgreich beendet" -Level "INFO"
-} catch {
-    Write-CustomLog "Unerwarteter Fehler bei der Skript-Ausführung: $_" -Level "FEHLER"
-} finally {
-    # Restore original culture
-    [System.Threading.Thread]::CurrentThread.CurrentCulture = $previousCulture
-}
-
-# Help message
-$HelpMessage = @"
-Active Directory Benutzerverwaltungsskript
-----------------------------------------
-
-BESCHREIBUNG:
-    Dieses Skript ermöglicht das Erstellen neuer AD-Benutzer basierend auf einem CSV-File.
-
-PARAMETER:
-    -CsvPath         Pfad zur Import-CSV-Datei
-    -DefaultOU       Standard-OU für neue Benutzer
-    -DefaultPassword Standardpasswort für neue Benutzer
-    -Verbose         Aktiviert detaillierte Ausgabe
-    -WhatIf          Zeigt an, was passieren würde, ohne Änderungen vorzunehmen
-
-BEISPIELE:
-    .\ADUserCreation.ps1 -CsvPath "neue_benutzer.csv" -Verbose
-    .\ADUserCreation.ps1 -CsvPath "neue_benutzer.csv" -WhatIf
-"@
+                ChangePasswordAtLogon
