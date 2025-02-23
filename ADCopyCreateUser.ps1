@@ -6,14 +6,14 @@
 # - Weist Gruppen basierend auf dem Template-Benutzer zu
 # - Unterstützt Logging, Fehlermeldungen und ausführliche Ausgabe (Verbose)
 
-Import-Module ActiveDirectory
-
 param (
     [string]$TemplateUser,
     [string]$ExportPath = "ADUsersExport.csv",
     [string]$CsvPath,
     [switch]$Verbose
 )
+
+Import-Module ActiveDirectory
 
 # Logging-Funktion
 function Write-Log {
@@ -40,7 +40,7 @@ function Export-ADUsers {
         
         Write-Log "Benutzerdaten erfolgreich exportiert: $ExportPath"
     } catch {
-        Write-Log "Fehler beim Export: $_" "ERROR"
+        Write-Log "Fehler beim Export: $_" -Level "ERROR"
     }
 }
 
@@ -69,7 +69,7 @@ function Create-ADUser {
 
         Write-Log "Benutzer $Name erfolgreich erstellt"
     } catch {
-        Write-Log "Fehler beim Erstellen von $Name: $_" "ERROR"
+        Write-Log "Fehler beim Erstellen von $Name: $_" -Level "ERROR"
     }
 }
 
@@ -77,7 +77,7 @@ function Create-ADUser {
 function Create-ADUsersFromCSV {
     Write-Log "Erstelle Benutzer aus CSV: $CsvPath"
     if (-Not (Test-Path $CsvPath)) {
-        Write-Log "Fehler: Datei $CsvPath nicht gefunden!" "ERROR"
+        Write-Log "Fehler: Datei $CsvPath nicht gefunden!" -Level "ERROR"
         return
     }
     
