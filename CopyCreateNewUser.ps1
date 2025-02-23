@@ -1,150 +1,240 @@
-# Funktion zum Erstellen von Benutzern aus CSV
-function Import-ADUsersFromCSV {
-    [CmdletBinding(SupportsShouldProcess = $true)]
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$CsvPath,
-        [Parameter(Mandatory = $false)]
-        [SecureString]$DefaultPassword = (ConvertTo-SecureString "Willkommen2024!" -AsPlainText -Force)
-    )
+<#
+.SYNOPSIS
+    Erstellt AD-Benutzer basierend auf einem Vorlagenbenutzer und CSV-Daten.
 
-    # Überprüfe, ob die CSV-Datei existiert
-    if (-not (Test-Path $CsvPath)) {
-        Write-CustomLog "CSV-Datei nicht gefunden: $CsvPath" -Level "FEHLER"
-        return
+.DESCRIPTION
+    Dieses Skript erstellt neue AD-Benutzer basierend auf einem Vorlagenbenutzer und CSV-Daten.
+    Es unterstützt auch das Auslesen der Daten des Vorlagenbenutzers in eine CSV-Datei.
+
+.PARAMETER CsvPath
+    Pfad zur CSV-Datei mit den Benutzerdaten.
+
+.PARAMETER TemplateUser
+    SAMAccountName des Vorlagenbenutzers.
+
+.PARAMETER ExportTemplateOnly
+    Schalter zum Auslesen der Daten des Vorlagenbenutzers in eine CSV-Datei.
+
+.EXAMPLE
+    .\CopyCreateNewUser.ps1 -CsvPath "C:\Users.csv" -TemplateUser "TemplateUser"
+
+.EXAMPLE
+    .\CopyCreateNewUser.ps1 -TemplateUser "TemplateUser" -ExportTemplateOnly
+#>
+
+[CmdletBinding()]
+param (
+    [Parameter(Mandatory=$true)]
+param(
+    [Parameter(Mandatory=$false)]
+[string]$CsvPath,
+
+    [Parameter(Mandatory=$true)]
+    
+    [Parameter(Mandatory=$false)]
+[string]$TemplateUser,
+
+    [switch]$ExportTemplateOnly
+    
+    [Parameter(Mandatory=$false)]
+    [switch]$ExportTemplateOnly,
+    
+    [Parameter(Mandatory=$false)]
+    [string]$TargetOU
+)
+
+# Importiere das Active Directory-Modul
+Import-Module ActiveDirectory
+
+# Funktion zum Erstellen des Log-Verzeichnisses
+function Create-LogDirectory {
+    $logDir = "C:\ADUserCreationLogs"
+    if (!(Test-Path $logDir)) {
+        New-Item -ItemType Directory -Force -Path $logDir
     }
+    return $logDir
+}
 
-    Write-CustomLog "Importiere Benutzer aus CSV: $CsvPath" -Level "INFO"
+# Funktion zum Schreiben von Log-Einträgen
+function Write-Log {
+    param (
+        [string]$Message
+# Funktionen für Logging und Ausgabe
+function Write-LogMessage {
+    param(
+        [string]$Message,
+        [ValidateSet('Info','Warning','Error','Success')]
+        [string]$Type = 'Info'
+)
+    $logDir = Create-LogDirectory
+    $logFile = Join-Path $logDir "ADUserCreation_$(Get-Date -Format 'yyyyMMdd').log"
+    
+    $colors = @{
+        'Info' = 'Cyan'
+        'Warning' = 'Yellow'
+        'Error' = 'Red'
+        'Success' = 'Green'
+    }
+    
+$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    "$timestamp - $Message" | Out-File -FilePath $logFile -Append
+    Write-Verbose $Message
+    Write-Host "[$timestamp] " -NoNewline
+    Write-Host $Message -ForegroundColor $colors[$Type]
+    
+    # Logging in Datei
+    $logPath = ".\ADUser_Creation_Log.txt"
+    "[$timestamp] [$Type] $Message" | Out-File -FilePath $logPath -Append
+}
 
+# Funktion zum Exportieren der Vorlagenbenutzerdaten
+# Funktion zum Exportieren der Template-Daten
+function Export-TemplateUserData {
+    param (
+        [string]$TemplateUser,
+        [string]$CsvPath
+    )
+    $user = Get-ADUser -Identity $TemplateUser -Properties *
+    $userProperties = $user | Select-Object SamAccountName, GivenName, Surname, Name, DisplayName, Description, Office, Department, Title, Company, EmailAddress, StreetAddress, City, State, PostalCode, Country, OfficePhone
+    $userProperties | Export-Csv -Path $CsvPath -NoTypeInformation -Delimiter ";"
+    Write-Log "Vorlagenbenutzerdaten wurden in $CsvPath exportiert."
+    param([string]$TemplateUser)
+    
     try {
-        # Lese CSV-Datei
-        $users = Import-Csv -Path $CsvPath -Delimiter ";" -Encoding UTF8
-
-        foreach ($user in $users) {
-            # Bestimme OU basierend auf CSV oder Standard-OU
-            $ou = if ($user.OU) { $user.OU } else { $DefaultOU }
-
-            if ($PSCmdlet.ShouldProcess($user.Name, "Benutzer aus CSV erstellen")) {
-                $params = @{
-                    SamAccountName = $user.Benutzername
-                    UserPrincipalName = $user.EMail
-                    Name = ($user.Vorname + " " + $user.Nachname)
-                    OU = $ou
-                    Groups = ($user.Gruppen -split ';')
-                    Password = $DefaultPassword
-                }
-
-                # Optional: Füge zusätzliche Attribute hinzu, wenn sie im CSV vorhanden sind
-                if ($user.Vorname) { $params.GivenName = $user.Vorname }
-                if ($user.Nachname) { $params.Surname = $user.Nachname }
-                if ($user.Abteilung) { $params.Department = $user.Abteilung }
-                if ($user.Position) { $params.Title = $user.Position }
-                if ($user.Vorgesetzter) { $params.Manager = $user.Vorgesetzter }
-                if ($user.Büro) { $params.Office = $user.Büro }
-                if ($user.Telefon) { $params.OfficePhone = $user.Telefon }
-                if ($user.Firma) { $params.Company = $user.Firma }
-                if ($user.Beschreibung) { $params.Description = $user.Beschreibung }
-
-                New-CustomADUser @params
-            }
-        }
-    } catch {
-        Write-CustomLog "Fehler beim Import aus CSV: $_" -Level "FEHLER"
+        $user = Get-ADUser -Identity $TemplateUser -Properties *
+        $exportProperties = @(
+            'GivenName','Surname','Department','Title',
+            'City','Country','Company','Office'
+        )
+        
+        $userData = $user | Select-Object $exportProperties
+        $userData | Export-Csv -Path ".\TemplateUser_Export.csv" -NoTypeInformation -Encoding UTF8
+        Write-LogMessage "Template-Daten wurden exportiert nach TemplateUser_Export.csv" -Type Success
+    }
+    catch {
+        Write-LogMessage "Fehler beim Exportieren der Template-Daten: $_" -Type Error
+        exit
     }
 }
 
 # Funktion zum Erstellen eines neuen AD-Benutzers
-function New-CustomADUser {
-    [CmdletBinding(SupportsShouldProcess = $true)]
+function New-ADUserFromTemplate {
+    param (
+# Hauptfunktion zur Benutzerverarbeitung
+function Process-UserCreation {
     param(
-        [Parameter(Mandatory = $true)]
-        [string]$SamAccountName,
-        [Parameter(Mandatory = $true)]
-        [string]$UserPrincipalName,
-        [Parameter(Mandatory = $true)]
-        [string]$Name,
-        [Parameter(Mandatory = $false)]
-        [string]$GivenName,
-        [Parameter(Mandatory = $false)]
-        [string]$Surname,
-        [Parameter(Mandatory = $false)]
-        [string]$Department,
-        [Parameter(Mandatory = $false)]
-        [string]$Title,
-        [Parameter(Mandatory = $false)]
-        [string]$Manager,
-        [Parameter(Mandatory = $false)]
-        [string]$Office,
-        [Parameter(Mandatory = $false)]
-        [string]$OfficePhone,
-        [Parameter(Mandatory = $false)]
-        [string]$Company,
-        [Parameter(Mandatory = $false)]
-        [string]$Description,
-        [Parameter(Mandatory = $true)]
-        [string]$OU,
-        [string[]]$Groups,
-        [SecureString]$Password
-    )
+[hashtable]$UserData,
+        [string]$TemplateUser
+        [string]$TargetOU
+)
+    $template = Get-ADUser -Identity $TemplateUser -Properties *
+    
+$securePassword = ConvertTo-SecureString $UserData.Password -AsPlainText -Force
 
-    Write-Verbose "Erstelle neuen Benutzer: $Name in OU: $OU"
+    
+$newUserParams = @{
+        SamAccountName = $UserData.SamAccountName
+        UserPrincipalName = "$($UserData.SamAccountName)@$((Get-ADDomain).DNSRoot)"
+        Name = $UserData.Name
+        Name = "$($UserData.GivenName) $($UserData.Surname)"
+GivenName = $UserData.GivenName
+Surname = $UserData.Surname
+        DisplayName = $UserData.DisplayName
+        Description = $UserData.Description
+        Office = $UserData.Office
+        Department = $UserData.Department
+        Title = $UserData.Title
+        Company = $UserData.Company
+        EmailAddress = $UserData.EmailAddress
+        StreetAddress = $UserData.StreetAddress
+        City = $UserData.City
+        State = $UserData.State
+        PostalCode = $UserData.PostalCode
+        Country = $UserData.Country
+        OfficePhone = $UserData.OfficePhone
+        SamAccountName = $UserData.SamAccountName
+        UserPrincipalName = "$($UserData.SamAccountName)@$($env:USERDNSDOMAIN)"
+AccountPassword = $securePassword
+Enabled = $true
+        Path = ($template.DistinguishedName -split ',', 2)[1]
+        Instance = $template
+        Path = $TargetOU
+}
 
-    try {
-        if ($PSCmdlet.ShouldProcess($Name, "Benutzer erstellen")) {
-            # Überprüfe, ob die OU existiert
-            if (-not (Get-ADOrganizationalUnit -Filter { DistinguishedName -eq $OU })) {
-                throw "Die angegebene OU existiert nicht: $OU"
-            }
-
-            $userParams = @{
-                Name = $Name
-                SamAccountName = $SamAccountName
-                UserPrincipalName = $UserPrincipalName
-                Path = $OU
-                AccountPassword = $Password
-                Enabled = $true
-                ChangePasswordAtLogon = $false # Keine Passwortänderung erforderlich
-            }
-
-            # Optional: Füge zusätzliche Attribute hinzu, wenn sie angegeben sind
-            if ($GivenName) { $userParams.GivenName = $GivenName }
-            if ($Surname) { $userParams.Surname = $Surname }
-            if ($Department) { $userParams.Department = $Department }
-            if ($Title) { $userParams.Title = $Title }
-            if ($Manager) { $userParams.Manager = $Manager }
-            if ($Office) { $userParams.Office = $Office }
-            if ($OfficePhone) { $userParams.OfficePhone = $OfficePhone }
-            if ($Company) { $userParams.Company = $Company }
-            if ($Description) { $userParams.Description = $Description }
-
-            New-ADUser @userParams
-
-            foreach ($group in $Groups) {
-                Add-ADGroupMember -Identity $group -Members $SamAccountName
-                Write-Verbose "Gruppe '$group' dem Benutzer '$SamAccountName' zugewiesen"
-            }
-
-            Write-CustomLog "Benutzer '$Name' erfolgreich erstellt in OU: $OU" -Level "INFO"
+    
+    # Optionale Parameter hinzufügen wenn vorhanden
+    @('Department','Title','City','Country','Company','Office') | ForEach-Object {
+        if ($UserData.$_) {
+            $newUserParams[$_] = $UserData.$_
         }
-    } catch {
-        Write-CustomLog "Fehler beim Erstellen von Benutzer '$Name': $_" -Level "FEHLER"
     }
-}
-
-# Hauptausführungsblock
+    
 try {
-    Write-CustomLog "Skript-Ausführung gestartet" -Level "INFO"
-
-    # Interaktive Parameterabfrage, falls erforderlich
-    if (-not $CsvPath) {
-        $CsvPath = Read-Host "Bitte CSV-Dateipfad eingeben"
-    }
-
-    if ($CsvPath) {
-        Import-ADUsersFromCSV -CsvPath $CsvPath
-    }
-
-    Write-CustomLog "Skript-Ausführung erfolgreich beendet" -Level "INFO"
-} catch {
-    Write-CustomLog "Unerwarteter Fehler bei der Skript-Ausführung: $_" -Level "FEHLER"
+New-ADUser @newUserParams
+        Write-Log "Benutzer $($UserData.SamAccountName) wurde erfolgreich erstellt."
+        Write-LogMessage "Benutzer $($UserData.SamAccountName) erfolgreich erstellt" -Type Success
 }
+catch {
+        Write-Log "Fehler beim Erstellen des Benutzers $($UserData.SamAccountName): $_"
+        Write-LogMessage "Fehler beim Erstellen von $($UserData.SamAccountName): $_" -Type Error
+}
+}
+
+# Hauptlogik
+if ($ExportTemplateOnly) {
+    Export-TemplateUserData -TemplateUser $TemplateUser -CsvPath $CsvPath
+# Hauptprogramm
+Write-LogMessage "Starte AD-Benutzerverarbeitung" -Type Info
+
+# OU-Validierung
+if (-not $TargetOU) {
+    $TargetOU = Read-Host "Bitte geben Sie die Ziel-OU an (z.B. 'OU=Users,DC=domain,DC=com')"
+}
+else {
+    $users = Import-Csv -Path $CsvPath -Delimiter ";"
+if (-not (Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$TargetOU'")) {
+    Write-LogMessage "Die angegebene OU existiert nicht: $TargetOU" -Type Error
+    exit
+}
+
+# Template-Export wenn gewünscht
+if ($ExportTemplateOnly -and $TemplateUser) {
+    Export-TemplateUserData -TemplateUser $TemplateUser
+    exit
+}
+
+# Verarbeitungsmodus bestimmen
+if ($CsvPath) {
+    # CSV-Modus
+    $users = Import-Csv -Path $CsvPath -Encoding UTF8
+foreach ($user in $users) {
+        if ([string]::IsNullOrEmpty($user.Password)) {
+            Write-Log "Fehler: Passwort für Benutzer $($user.SamAccountName) fehlt. Dieser Benutzer wird übersprungen."
+        if (-not $user.Password) {
+            Write-LogMessage "Kein Passwort für Benutzer $($user.SamAccountName) angegeben" -Type Error
+continue
+}
+        New-ADUserFromTemplate -UserData $user -TemplateUser $TemplateUser
+        Process-UserCreation -UserData $user -TargetOU $TargetOU
+    }
+}
+else {
+    # Interaktiver Modus
+    $userData = @{}
+    $userData.GivenName = Read-Host "Vorname"
+    $userData.Surname = Read-Host "Nachname"
+    $userData.SamAccountName = Read-Host "SAM Account Name"
+    $userData.Password = Read-Host "Passwort"
+    
+    if ($TemplateUser) {
+        $template = Get-ADUser -Identity $TemplateUser -Properties *
+        @('Department','Title','City','Country','Company','Office') | ForEach-Object {
+            $userData[$_] = $template.$_
+        }
+}
+    
+    Process-UserCreation -UserData $userData -TargetOU $TargetOU
+}
+
+Write-Log "Skript-Ausführung abgeschlossen."
+Write-LogMessage "Verarbeitung abgeschlossen" -Type Success
