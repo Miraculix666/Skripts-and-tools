@@ -1,6 +1,6 @@
 # Active Directory User Management Script
 # Author: Enhanced by Bolt
-# Version: 2.2
+# Version: 2.3
 # PowerShell Version: 5.1
 # Description:
 # - Exports existing AD users to CSV based on a template user's OUs
@@ -102,19 +102,23 @@ function Get-TemplateUserOUs {
     
     $user = Get-ValidADUser -Identity $TemplateUser -Operation "OU-Ermittlung"
     if ($user) {
-        $ouPath = ($user.DistinguishedName -split ",", 2)[1]
-        $ous = @()
-        
-        # Get all OUs from the path
         try {
-            $ous = Get-ADOrganizationalUnit -Filter * -SearchBase $ouPath -SearchScope Subtree |
+            $ouPath = ($user.DistinguishedName -split ',', 2)[1]
+            Write-Verbose "Base OU path: $ouPath"
+            
+            # Get all OUs from the path
+            $ous = @()
+            $ous += Get-ADOrganizationalUnit -Filter * -SearchBase $ouPath -SearchScope Subtree |
                    Select-Object -ExpandProperty DistinguishedName
             
             # Add the template user's direct OU
             $ous += $ouPath
             
-            Write-Verbose "Gefundene OUs: $($ous.Count)"
-            return $ous | Sort-Object -Unique
+            $uniqueOUs = $ous | Select-Object -Unique
+            Write-Verbose "Gefundene OUs: $($uniqueOUs.Count)"
+            Write-Verbose ($uniqueOUs -join "`n")
+            
+            return $uniqueOUs
         } catch {
             Write-CustomLog "Fehler beim Abrufen der OUs: $_" -Level "FEHLER"
             return @($ouPath)
@@ -130,11 +134,15 @@ function Compare-GroupMembership {
         [string[]]$UserGroups
     )
     
-    $templateGroupNames = $TemplateGroups | ForEach-Object { ($_ -split ',')[0] }
-    $userGroupNames = $UserGroups | ForEach-Object { ($_ -split ',')[0] }
+    if (-not $TemplateGroups -or -not $UserGroups) {
+        return $false
+    }
+    
+    $templateGroupNames = $TemplateGroups | ForEach-Object { $_.Split(',')[0] }
+    $userGroupNames = $UserGroups | ForEach-Object { $_.Split(',')[0] }
     
     $commonGroups = Compare-Object -ReferenceObject $templateGroupNames -DifferenceObject $userGroupNames -IncludeEqual -ExcludeDifferent
-    return $commonGroups.Count -gt 0
+    return ($commonGroups.Count -gt 0)
 }
 
 # Function to export AD users
@@ -150,18 +158,40 @@ function Export-ADUsers {
     try {
         Write-Verbose "Hole Template-Benutzer Gruppen und OUs"
         $templateGroups = $Template.MemberOf
+        Write-Verbose "Template Gruppen: $($templateGroups.Count)"
+        
         $templateOUs = Get-TemplateUserOUs -TemplateUser $TemplateUser
+        if (-not $templateOUs) {
+            throw "Keine OUs für Template-Benutzer gefunden"
+        }
         
         Write-Verbose "Suche Benutzer in allen relevanten OUs"
         $allUsers = @()
         foreach ($ou in $templateOUs) {
             Write-Verbose "Durchsuche OU: $ou"
-            $usersInOU = Get-ADUser -Filter * -SearchBase $ou -SearchScope OneLevel -Properties SamAccountName, UserPrincipalName, Name, GivenName, Surname, Department, Title, Manager, Office, OfficePhone, EmailAddress, Company, Description, MemberOf |
-                        Where-Object { Compare-GroupMembership -TemplateGroups $templateGroups -UserGroups $_.MemberOf }
-            $allUsers += $usersInOU
+            try {
+                $usersInOU = Get-ADUser -Filter * -SearchBase $ou -SearchScope OneLevel `
+                            -Properties SamAccountName, UserPrincipalName, Name, GivenName, Surname, `
+                                      Department, Title, Manager, Office, OfficePhone, EmailAddress, `
+                                      Company, Description, MemberOf, DistinguishedName
+                
+                foreach ($user in $usersInOU) {
+                    if (Compare-GroupMembership -TemplateGroups $templateGroups -UserGroups $user.MemberOf) {
+                        $allUsers += $user
+                    }
+                }
+            } catch {
+                Write-CustomLog "Fehler beim Durchsuchen von OU '$ou': $_" -Level "WARNUNG"
+                continue
+            }
         }
         
         Write-Verbose "Gefundene Benutzer: $($allUsers.Count)"
+        
+        if ($allUsers.Count -eq 0) {
+            Write-CustomLog "Keine Benutzer mit übereinstimmenden Gruppen gefunden" -Level "WARNUNG"
+            return
+        }
         
         $exportData = $allUsers | Select-Object @{
             Name='Benutzername'; Expression={$_.SamAccountName}
@@ -176,7 +206,15 @@ function Export-ADUsers {
         }, @{
             Name='Position'; Expression={$_.Title}
         }, @{
-            Name='Vorgesetzter'; Expression={$_.Manager}
+            Name='Vorgesetzter'; Expression={
+                if ($_.Manager) {
+                    try {
+                        (Get-ADUser $_.Manager).SamAccountName
+                    } catch {
+                        $_.Manager
+                    }
+                } else { "" }
+            }
         }, @{
             Name='Büro'; Expression={$_.Office}
         }, @{
