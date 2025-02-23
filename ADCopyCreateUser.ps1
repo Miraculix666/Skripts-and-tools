@@ -15,6 +15,18 @@ param (
 
 Import-Module ActiveDirectory
 
+# Funktion zur interaktiven Abfrage fehlender Parameter
+function Get-ParameterIfMissing {
+    param (
+        [string]$ParameterName,
+        [string]$PromptMessage
+    )
+    if (-not (Get-Variable -Name $ParameterName -ValueOnly -ErrorAction SilentlyContinue)) {
+        return Read-Host -Prompt $PromptMessage
+    }
+    return (Get-Variable -Name $ParameterName -ValueOnly)
+}
+
 # Logging-Funktion
 function Write-Log {
     param (
@@ -28,6 +40,7 @@ function Write-Log {
 
 # Funktion zum Exportieren von AD-Benutzern basierend auf einem Template-User
 function Export-ADUsers {
+    $TemplateUser = Get-ParameterIfMissing -ParameterName "TemplateUser" -PromptMessage "Geben Sie den Template-Benutzer an"
     Write-Log "Starte Benutzerexport basierend auf Template: $TemplateUser"
     try {
         $Template = Get-ADUser -Identity $TemplateUser -Properties MemberOf
@@ -75,6 +88,7 @@ function Create-ADUser {
 
 # Funktion zur Erstellung mehrerer Benutzer aus CSV
 function Create-ADUsersFromCSV {
+    $CsvPath = Get-ParameterIfMissing -ParameterName "CsvPath" -PromptMessage "Geben Sie den Pfad zur CSV-Datei an"
     Write-Log "Erstelle Benutzer aus CSV: $CsvPath"
     if (-Not (Test-Path $CsvPath)) {
         Write-Log "Fehler: Datei $CsvPath nicht gefunden!" -Level "ERROR"
@@ -93,6 +107,16 @@ function Create-ADUsersFromCSV {
 }
 
 # Hauptprogramm
+if (-not $TemplateUser) {
+    $TemplateUser = Get-ParameterIfMissing -ParameterName "TemplateUser" -PromptMessage "Geben Sie den Template-Benutzer an"
+}
+if (-not $ExportPath) {
+    $ExportPath = Get-ParameterIfMissing -ParameterName "ExportPath" -PromptMessage "Geben Sie den Exportpfad an"
+}
+if (-not $CsvPath) {
+    $CsvPath = Get-ParameterIfMissing -ParameterName "CsvPath" -PromptMessage "Geben Sie den Pfad zur CSV-Datei an"
+}
+
 if ($TemplateUser) {
     Export-ADUsers
 }
