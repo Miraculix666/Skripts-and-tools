@@ -18,6 +18,23 @@ Set-WinSystemLocale -SystemLocale "de-DE"
 # Set console output encoding to UTF-8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+
+###General German localisation
+
+# Set system locale to German
+Set-WinSystemLocale -SystemLocale "de-DE"
+
+# Set input method and keyboard layout to German
+Set-WinUILanguageOverride -Language "de-DE"
+Set-WinUserLanguageList -LanguageList "de-DE" -Force
+
+# Set region format to Germany
+Set-Culture -CultureInfo "de-DE"
+
+# Optionally, set time zone to Central European Time
+Set-TimeZone -Id "W. Europe Standard Time"
+
+
 # Optional: Change system default encoding (requires admin privileges and a restart)
 New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Nls\CodePage" -Name "OEMCP" -Value "65001" -Force
 
