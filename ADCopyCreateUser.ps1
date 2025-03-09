@@ -1,3 +1,13 @@
+# https://petri.com/create-new-active-directory-users-excel-powershell/
+# https://learn.microsoft.com/en-us/answers/questions/1035531/creating-new-ad-users-in-powershell-from-existing?childtoview=1046290&page=1
+# https://blog.netwrix.com/bulk-user-creation-in-active-directory/
+# https://petri.com/how-to-copy-active-directory-groups-from-one-user-to-another-with-powershell/
+# https://support.microsoft.com/en-us/windows/manage-user-accounts-in-windows-104dc19f-6430-4b49-6a2b-e4dbd1dcdf32
+# https://activedirectorypro.com/copy-group-membership-from-one-user-to-another-in-ad/
+# https://stackoverflow.com/questions/25754596/copy-group-membership-from-one-user-to-another-in-ad
+# https://community.spiceworks.com/t/how-to-copy-group-membership-from-one-user-to-another/1014279
+# https://woshub.com/copy-ad-group-membership-another-user-powershell/
+
 # Active Directory User Management Script
 # Author: Enhanced by Bolt
 # Version: 2.3
