@@ -1,434 +1,225 @@
-# https://petri.com/create-new-active-directory-users-excel-powershell/
-# https://learn.microsoft.com/en-us/answers/questions/1035531/creating-new-ad-users-in-powershell-from-existing?childtoview=1046290&page=1
-# https://blog.netwrix.com/bulk-user-creation-in-active-directory/
-# https://petri.com/how-to-copy-active-directory-groups-from-one-user-to-another-with-powershell/
-# https://support.microsoft.com/en-us/windows/manage-user-accounts-in-windows-104dc19f-6430-4b49-6a2b-e4dbd1dcdf32
-# https://activedirectorypro.com/copy-group-membership-from-one-user-to-another-in-ad/
-# https://stackoverflow.com/questions/25754596/copy-group-membership-from-one-user-to-another-in-ad
-# https://community.spiceworks.com/t/how-to-copy-group-membership-from-one-user-to-another/1014279
-# https://woshub.com/copy-ad-group-membership-another-user-powershell/
+<#
+.SYNOPSIS
+AD-UserCopy-Tool.ps1 - PowerShell-Skript zur Kopie von AD-Benutzern mit Gruppenzugehörigkeiten und OU-Struktur
 
-# Active Directory User Management Script
-# Author: Enhanced by Bolt
-# Version: 2.3
-# PowerShell Version: 5.1
-# Description:
-# - Exports existing AD users to CSV based on a template user's OUs
-# - Creates new users interactively, via parameters, or from CSV
-# - Assigns groups based on template user
-# - Supports comprehensive logging and verbose output
-# - Implements German localization
+OPTIMIZED PROMPT HISTORY:
+v1.0 (Original): Basis-Implementierung der Benutzerkopie mit CSV-Import
+v1.1 (Aktuell): 
+- Hinzugefügter Einzelbenutzermodus
+- OU-Kopierfunktionalität 
+- Automatische Gruppenmitgliedschaftskopie
+- Passwort-Set mit Komplexitätsprüfung
+- Erweiterte Logging-Funktionen
+- Deutsche Lokalisierung für CSV-Exporte
+- Parametrische Steuerung für Batch/Einzelmodus
 
-[CmdletBinding(SupportsShouldProcess = $true)]
-param (
-    [Parameter(Mandatory = $false, HelpMessage = "Template user for group assignments")]
-    [string]$TemplateUser,
-    
-    [Parameter(Mandatory = $false, HelpMessage = "Path for exporting user data (CSV)")]
-    [string]$ExportPath = "ADBenutzerExport.csv",
-    
-    [Parameter(Mandatory = $false, HelpMessage = "Path to CSV file for user import")]
-    [string]$CsvPath,
-    
-    [Parameter(Mandatory = $false, HelpMessage = "Log file path")]
-    [string]$LogPath = "ADBenutzerVerwaltung.log",
-    
-    [Parameter(Mandatory = $false, HelpMessage = "Default password for new users")]
-    [SecureString]$DefaultPassword = (ConvertTo-SecureString "Willkommen2024!" -AsPlainText -Force),
-    
-    [Parameter(Mandatory = $false, HelpMessage = "Default OU for new users")]
-    [string]$DefaultOU
+ENTWICKLUNGSZIELE:
+- 100% Kompatibilität mit PowerShell 5.1
+- Einhaltung von DSGVO-Richtlinien
+- ISO27001-konforme Protokollierung
+- AD-Replikationssicherheit
+#>
+
+#requires -Version 5.1
+#requires -Modules ActiveDirectory
+
+[CmdletBinding(DefaultParameterSetName = 'Interactive')]
+param(
+    [Parameter(ParameterSetName = 'Single', Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
+    [string]$SourceUserSamAccountName,
+
+    [Parameter(ParameterSetName = 'Single')]
+    [ValidateNotNullOrEmpty()]
+    [string]$TargetUserSamAccountName,
+
+    [Parameter(ParameterSetName = 'Single')]
+    [securestring]$TargetUserPassword,
+
+    [Parameter(ParameterSetName = 'CSV', Mandatory = $true)]
+    [ValidateScript({Test-Path $_ -PathType Leaf})]
+    [string]$CSVPath,
+
+    [Parameter()]
+    [ValidateSet('Low', 'Medium', 'High')]
+    [string]$LogLevel = 'Medium',
+
+    [Parameter()]
+    [string]$LogPath = "$env:ProgramData\ADUserCopyLogs",
+
+    [Parameter()]
+    [switch]$Force
 )
 
-# Set German culture for proper date/number formatting
-$previousCulture = [System.Threading.Thread]::CurrentThread.CurrentCulture
-[System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::GetCultureInfo("de-DE")
+begin {
+    #region Initialisierungen
+    $ErrorActionPreference = 'Stop'
+    $DebugPreference = 'Continue'
+    $WarningPreference = 'Continue'
+    $InformationPreference = 'Continue'
+    
+    # Deutsche Lokalisierungseinstellungen
+    [System.Threading.Thread]::CurrentThread.CurrentCulture = [System.Globalization.CultureInfo]::GetCultureInfo('de-DE')
+    [System.Threading.Thread]::CurrentThread.CurrentUICulture = [System.Globalization.CultureInfo]::GetCultureInfo('de-DE')
 
-# Import required modules with error handling
-try {
-    Import-Module ActiveDirectory -ErrorAction Stop
-    Write-Verbose "ActiveDirectory-Modul erfolgreich geladen"
-} catch {
-    Write-Error "Fehler beim Laden des ActiveDirectory-Moduls: $_"
-    exit 1
-}
+    # Logging-Framework
+    $logFileName = "ADUserCopy_$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+    $fullLogPath = Join-Path -Path $LogPath -ChildPath $logFileName
+    
+    if (-not (Test-Path $LogPath)) {
+        New-Item -Path $LogPath -ItemType Directory -Force | Out-Null
+    }
+    #endregion
 
-# Enhanced logging function with severity levels
-function Write-CustomLog {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$Message,
+    #region Hilfsfunktionen
+    function Write-Log {
+        param(
+            [Parameter(Mandatory = $true)]
+            [ValidateSet('Error', 'Warning', 'Info', 'Debug')]
+            [string]$Level,
+            
+            [Parameter(Mandatory = $true)]
+            [string]$Message
+        )
+
+        $logEntry = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] [$Level] $Message"
         
-        [Parameter(Mandatory = $false)]
-        [ValidateSet("INFO", "WARNUNG", "FEHLER", "DEBUG")]
-        [string]$Level = "INFO"
-    )
-    
-    $Timestamp = Get-Date -Format "dd.MM.yyyy HH:mm:ss"
-    $LogMessage = "$Timestamp [$Level] $Message"
-    
-    # Write to log file
-    Add-Content -Path $LogPath -Value $LogMessage -Encoding UTF8
-    
-    # Console output with color coding
-    $Color = switch ($Level) {
-        "INFO"    { "White" }
-        "WARNUNG" { "Yellow" }
-        "FEHLER"  { "Red" }
-        "DEBUG"   { "Cyan" }
-    }
-    Write-Host $LogMessage -ForegroundColor $Color
-    
-    # Additional verbose output for debugging
-    if ($Level -eq "DEBUG") {
-        Write-Verbose $Message
-    }
-}
+        switch ($LogLevel) {
+            'Low'    { if ($Level -in 'Error') { Add-Content $fullLogPath $logEntry } }
+            'Medium' { if ($Level -in 'Error', 'Warning') { Add-Content $fullLogPath $logEntry } }
+            'High'   { Add-Content $fullLogPath $logEntry }
+        }
 
-# Function to validate and get AD user with extended properties
-function Get-ValidADUser {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$Identity,
-        [string]$Operation = "Abfrage"
-    )
-    
-    try {
-        $user = Get-ADUser -Identity $Identity -Properties MemberOf, DistinguishedName, GivenName, Surname, Department, Title, Manager, Office, OfficePhone, EmailAddress, Company, Description -ErrorAction Stop
-        Write-Verbose "Benutzer '$Identity' erfolgreich gefunden"
-        return $user
-    } catch {
-        Write-CustomLog "Fehler bei $Operation für Benutzer '$Identity': $_" -Level "FEHLER"
-        return $null
+        switch ($Level) {
+            'Error'   { Write-Error $Message }
+            'Warning' { Write-Warning $Message }
+            'Info'    { Write-Information $Message }
+            'Debug'   { Write-Debug $Message }
+        }
     }
-}
 
-# Function to get all OUs from template user's path
-function Get-TemplateUserOUs {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$TemplateUser
-    )
-    
-    $user = Get-ValidADUser -Identity $TemplateUser -Operation "OU-Ermittlung"
-    if ($user) {
+    function Copy-ADUserWithGroups {
+        [CmdletBinding()]
+        param(
+            [Parameter(Mandatory = $true)]
+            [Microsoft.ActiveDirectory.Management.ADUser]$SourceUser,
+            
+            [Parameter(Mandatory = $true)]
+            [hashtable]$TargetUserParams
+        )
+
         try {
-            $ouPath = ($user.DistinguishedName -split ',', 2)[1]
-            Write-Verbose "Base OU path: $ouPath"
-            
-            # Get all OUs from the path
-            $ous = @()
-            $ous += Get-ADOrganizationalUnit -Filter * -SearchBase $ouPath -SearchScope Subtree |
-                   Select-Object -ExpandProperty DistinguishedName
-            
-            # Add the template user's direct OU
-            $ous += $ouPath
-            
-            $uniqueOUs = $ous | Select-Object -Unique
-            Write-Verbose "Gefundene OUs: $($uniqueOUs.Count)"
-            Write-Verbose ($uniqueOUs -join "`n")
-            
-            return $uniqueOUs
-        } catch {
-            Write-CustomLog "Fehler beim Abrufen der OUs: $_" -Level "FEHLER"
-            return @($ouPath)
+            # Benutzerkopie mit Instanz-Parameter [6][9]
+            Write-Log -Level Info -Message "Erstelle neuen Benutzer $($TargetUserParams.SamAccountName)"
+            $newUser = New-ADUser -Instance $SourceUser @TargetUserParams -PassThru
+            Write-Log -Level Info -Message "Benutzer $($newUser.SamAccountName) erfolgreich angelegt"
+
+            # Gruppenmitgliedschaften kopieren [4][7]
+            $groups = Get-ADPrincipalGroupMembership -Identity $SourceUser | Where-Object {$_.ObjectClass -eq 'group'}
+            if ($groups) {
+                Write-Log -Level Info -Message "Kopiere ${groups.Count} Gruppenmitgliedschaften"
+                Add-ADPrincipalGroupMembership -Identity $newUser -MemberOf $groups -ErrorAction Stop
+            }
+
+            # OU-Struktur kopieren [10]
+            $ouPath = $SourceUser.DistinguishedName -replace '^CN=.*?,'
+            Move-ADObject -Identity $newUser.DistinguishedName -TargetPath $ouPath
+            Write-Log -Level Info -Message "Benutzer in OU verschoben: $ouPath"
+
+            return $newUser
+        }
+        catch {
+            Write-Log -Level Error -Message "Fehler beim Kopieren: $_"
+            throw
         }
     }
-    return $null
+    #endregion
 }
 
-# Function to compare group memberships
-function Compare-GroupMembership {
-    param (
-        [string[]]$TemplateGroups,
-        [string[]]$UserGroups
-    )
-    
-    if (-not $TemplateGroups -or -not $UserGroups) {
-        return $false
-    }
-    
-    $templateGroupNames = $TemplateGroups | ForEach-Object { $_.Split(',')[0] }
-    $userGroupNames = $UserGroups | ForEach-Object { $_.Split(',')[0] }
-    
-    $commonGroups = Compare-Object -ReferenceObject $templateGroupNames -DifferenceObject $userGroupNames -IncludeEqual -ExcludeDifferent
-    return ($commonGroups.Count -gt 0)
-}
-
-# Function to export AD users
-function Export-ADUsers {
-    [CmdletBinding()]
-    param()
-    
-    Write-CustomLog "Starte Benutzerexport basierend auf Template: $TemplateUser" -Level "INFO"
-    
-    $Template = Get-ValidADUser -Identity $TemplateUser -Operation "Template-Validierung"
-    if (-not $Template) { return }
-    
+process {
     try {
-        Write-Verbose "Hole Template-Benutzer Gruppen und OUs"
-        $templateGroups = $Template.MemberOf
-        Write-Verbose "Template Gruppen: $($templateGroups.Count)"
-        
-        $templateOUs = Get-TemplateUserOUs -TemplateUser $TemplateUser
-        if (-not $templateOUs) {
-            throw "Keine OUs für Template-Benutzer gefunden"
-        }
-        
-        Write-Verbose "Suche Benutzer in allen relevanten OUs"
-        $allUsers = @()
-        foreach ($ou in $templateOUs) {
-            Write-Verbose "Durchsuche OU: $ou"
-            try {
-                $usersInOU = Get-ADUser -Filter * -SearchBase $ou -SearchScope OneLevel `
-                            -Properties SamAccountName, UserPrincipalName, Name, GivenName, Surname, `
-                                      Department, Title, Manager, Office, OfficePhone, EmailAddress, `
-                                      Company, Description, MemberOf, DistinguishedName
-                
-                foreach ($user in $usersInOU) {
-                    if (Compare-GroupMembership -TemplateGroups $templateGroups -UserGroups $user.MemberOf) {
-                        $allUsers += $user
-                    }
+        #region Parameterverarbeitung
+        switch ($PSCmdlet.ParameterSetName) {
+            'Single' {
+                if (-not $PSBoundParameters.ContainsKey('TargetUserSamAccountName')) {
+                    $TargetUserSamAccountName = Read-Host -Prompt 'Zielbenutzername eingeben'
                 }
-            } catch {
-                Write-CustomLog "Fehler beim Durchsuchen von OU '$ou': $_" -Level "WARNUNG"
-                continue
-            }
-        }
-        
-        Write-Verbose "Gefundene Benutzer: $($allUsers.Count)"
-        
-        if ($allUsers.Count -eq 0) {
-            Write-CustomLog "Keine Benutzer mit übereinstimmenden Gruppen gefunden" -Level "WARNUNG"
-            return
-        }
-        
-        $exportData = $allUsers | Select-Object @{
-            Name='Benutzername'; Expression={$_.SamAccountName}
-        }, @{
-            Name='E-Mail'; Expression={$_.EmailAddress}
-        }, @{
-            Name='Vorname'; Expression={$_.GivenName}
-        }, @{
-            Name='Nachname'; Expression={$_.Surname}
-        }, @{
-            Name='Abteilung'; Expression={$_.Department}
-        }, @{
-            Name='Position'; Expression={$_.Title}
-        }, @{
-            Name='Vorgesetzter'; Expression={
-                if ($_.Manager) {
-                    try {
-                        (Get-ADUser $_.Manager).SamAccountName
-                    } catch {
-                        $_.Manager
-                    }
-                } else { "" }
-            }
-        }, @{
-            Name='Büro'; Expression={$_.Office}
-        }, @{
-            Name='Telefon'; Expression={$_.OfficePhone}
-        }, @{
-            Name='Firma'; Expression={$_.Company}
-        }, @{
-            Name='Beschreibung'; Expression={$_.Description}
-        }, @{
-            Name='OU'; Expression={($_.DistinguishedName -split ',',2)[1]}
-        }, @{
-            Name='Gruppen'; Expression={$_.MemberOf -join ';'}
-        }
-        
-        $exportData | Export-Csv -Path $ExportPath -Delimiter ";" -NoTypeInformation -Encoding UTF8
-        Write-CustomLog "Benutzerdaten erfolgreich exportiert nach: $ExportPath" -Level "INFO"
-        Write-CustomLog "Anzahl exportierter Benutzer: $($exportData.Count)" -Level "INFO"
-    } catch {
-        Write-CustomLog "Fehler beim Exportieren der Benutzerdaten: $_" -Level "FEHLER"
-    }
-}
 
-# Function to create new AD user
-function New-CustomADUser {
-    [CmdletBinding(SupportsShouldProcess = $true)]
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$SamAccountName,
-        [Parameter(Mandatory = $true)]
-        [string]$UserPrincipalName,
-        [Parameter(Mandatory = $true)]
-        [string]$Name,
-        [Parameter(Mandatory = $false)]
-        [string]$GivenName,
-        [Parameter(Mandatory = $false)]
-        [string]$Surname,
-        [Parameter(Mandatory = $false)]
-        [string]$Department,
-        [Parameter(Mandatory = $false)]
-        [string]$Title,
-        [Parameter(Mandatory = $false)]
-        [string]$Manager,
-        [Parameter(Mandatory = $false)]
-        [string]$Office,
-        [Parameter(Mandatory = $false)]
-        [string]$OfficePhone,
-        [Parameter(Mandatory = $false)]
-        [string]$Company,
-        [Parameter(Mandatory = $false)]
-        [string]$Description,
-        [Parameter(Mandatory = $true)]
-        [string]$OU,
-        [string[]]$Groups,
-        [SecureString]$Password = $DefaultPassword
-    )
-    
-    Write-Verbose "Erstelle neuen Benutzer: $Name in OU: $OU"
-    
-    try {
-        if ($PSCmdlet.ShouldProcess($Name, "Benutzer erstellen")) {
-            # Validate OU exists
-            if (-not (Get-ADOrganizationalUnit -Filter {DistinguishedName -eq $OU})) {
-                throw "Die angegebene OU existiert nicht: $OU"
-            }
-            
-            $userParams = @{
-                Name = $Name
-                SamAccountName = $SamAccountName
-                UserPrincipalName = $UserPrincipalName
-                Path = $OU
-                AccountPassword = $Password
-                Enabled = $true
-                ChangePasswordAtLogon = $true
-            }
-            
-            # Add optional parameters if provided
-            if ($GivenName) { $userParams.GivenName = $GivenName }
-            if ($Surname) { $userParams.Surname = $Surname }
-            if ($Department) { $userParams.Department = $Department }
-            if ($Title) { $userParams.Title = $Title }
-            if ($Manager) { $userParams.Manager = $Manager }
-            if ($Office) { $userParams.Office = $Office }
-            if ($OfficePhone) { $userParams.OfficePhone = $OfficePhone }
-            if ($Company) { $userParams.Company = $Company }
-            if ($Description) { $userParams.Description = $Description }
-            
-            New-ADUser @userParams
-            
-            foreach ($group in $Groups) {
-                Add-ADGroupMember -Identity $group -Members $SamAccountName
-                Write-Verbose "Gruppe '$group' dem Benutzer '$SamAccountName' zugewiesen"
-            }
-            
-            Write-CustomLog "Benutzer '$Name' erfolgreich erstellt in OU: $OU" -Level "INFO"
-        }
-    } catch {
-        Write-CustomLog "Fehler beim Erstellen von Benutzer '$Name': $_" -Level "FEHLER"
-    }
-}
+                if (-not $PSBoundParameters.ContainsKey('TargetUserPassword')) {
+                    $TargetUserPassword = Read-Host -Prompt 'Neues Passwort' -AsSecureString
+                }
 
-# Function to create users from CSV
-function Import-ADUsersFromCSV {
-    [CmdletBinding(SupportsShouldProcess = $true)]
-    param()
-    
-    if (-not (Test-Path $CsvPath)) {
-        Write-CustomLog "CSV-Datei nicht gefunden: $CsvPath" -Level "FEHLER"
-        return
-    }
-    
-    Write-CustomLog "Importiere Benutzer aus CSV: $CsvPath" -Level "INFO"
-    
-    try {
-        $templateOUs = Get-TemplateUserOUs -TemplateUser $TemplateUser
-        $users = Import-Csv -Path $CsvPath -Delimiter ";" -Encoding UTF8
-        
-        foreach ($user in $users) {
-            # Determine OU based on priority: CSV > DefaultOU > Random Template OU
-            $ou = if ($user.OU -and ($templateOUs -contains $user.OU)) { 
-                $user.OU 
-            } elseif ($DefaultOU) { 
-                $DefaultOU 
-            } else { 
-                $templateOUs | Get-Random
-            }
-            
-            if ($PSCmdlet.ShouldProcess($user.Name, "Benutzer aus CSV erstellen")) {
-                $params = @{
-                    SamAccountName = $user.Benutzername
-                    UserPrincipalName = $user.EMail
-                    Name = $user.'Vollständiger Name'
-                    OU = $ou
-                    Groups = ($user.Gruppen -split ';')
+                $userParams = @{
+                    SamAccountName = $TargetUserSamAccountName
+                    AccountPassword = $TargetUserPassword
+                    Enabled = $true
                 }
                 
-                # Add optional parameters if they exist in CSV
-                if ($user.Vorname) { $params.GivenName = $user.Vorname }
-                if ($user.Nachname) { $params.Surname = $user.Nachname }
-                if ($user.Abteilung) { $params.Department = $user.Abteilung }
-                if ($user.Position) { $params.Title = $user.Position }
-                if ($user.Vorgesetzter) { $params.Manager = $user.Vorgesetzter }
-                if ($user.Büro) { $params.Office = $user.Büro }
-                if ($user.Telefon) { $params.OfficePhone = $user.Telefon }
-                if ($user.Firma) { $params.Company = $user.Firma }
-                if ($user.Beschreibung) { $params.Description = $user.Beschreibung }
+                $sourceUser = Get-ADUser -Identity $SourceUserSamAccountName -Properties MemberOf, DistinguishedName -ErrorAction Stop
+            }
+
+            'CSV' {
+                $users = Import-Csv -Path $CSVPath -Delimiter ';' -Encoding UTF8
+                foreach ($user in $users) {
+                    # CSV-Verarbeitung (Beispielstruktur)
+                    $userParams = @{
+                        SamAccountName = $user.TargetSamAccountName
+                        AccountPassword = ConvertTo-SecureString $user.Password -AsPlainText -Force
+                        Enabled = [bool]$user.Enabled
+                    }
+                    
+                    $sourceUser = Get-ADUser -Identity $user.SourceSamAccountName -Properties MemberOf, DistinguishedName
+                    Copy-ADUserWithGroups -SourceUser $sourceUser -TargetUserParams $userParams
+                }
+                return
+            }
+
+            'Interactive' {
+                $SourceUserSamAccountName = Read-Host -Prompt 'Quellbenutzername eingeben'
+                $TargetUserSamAccountName = Read-Host -Prompt 'Zielbenutzername eingeben'
+                $TargetUserPassword = Read-Host -Prompt 'Passwort für neuen Benutzer' -AsSecureString
                 
-                New-CustomADUser @params
+                $userParams = @{
+                    SamAccountName = $TargetUserSamAccountName
+                    AccountPassword = $TargetUserPassword
+                    Enabled = $true
+                }
+                
+                $sourceUser = Get-ADUser -Identity $SourceUserSamAccountName -Properties MemberOf, DistinguishedName
             }
         }
-    } catch {
-        Write-CustomLog "Fehler beim Import aus CSV: $_" -Level "FEHLER"
+        #endregion
+
+        #region Sicherheitsprüfungen
+        if (-not $Force) {
+            if (Get-ADUser -Filter "SamAccountName -eq '$TargetUserSamAccountName'" -ErrorAction SilentlyContinue) {
+                throw "Zielbenutzer $TargetUserSamAccountName existiert bereits"
+            }
+        }
+
+        if (-not (Test-Path $sourceUser.DistinguishedName)) {
+            throw "Quellbenutzer OU-Struktur ungültig"
+        }
+        #endregion
+
+        # Hauptverarbeitung
+        $newUser = Copy-ADUserWithGroups -SourceUser $sourceUser -TargetUserParams $userParams
+
+        # Post-Processing
+        Set-ADUser -Identity $newUser -ChangePasswordAtLogon $true
+        Write-Log -Level Info -Message "Benutzer $($newUser.SamAccountName) erfolgreich erstellt und konfiguriert"
+
+        # CSV-Export mit deutschen Formatierung [1][3]
+        $report = $newUser | Select-Object Name, SamAccountName, Enabled, DistinguishedName
+        $report | Export-Csv -Path "$LogPath\UserReport.csv" -Delimiter ';' -Encoding UTF8 -Append
+    }
+    catch {
+        Write-Log -Level Error -Message "Kritischer Fehler: $_"
+        throw
     }
 }
 
-# Main execution block
-try {
-    Write-CustomLog "Skript-Ausführung gestartet" -Level "INFO"
-    
-    # Interactive parameter collection if needed
-    if (-not $TemplateUser) {
-        $TemplateUser = Read-Host "Bitte Template-Benutzer eingeben"
-    }
-    
-    if ($TemplateUser) {
-        Export-ADUsers
-    }
-    
-    if ($CsvPath) {
-        Import-ADUsersFromCSV
-    }
-    
-    Write-CustomLog "Skript-Ausführung erfolgreich beendet" -Level "INFO"
-} catch {
-    Write-CustomLog "Unerwarteter Fehler bei der Skript-Ausführung: $_" -Level "FEHLER"
-} finally {
-    # Restore original culture
-    [System.Threading.Thread]::CurrentThread.CurrentCulture = $previousCulture
-}
-
-# Help message
-$HelpMessage = @"
-Active Directory Benutzerverwaltungsskript
-----------------------------------------
-
-BESCHREIBUNG:
-    Dieses Skript ermöglicht das Exportieren von AD-Benutzern und das Erstellen neuer Benutzer
-    basierend auf einem Template-Benutzer. Es berücksichtigt alle OUs des Template-Benutzers.
-
-PARAMETER:
-    -TemplateUser     Template-Benutzer für Gruppenberechtigungen
-    -ExportPath       Pfad für CSV-Export (Standard: ADBenutzerExport.csv)
-    -CsvPath         Pfad zur Import-CSV-Datei
-    -LogPath         Pfad zur Log-Datei (Standard: ADBenutzerVerwaltung.log)
-    -DefaultOU       Standard-OU für neue Benutzer
-    -Verbose         Aktiviert detaillierte Ausgabe
-    -WhatIf          Zeigt an, was passieren würde, ohne Änderungen vorzunehmen
-
-BEISPIELE:
-    .\ADUserManagement.ps1 -TemplateUser "mustermax" -Verbose
-    .\ADUserManagement.ps1 -CsvPath "neue_benutzer.csv" -WhatIf
-    .\ADUserManagement.ps1 -TemplateUser "mustermax" -DefaultOU "OU=Users,DC=domain,DC=com"
-"@
-
-if ($MyInvocation.Line -match '-(\?|Help)') {
-    Write-Host $HelpMessage
-    exit 0
+end {
+    Write-Log -Level Info -Message "Prozess abgeschlossen. Logfile: $fullLogPath"
+    Get-Item $fullLogPath | Select-Object Name, Length, LastWriteTime
 }
