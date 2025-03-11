@@ -223,3 +223,5 @@ end {
     Write-Log -Level Info -Message "Prozess abgeschlossen. Logfile: $fullLogPath"
     Get-Item $fullLogPath | Select-Object Name, Length, LastWriteTime
 }
+
+
