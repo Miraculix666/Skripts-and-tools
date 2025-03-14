@@ -5,7 +5,8 @@ param (
     [string]$OU,
     [string]$Password,
     [switch]$SkipConfirmation = $false,
-    [switch]$VerboseOutput = $true
+    [switch]$VerboseOutput = $true,
+    [switch]$Silent = $false
 )
 
 # Load necessary modules
@@ -27,9 +28,15 @@ function ResetPasswordAndEnableAccount {
         Enable-ADAccount -Identity $Identity -ErrorAction Stop
         Set-ADAccountControl -Identity $Identity -CannotChangePassword $true -ErrorAction Stop
         
-        Write-Host "Password reset and account enabled for $Identity" -ForegroundColor Green
+        if (!$Silent) {
+            Write-Host "Password reset and account enabled for $Identity" -ForegroundColor Green
+        }
+        Write-Verbose "Password reset and account enabled for $Identity"
     } catch {
-        Write-Host "Failed to reset password and enable account for $Identity" -ForegroundColor Red
+        if (!$Silent) {
+            Write-Host "Failed to reset password and enable account for $Identity" -ForegroundColor Red
+        }
+        Write-Verbose "Failed to reset password and enable account for $Identity"
     }
 }
 
@@ -44,13 +51,18 @@ if (!$UserName -and !$Wildcard -and !$OU) {
     $Password = Read-Host "Enter new password"
 }
 
+# Determine domain name automatically
+$domainName = (Get-CimInstance Win32_ComputerSystem).Domain
+Write-Verbose "Detected domain name: $domainName"
+
 # Find users based on input
 $users = @()
 if ($UserName) {
     $users += Get-ADUser -Identity $UserName
 } elseif ($Wildcard) {
     # Use the wildcard in the filter
-    $users += Get-ADUser -Filter {Name -like $Wildcard}
+    $allUsers = Get-ADUser -Filter * -Properties Name
+    $users = $allUsers | Where-Object {$_.Name -like $Wildcard}
 } elseif ($OU) {
     # Get all users in the specified OU
     $users += Get-ADUser -Filter * -SearchBase $OU
@@ -67,10 +79,33 @@ if (!$SkipConfirmation) {
     }
 }
 
-# Save users to file
-$users | Select-Object Name, SamAccountName, DistinguishedName | Export-Csv -Path "C:\Daten\AffectedUsers.csv" -NoTypeInformation
+# Save users to file with German locale settings
+$users | Select-Object Name, SamAccountName, DistinguishedName | Export-Csv -Path "C:\Daten\AffectedUsers.csv" -NoTypeInformation -Delimiter ";"
 
 # Process each user
 foreach ($user in $users) {
     ResetPasswordAndEnableAccount -Identity $user.SamAccountName -NewPassword $Password
+}
+
+# Logging
+Start-Transcript -Path "C:\Daten\ScriptLog.log"
+Write-Host "Script execution completed."
+Stop-Transcript
+
+# Help function
+function Get-Help {
+    Write-Host "Usage: .\Script.ps1 [-UserName <string>] [-Wildcard <string>] [-OU <string>] [-Password <string>] [-SkipConfirmation] [-VerboseOutput] [-Silent]"
+    Write-Host "Parameters:"
+    Write-Host "  -UserName      : Specify a user name"
+    Write-Host "  -Wildcard      : Specify a wildcard for user names"
+    Write-Host "  -OU            : Specify an Organizational Unit"
+    Write-Host "  -Password      : Specify a new password"
+    Write-Host "  -SkipConfirmation : Skip user confirmation"
+    Write-Host "  -VerboseOutput : Enable verbose output (default)"
+    Write-Host "  -Silent        : Suppress console output"
+}
+
+# Call help function if no parameters are provided
+if (!$UserName -and !$Wildcard -and !$OU -and !$Password) {
+    Get-Help
 }
