@@ -45,12 +45,15 @@ if (!$UserName -and !$Wildcard -and !$OU) {
 }
 
 # Find users based on input
+$users = @()
 if ($UserName) {
-    $users = Get-ADUser -Identity $UserName
+    $users += Get-ADUser -Identity $UserName
 } elseif ($Wildcard) {
-    $users = Get-ADUser -Filter {Name -like $Wildcard}
+    # Use the wildcard in the filter
+    $users += Get-ADUser -Filter {Name -like $Wildcard}
 } elseif ($OU) {
-    $users = Get-ADUser -Filter * -SearchBase $OU
+    # Get all users in the specified OU
+    $users += Get-ADUser -Filter * -SearchBase $OU
 }
 
 # Prompt for confirmation before changing
@@ -63,6 +66,9 @@ if (!$SkipConfirmation) {
         exit
     }
 }
+
+# Save users to file
+$users | Select-Object Name, SamAccountName, DistinguishedName | Export-Csv -Path "C:\Daten\AffectedUsers.csv" -NoTypeInformation
 
 # Process each user
 foreach ($user in $users) {
