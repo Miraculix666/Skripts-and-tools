@@ -1,14 +1,14 @@
 <#
 .SYNOPSIS
-Active Directory user management using net user commands
+Modifies user accounts without checking existing properties
 
 .DESCRIPTION
-Modifies user accounts with German localization and secure logging
+Applies settings to all users matching naming patterns
 #>
 
 [CmdletBinding()]
 param (
-    [string]$LogFilePath = "C:\AD-Verwaltung\Protokolle.log",
+    [string]$LogPath = "C:\ADLogs\Operations.log",
     [int]$BatchSize = 500,
     [switch]$Silent
 )
@@ -16,55 +16,27 @@ param (
 $ErrorActionPreference = "Stop"
 $startTime = Get-Date
 
-function Protokollieren {
-    param ($Nachricht, $Level = "INFO")
-    $Zeitstempel = Get-Date -Format "dd.MM.yyyy HH:mm:ss.fff"
-    "$Zeitstempel [$Level] - $Nachricht" | Add-Content $LogFilePath -Encoding UTF8
-    if (-not $Silent) { Write-Host "$Zeitstempel [$Level] - $Nachricht" }
+function Write-Log {
+    param($Message, $Level = "INFO")
+    $timestamp = Get-Date -Format "dd.MM.yyyy HH:mm:ss"
+    "$timestamp [$Level] - $Message" | Add-Content $LogPath -Encoding UTF8
+    if (-not $Silent) { Write-Host "$timestamp [$Level] - $Message" }
 }
 
 try {
-    Protokollieren "Skriptstart: NetUser-Implementierung"
+    Write-Log "Starting user modification process"
 
-    $users = Get-ADUser -Filter { 
-        SamAccountName -like "L110*" -or SamAccountName -like "L114*" 
-    } -Properties Enabled,PasswordNeverExpires -ResultPageSize $BatchSize |
+    # Get users without property checks
+    $users = Get-ADUser -Filter {
+        SamAccountName -like "L110*" -or SamAccountName -like "L114*"
+    } -ResultPageSize $BatchSize |
     Where-Object { $_.SamAccountName -match '^(L110|L114)\d{4}$' }
+
+    Write-Log "Found $($users.Count) users for processing"
 
     foreach ($user in $users) {
         try {
             $username = $user.SamAccountName
-            $pass = "T3mp!" + (Get-Random -Minimum 100000 -Maximum 999999)
-            
-            # Account activation
-            if (-not $user.Enabled) {
-                net user $username /active:yes 2>&1 | Out-Null
-                Protokollieren "Konto aktiviert: $username"
-            }
+            $tempPass = "TempPass$(Get-Random -Min 1000 -Max 9999)!"
 
-            # Password change
-            net user $username $pass 2>&1 | Out-Null
-            Protokollieren "Passwort geändert: $username"
-
-            # Password policies
-            net user $username /passwordchg:no 2>&1 | Out-Null
-            Set-ADUser $username -PasswordNeverExpires $true
-            Protokollieren "Richtlinien aktualisiert: $username"
-
-            # Force no password change at next logon
-            Set-ADUser $username -Replace @{pwdLastSet = -1}
-        }
-        catch {
-            Protokollieren "Fehler bei $username: $_" -Level "FEHLER"
-            continue
-        }
-    }
-}
-catch {
-    Protokollieren "Globaler Fehler: $_" -Level "FEHLER"
-    exit 1
-}
-finally {
-    $dauer = (Get-Date) - $startTime
-    Protokollieren "Skriptdauer: $($dauer.TotalSeconds.ToString("N2")) Sekunden"
-}
+            # Always reactivate account
