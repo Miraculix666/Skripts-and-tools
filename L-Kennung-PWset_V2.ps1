@@ -1,7 +1,7 @@
-# Erforderliche Module laden
+# Import Active Directory Module
 Import-Module ActiveDirectory
 
-# Dynamische OU-Suche
+# Dynamically discover OUs 81 and 82
 $domain = Get-ADDomain
 $targetOUs = @('81', '82') | ForEach-Object {
     Get-ADOrganizationalUnit -Filter "Name -eq '$_'" -SearchBase $domain.DistinguishedName -SearchScope Subtree
@@ -12,7 +12,7 @@ if (-not $targetOUs) {
     exit
 }
 
-# Benutzer mit Namensfiltern finden
+# Get users with name patterns L110* or L114*
 $users = $targetOUs | ForEach-Object {
     Get-ADUser -Filter "Name -like 'L11[04]*'" -SearchBase $_.DistinguishedName -Properties Enabled
 }
@@ -22,11 +22,8 @@ if (-not $users) {
     exit
 }
 
-# Passwortabfrage
-$plainPassword = Read-Host "Neues Passwort eingeben" -AsSecureString
-$password = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-    [Runtime.InteropServices.Marshal]::SecureStringToBSTR($plainPassword)
-)
+# Passwortabfrage (plaintext für net user)
+$plainPassword = Read-Host "Neues Passwort eingeben"
 
 # Initialisierung Zähler
 $totalUsers = $users.Count
@@ -36,8 +33,8 @@ $errorUsers = @()
 # Verarbeitungsschleife
 foreach ($user in $users) {
     try {
-        # Net User-Kommando für Basisoperationen
-        $output = net user $user.SamAccountName $password /DOMAIN /ACTIVE:YES /PASSWORDCHG:NO 2>&1
+        # Net User-Kommando für Basisoperationen (plaintext-Passwort verwenden)
+        $output = net user $user.SamAccountName $plainPassword /DOMAIN /ACTIVE:YES /PASSWORDCHG:NO 2>&1
         
         if ($LASTEXITCODE -ne 0) {
             throw "Net User Fehler: $($output -join ' ')"
@@ -71,5 +68,5 @@ if ($errorUsers.Count -gt 0) {
     $errorUsers | Format-Table -AutoSize
 }
 
-# Aufräumen
-Remove-Variable password, plainPassword -ErrorAction SilentlyContinue
+# Cleanup (keine SecureString-Verwendung, daher keine Bereinigung notwendig)
+Write-Host "`nVorgang abgeschlossen."
