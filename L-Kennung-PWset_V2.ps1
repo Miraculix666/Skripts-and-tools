@@ -1,69 +1,155 @@
-# Requires Active Directory module and RSAT tools
-Import-Module ActiveDirectory
+<#
+.SYNOPSIS
+AD-Benutzerverwaltung mit Passwortzurücksetzung und deutscher Lokalisierung
 
-# Set debug parameters
-$DebugPreference = 'Continue'
-$ErrorActionPreference = 'Stop'
+.DESCRIPTION
+Dieses Skript führt folgende Aufgaben durch:
+1. Findet Benutzer in den OUs 81/82 mit Namensmustern L110* oder L114*
+2. Exportiert Ergebnisse in eine CSV-Datei
+3. Setzt Passwörter zurück und konfiguriert Kontoeigenschaften
+4. Aktualisiert Anmeldezeitstempel
 
-# Define search parameters
-$searchPatterns = @('L110*', 'L114*')
-$ouNames = @('81', '82')
+.NOTES
+Version: 1.5
+Erstellt am: 2024-03-15
+#>
 
-# Function to find OUs recursively
-function Find-TargetOUs {
-    param([string[]]$Names)
-    
-    $domain = Get-ADDomain
-    Write-Debug "Searching in domain: $($domain.DNSRoot)"
-    
-    $foundOUs = foreach ($name in $Names) {
-        Get-ADOrganizationalUnit -Filter "Name -eq '$name'" `
-            -SearchBase $domain.DistinguishedName `
-            -SearchScope Subtree `
-            -Properties DistinguishedName
+#Requires -Version 5.1
+#Requires -Modules ActiveDirectory
+
+[CmdletBinding()]
+param(
+    [Parameter()]
+    [string[]]$OUNames = @('81', '82'),
+
+    [Parameter()]
+    [string]$ReportPath = "C:\Daten\Benutzerbericht.csv",
+
+    [Parameter()]
+    [securestring]$NewPassword,
+
+    [switch]$Force
+)
+
+begin {
+    # Deutsche Lokalisierung
+    $culture = [System.Globalization.CultureInfo]::GetCultureInfo('de-DE')
+    [System.Threading.Thread]::CurrentThread.CurrentCulture = $culture
+    [System.Threading.Thread]::CurrentThread.CurrentUICulture = $culture
+
+    # Initialisierung
+    $ErrorActionPreference = 'Stop'
+    $stats = [PSCustomObject]@{
+        GefundeneBenutzer = 0
+        Erfolgreich       = 0
+        Fehler            = 0
+        Fehlerliste       = [System.Collections.Generic.List[string]]::new()
     }
-    
-    if (-not $foundOUs) {
-        throw "Target OUs ($($Names -join ', ')) not found in domain structure!"
-    }
-    
-    return $foundOUs
 }
 
-try {
-    # Find target OUs
-    $targetOUs = Find-TargetOUs -Names $ouNames
-    Write-Debug "Found OUs:`n$($targetOUs | Format-Table Name, DistinguishedName -AutoSize | Out-String)"
-    
-    # Search for users in each OU
-    $users = foreach ($ou in $targetOUs) {
-        foreach ($pattern in $searchPatterns) {
-            Write-Debug "Searching in OU $($ou.DistinguishedName) for $pattern"
-            
-            Get-ADUser -LDAPFilter "(sAMAccountName=$pattern)" `
-                -SearchBase $ou.DistinguishedName `
-                -Properties * `
+process {
+    try {
+        # 1. OU-Suche ---------------------------------------------------------
+        Write-Verbose "Starte OU-Suche"
+        $domain = Get-ADDomain
+        $targetOUs = foreach ($name in $OUNames) {
+            Get-ADOrganizationalUnit -Filter "Name -eq '$name'" `
+                -SearchBase $domain.DistinguishedName `
                 -SearchScope Subtree
         }
-    }
-    
-    if (-not $users) {
-        Write-Host "No users found matching the criteria!" -ForegroundColor Yellow
-        exit
-    }
-    
-    # Display results
-    Write-Host "Found $($users.Count) matching users:"
-    $users | Format-Table Name, SamAccountName, DistinguishedName -AutoSize
-    
-    # Export results
-    $csvPath = "C:\Daten\User_Report_$(Get-Date -Format 'yyyyMMdd-HHmmss').csv"
-    $users | Export-Csv -Path $csvPath -Delimiter ';' -Encoding UTF8 -NoTypeInformation
-    Write-Host "Report exported to: $csvPath" -ForegroundColor Green
 
+        if (-not $targetOUs) {
+            throw "Ziel-OUs ($($OUNames -join ', ')) nicht gefunden!"
+        }
+
+        # 2. Benutzersuche ----------------------------------------------------
+        $users = foreach ($ou in $targetOUs) {
+            Get-ADUser -LDAPFilter "(|(sAMAccountName=L110*)(sAMAccountName=L114*))" `
+                -SearchBase $ou.DistinguishedName `
+                -Properties Enabled, LastLogonDate `
+                -SearchScope Subtree
+        }
+
+        if (-not $users) {
+            Write-Host "Keine passenden Benutzer gefunden." -ForegroundColor Yellow
+            return
+        }
+
+        $stats.GefundeneBenutzer = $users.Count
+
+        # 3. CSV-Export -------------------------------------------------------
+        $users | Select-Object @{n='Benutzername';e={$_.Name}},
+                              @{n='Anmeldename';e={$_.SamAccountName}},
+                              @{n='Aktiviert';e={$_.Enabled}},
+                              @{n='Letzte Anmeldung';e={$_.LastLogonDate}} |
+                 Export-Csv -Path $ReportPath -Delimiter ";" -Encoding UTF8 -NoTypeInformation
+        
+        Write-Host "Bericht erstellt: $ReportPath" -ForegroundColor Green
+
+        # 4. Bestätigung ------------------------------------------------------
+        if (-not $Force) {
+            $confirmation = Read-Host "Möchten Sie die Änderungen durchführen? (J/N)"
+            if ($confirmation -notin @('J','j')) { return }
+        }
+
+        # 5. Passwortverwaltung -----------------------------------------------
+        if (-not $NewPassword) {
+            $NewPassword = Read-Host "Neues Passwort eingeben" -AsSecureString
+        }
+
+        $plainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
+            [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($NewPassword)
+        )
+
+        # 6. Benutzerverarbeitung ---------------------------------------------
+        foreach ($user in $users) {
+            try {
+                Write-Verbose "Verarbeite $($user.SamAccountName)"
+
+                # Passwortzurücksetzung mit net user
+                $output = net user $user.SamAccountName $plainPassword /DOMAIN /ACTIVE:YES 2>&1
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Net User Fehler: $output"
+                }
+
+                # AD-Einstellungen
+                Set-ADUser -Identity $user -PasswordNeverExpires $true `
+                    -CannotChangePassword $true `
+                    -Replace @{lastLogonTimestamp = [DateTime]::Now.ToFileTime()}
+
+                $stats.Erfolgreich++
+                Write-Host "$($user.SamAccountName) erfolgreich aktualisiert" -ForegroundColor Green
+            }
+            catch {
+                $stats.Fehler++
+                $errorMsg = "Fehler bei $($user.SamAccountName): $($_.Exception.Message)"
+                $stats.Fehlerliste.Add($errorMsg)
+                Write-Host $errorMsg -ForegroundColor Red
+            }
+        }
+    }
+    catch {
+        Write-Host "KRITISCHER FEHLER: $($_.Exception.Message)" -ForegroundColor Red
+        exit 1
+    }
+    finally {
+        # Bereinigung
+        Remove-Variable plainPassword -ErrorAction SilentlyContinue
+    }
 }
-catch {
-    Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "Error details: $($_.ScriptStackTrace)" -ForegroundColor DarkGray
-    exit 1
+
+end {
+    # Zusammenfassung ---------------------------------------------------------
+    Write-Host @"
+    
+    ===== ZUSAMMENFASSUNG =====
+    Gefundene Benutzer:   $($stats.GefundeneBenutzer)
+    Erfolgreich:          $($stats.Erfolgreich)
+    Fehler:               $($stats.Fehler)
+    
+    Fehlerdetails:
+    $($stats.Fehlerliste -join "`n")
+"@
+
+    if ($stats.Fehler -gt 0) { exit 2 }
 }
