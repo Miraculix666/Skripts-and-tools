@@ -1,16 +1,13 @@
 <#
 .SYNOPSIS
-AD-Benutzerverwaltungsskript mit deutscher Lokalisierung
+AD-Benutzerverwaltungsskript für spezielle OUs
 
 .DESCRIPTION
 Dieses Skript führt folgende Aufgaben durch:
-1. Findet Benutzer in spezifizierten OUs
-2. Exportiert Berichte im deutschen CSV-Format
-3. Setzt Passwörter und Kontoeigenschaften
-4. Bietet detaillierte Protokollierung
-
-.VERSION
-2.1.20250407
+1. Dynamische Suche nach OUs 81 und 82
+2. Ermittlung aller Benutzer mit Namen L110* oder L114*
+3. Passwortzurücksetzung mit Aktivierung
+4. Deutschsprachige Berichterstellung
 
 .PARAMETER TargetOUNames
 Kommagetrennte Liste der OU-Namen (Standard: 81,82)
@@ -18,8 +15,8 @@ Kommagetrennte Liste der OU-Namen (Standard: 81,82)
 .PARAMETER ReportPath
 Ausgabepfad für Berichtsdatei (Standard: C:\Daten\Benutzerbericht.csv)
 
-.PARAMETER Verbose
-Aktiviert detaillierte Protokollierung
+.PARAMETER Force
+Unterdrückt Bestätigungsaufforderungen
 
 .EXAMPLE
 .\Skript.ps1 -TargetOUNames 81,82 -Verbose
@@ -33,10 +30,8 @@ param(
     [Parameter()]
     [string[]]$TargetOUNames = @('81', '82'),
     
-    [Parameter()]
     [string]$ReportPath = "C:\Daten\Benutzerbericht.csv",
     
-    [Parameter()]
     [switch]$Force
 )
 
@@ -46,7 +41,7 @@ begin {
     [System.Threading.Thread]::CurrentThread.CurrentCulture = $culture
     [System.Threading.Thread]::CurrentThread.CurrentUICulture = $culture
 
-    # Initialisierungen
+    # Initialisierung
     $ErrorActionPreference = 'Stop'
     $startTime = Get-Date
     $stats = [PSCustomObject]@{
@@ -59,24 +54,28 @@ begin {
 
 process {
     try {
-        # OU-Suche
-        Write-Verbose "Starte OU-Suche für: $($TargetOUNames -join ', ')"
+        # Dynamische OU-Suche -------------------------------------------------
+        Write-Verbose "Starte OU-Suche"
         $domain = Get-ADDomain
-        $searchBase = $domain.DistinguishedName
+        Write-Verbose "Domain: $($domain.DNSRoot)"
         
-        $ous = foreach ($name in $TargetOUNames) {
-            Get-ADOrganizationalUnit -Filter "Name -eq '$name'" -SearchBase $searchBase -SearchScope Subtree
+        $targetOUs = foreach ($name in $TargetOUNames) {
+            Write-Verbose "Suche OU: $name"
+            Get-ADOrganizationalUnit -Filter "Name -like '*$name*'" -SearchBase $domain.DistinguishedName -SearchScope Subtree
         }
 
-        if (-not $ous) {
+        if (-not $targetOUs) {
             throw "Keine OUs gefunden für: $($TargetOUNames -join ', ')"
         }
 
-        # Benutzerabfrage
+        Write-Verbose "Gefundene OUs:`n$($targetOUs | Format-Table Name, DistinguishedName -AutoSize | Out-String)"
+
+        # Benutzersuche -------------------------------------------------------
         $userFilter = "Name -like 'L11[04]*'"
-        Write-Verbose "Verwende Filter: $userFilter"
+        Write-Verbose "Verwende Benutzerfilter: $userFilter"
         
-        $users = foreach ($ou in $ous) {
+        $users = foreach ($ou in $targetOUs) {
+            Write-Verbose "Durchsuche OU: $($ou.DistinguishedName)"
             Get-ADUser -Filter $userFilter -SearchBase $ou.DistinguishedName -Properties *
         }
 
@@ -86,23 +85,24 @@ process {
         }
 
         $stats.TotalUsers = $users.Count
+        Write-Verbose "Gefundene Benutzer: $($stats.TotalUsers)"
 
-        # CSV-Export
+        # CSV-Export ----------------------------------------------------------
         $users | Select-Object @{n='Benutzername';e={$_.Name}},
                               @{n='Anmeldename';e={$_.SamAccountName}},
                               @{n='Aktiviert';e={$_.Enabled}},
                               @{n='Letzte Anmeldung';e={$_.LastLogonDate}} |
                  Export-Csv -Path $ReportPath -Delimiter ";" -Encoding UTF8 -NoTypeInformation
         
-        Write-Verbose "Bericht erstellt: $ReportPath"
+        Write-Host "Bericht erstellt: $ReportPath" -ForegroundColor Green
 
-        # Bestätigung
+        # Bestätigung ---------------------------------------------------------
         if (-not $Force) {
             $confirmation = Read-Host "Möchten Sie fortfahren? (J/N)"
             if ($confirmation -notin @('J','j')) { return }
         }
 
-        # Passwortverwaltung
+        # Passwortverwaltung --------------------------------------------------
         $securePass = Read-Host "Neues Passwort eingeben" -AsSecureString
         $plainPass = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
             [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePass)
@@ -119,23 +119,27 @@ process {
                 }
 
                 # AD-Einstellungen
-                Set-ADUser -Identity $user -PasswordNeverExpires $true -CannotChangePassword $true
-                Set-ADUser -Identity $user -Replace @{lastLogonTimestamp = [DateTime]::Now.ToFileTime()}
+                Set-ADUser -Identity $user -PasswordNeverExpires $true `
+                    -CannotChangePassword $true `
+                    -Replace @{lastLogonTimestamp = [DateTime]::Now.ToFileTime()} `
+                    -ErrorAction Stop
 
                 $stats.Success++
+                Write-Host "$($user.SamAccountName): Erfolgreich aktualisiert" -ForegroundColor Green
             }
             catch {
                 $stats.Errors++
+                $errorMsg = $_.Exception.Message
                 $stats.ErrorList.Add([PSCustomObject]@{
                     Benutzer = $user.SamAccountName
-                    Fehler = $_.Exception.Message
+                    Fehler = $errorMsg
                 })
-                Write-Warning "Fehler bei $($user.SamAccountName): $($_.Exception.Message)"
+                Write-Host "Fehler bei $($user.SamAccountName): $errorMsg" -ForegroundColor Red
             }
         }
     }
     catch {
-        Write-Error "Kritischer Fehler: $($_.Exception.Message)"
+        Write-Host "KRITISCHER FEHLER: $($_.Exception.Message)" -ForegroundColor Red
         exit 1
     }
     finally {
@@ -145,7 +149,7 @@ process {
 }
 
 end {
-    # Zusammenfassung
+    # Zusammenfassung ---------------------------------------------------------
     $duration = (Get-Date) - $startTime
     Write-Host @"
     
@@ -158,4 +162,7 @@ end {
     Fehlerdetails:
     $($stats.ErrorList | Format-Table -AutoSize | Out-String)
 "@
+
+    # Ergebnisrückgabe
+    if ($stats.Errors -gt 0) { exit 2 }
 }
