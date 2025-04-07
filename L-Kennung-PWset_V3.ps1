@@ -40,3 +40,30 @@ try {
             $tempPass = "TempPass$(Get-Random -Min 1000 -Max 9999)!"
 
             # Always reactivate account
+            net user $username /active:yes 2>&1 | Out-Null
+            Write-Log "Reactivated account: $username"
+
+            # Set new password
+            net user $username $tempPass 2>&1 | Out-Null
+            Write-Log "Password reset for: $username"
+
+            # Apply password policies
+            net user $username /passwordchg:no 2>&1 | Out-Null
+            Set-ADUser $username -PasswordNeverExpires $true
+            Set-ADUser $username -Replace @{pwdLastSet = -1}
+            Write-Log "Policy applied: $username"
+        }
+        catch {
+            Write-Log "Error processing $username : $_" -Level "ERROR"
+            continue
+        }
+    }
+}
+catch {
+    Write-Log "Critical error: $_" -Level "ERROR"
+    exit 1
+}
+finally {
+    $duration = (Get-Date) - $startTime
+    Write-Log "Operation completed in $($duration.TotalSeconds.ToString('N2')) seconds"
+}
