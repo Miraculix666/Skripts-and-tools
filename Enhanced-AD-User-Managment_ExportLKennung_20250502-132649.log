@@ -1,0 +1,11 @@
+﻿[2025-05-02 13:26:49] [Info] Skript 'Enhanced-AD-User-Managment.ps1' gestartet (Modus: ExportLKennung). LogLevel: Info. Ausgeführt von: nwob4746.
+[2025-05-02 13:26:49] [Info] Starte Modus: ExportLKennung
+[2025-05-02 13:26:50] [Info] Suche nach OUs: 81, 82
+[2025-05-02 13:26:51] [Info] Gefundene OU DNs für die Suche: OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de; OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de
+[2025-05-02 13:26:51] [Info] Suche Benutzer mit LDAP-Filter '(|(sAMAccountName=L110*)(sAMAccountName=L114*))' in den gefundenen OUs...
+[2025-05-02 13:26:52] [Warning] Fehler beim Durchsuchen der OU 'OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de' mit Filter '(|(sAMAccountName=L110*)(sAMAccountName=L114*))': Das Argument "collection" mit dem Wert  "System.Object[]" für "AddRange" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden: "Der Wert "System.Object[]" vom Typ "System.Object[]" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden."
+[2025-05-02 13:26:53] [Warning] Fehler beim Durchsuchen der OU 'OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de' mit Filter '(|(sAMAccountName=L110*)(sAMAccountName=L114*))': Das Argument "collection" mit dem Wert  "System.Object[]" für "AddRange" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden: "Der Wert "System.Object[]" vom Typ "System.Object[]" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden."
+[2025-05-02 13:26:53] [Info] Insgesamt 0 eindeutige Benutzer gefunden.
+[2025-05-02 13:26:53] [Warning] Keine Benutzer für die angegebenen Kriterien gefunden.
+[2025-05-02 13:26:53] [Info] Skriptausführung beendet. Gesamtdauer: 0:00:03,8667884
+[2025-05-02 13:26:53] [Info] Log-Datei: C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment_ExportLKennung_20250502-132649.log
