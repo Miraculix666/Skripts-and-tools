@@ -1,28 +1,43 @@
 #Enhanced-AD-User-Managment.ps1
+
 <#
 .SYNOPSIS
-Verwaltet Active Directory-Benutzer: Kopiert einzelne Benutzer oder erstellt Benutzer aus einer CSV-Datei.
+Verwaltet Active Directory-Benutzer: Kopiert einzelne Benutzer, erstellt Benutzer aus CSV, wendet Eigenschaften an oder exportiert Benutzerdaten.
 
 .DESCRIPTION
 Dieses Skript bietet Werkzeuge zur Verwaltung von Active Directory (AD) Benutzern.
 Es kann verwendet werden, um:
 - Einen einzelnen AD-Benutzer zu kopieren, einschließlich Gruppenzugehörigkeiten und optional der OU-Struktur (Modus: CopySingleUser).
 - Mehrere AD-Benutzer basierend auf einer CSV-Datei zu erstellen (Modus: CreateUsersFromCSV). Optional können Attribute und Gruppen von einem Referenzbenutzer (Vorlage) übernommen werden.
+- Ausgewählte Eigenschaften und Gruppenmitgliedschaften von einem Referenzbenutzer auf einen bereits existierenden Zielbenutzer anzuwenden (Modus: ApplyPropertiesToExistingUser).
+- Benutzerdaten basierend auf einem Filter zu suchen und relevante Eigenschaften (inkl. OU, Gruppen) in eine CSV-Datei zu exportieren (Modus: ExportUserData).
 
 Das Skript ist für PowerShell Version 5.1 optimiert und verwendet deutsche Lokalisierungseinstellungen für CSV-Exporte und Datums-/Zeitformate.
 Es implementiert detaillierte Protokollierung und unterstützt den -Verbose Parameter für ausführliche Ausgaben.
-Standardmäßig werden Log-Dateien und Benutzerberichte im Verzeichnis des Skripts gespeichert.
+Log-Dateien und ein Benutzerbericht (CSV) über durchgeführte Aktionen werden standardmäßig im Verzeichnis des Skripts gespeichert.
 
 .PARAMETER CopySingleUser
 Schalter, um den Modus zum Kopieren eines einzelnen Benutzers zu aktivieren.
+
+.PARAMETER CreateUsersFromCSV
+Schalter, um den Modus zur Erstellung von Benutzern aus einer CSV-Datei zu aktivieren.
+
+.PARAMETER ApplyPropertiesToExistingUser
+Schalter, um den Modus zum Anwenden von Eigenschaften/Gruppen auf einen existierenden Benutzer zu aktivieren.
+
+.PARAMETER ExportUserData
+Schalter, um den Modus zum Exportieren von Benutzerdaten in eine CSV-Datei zu aktivieren.
 
 .PARAMETER ReferenceUserSamAccountName
 Der SAMAccountName des Referenzbenutzers.
 - Im Modus 'CopySingleUser': Der Quellbenutzer, der kopiert werden soll (Mandatory).
 - Im Modus 'CreateUsersFromCSV': Der Vorlagenbenutzer, von dem optional Attribute/Gruppen übernommen werden (Optional).
+- Im Modus 'ApplyPropertiesToExistingUser': Der Benutzer, dessen Eigenschaften/Gruppen als Quelle dienen (Mandatory).
 
 .PARAMETER TargetUserSamAccountName
-Der gewünschte SAMAccountName für den neuen (kopierten) Benutzer (nur für Modus CopySingleUser). Wird interaktiv abgefragt, wenn nicht angegeben.
+Der SAMAccountName des Zielbenutzers.
+- Im Modus 'CopySingleUser': Der gewünschte SAMAccountName für den *neuen* (kopierten) Benutzer (Optional, wird interaktiv abgefragt).
+- Im Modus 'ApplyPropertiesToExistingUser': Der SAMAccountName des *existierenden* Benutzers, der modifiziert werden soll (Mandatory).
 
 .PARAMETER TargetUserPassword
 Das initiale Passwort für den neuen (kopierten) Benutzer als SecureString (nur für Modus CopySingleUser). Wird interaktiv und sicher abgefragt, wenn nicht angegeben. Der Benutzer muss das Passwort bei der ersten Anmeldung ändern.
@@ -31,12 +46,11 @@ Das initiale Passwort für den neuen (kopierten) Benutzer als SecureString (nur 
 Der Distinguished Name der Organisationseinheit (OU), in die der neue Benutzer kopiert/erstellt werden soll.
 Für CopySingleUser: Optional; Standard ist die OU des Referenzbenutzers.
 Für CreateUsersFromCSV: Optional; Überschreibt die OU aus der CSV oder vom Referenzbenutzer.
+Für ApplyPropertiesToExistingUser: Nicht relevant.
+Für ExportUserData: Nicht relevant (siehe -SearchBaseOU).
 
 .PARAMETER Force
 Überschreibt einen bereits existierenden Zielbenutzer im Modus CopySingleUser, falls vorhanden. Standardmäßig wird ein Fehler ausgegeben.
-
-.PARAMETER CreateUsersFromCSV
-Schalter, um den Modus zur Erstellung von Benutzern aus einer CSV-Datei zu aktivieren.
 
 .PARAMETER CsvPath
 Der vollständige Pfad zur CSV-Datei, die die Daten für die zu erstellenden Benutzer enthält (nur für Modus CreateUsersFromCSV).
@@ -46,6 +60,18 @@ Optionale Spalten: Password (Klartext - NICHT EMPFOHLEN!), TargetOU, Enabled, De
 .PARAMETER DefaultPassword
 Ein Standardpasswort (als SecureString), das für alle Benutzer aus der CSV verwendet wird, es sei denn, die CSV enthält eine 'Password'-Spalte. Wenn weder DefaultPassword noch eine 'Password'-Spalte vorhanden sind, wird ein zufälliges Passwort generiert (empfohlen).
 
+.PARAMETER UserFilter
+Ein Filterausdruck für Get-ADUser (`-Filter` oder `-LDAPFilter`), um die zu exportierenden Benutzer zu definieren (nur für Modus ExportUserData). Beispiel: "SamAccountName -like 'L*'" oder "(|(sAMAccountName=L110*)(sAMAccountName=L114*))". Mandatory für ExportUserData.
+
+.PARAMETER SearchBaseOU
+Der Distinguished Name einer OU, um die Benutzersuche für den Export einzuschränken (nur für Modus ExportUserData). Optional.
+
+.PARAMETER PropertiesToExport
+Eine Liste von AD-Attributnamen (String-Array), die zusätzlich zu den Standardattributen exportiert werden sollen (nur für Modus ExportUserData). Standard: siehe .NOTES.
+
+.PARAMETER ExportCsvPath
+Pfad für die CSV-Exportdatei (nur für Modus ExportUserData). Mandatory.
+
 .PARAMETER LogPath
 Verzeichnis für die Log-Dateien. Standard ist das Verzeichnis, in dem das Skript liegt (`$PSScriptRoot`), oder das aktuelle Arbeitsverzeichnis (`$PWD`), wenn nicht aus einer Datei ausgeführt.
 
@@ -53,10 +79,7 @@ Verzeichnis für die Log-Dateien. Standard ist das Verzeichnis, in dem das Skrip
 Steuert die Detailtiefe der Log-Datei. Mögliche Werte: Error, Warning, Info, Verbose. Standard ist 'Info'.
 
 .PARAMETER UserReportCsvPath
-Pfad für die CSV-Datei, die einen Bericht über erstellte/kopierte Benutzer enthält. Standard ist das Skriptverzeichnis (`$PSScriptRoot` oder `$PWD`) mit dem Namen '{ScriptName}_UserReport_{Timestamp}.csv'.
-
-.PARAMETER NoUserReport
-Unterdrückt die Erstellung des Benutzerberichts.
+Pfad für die CSV-Datei, die einen Bericht über erstellte/kopierte/modifizierte Benutzer enthält (nicht für ExportUserData relevant). Standard ist das Skriptverzeichnis (`$PSScriptRoot` oder `$PWD`) mit dem Namen '{ScriptName}_UserReport_{Timestamp}.csv'. Der Bericht wird immer für die Modi Copy, Create, Apply erstellt.
 
 .EXAMPLE
 # Beispiel 1: Kopiert 'BenutzerA' zu 'BenutzerB' interaktiv (fragt nach Zielname und Passwort)
@@ -74,14 +97,44 @@ $defaultPass = ConvertTo-SecureString "Sommer2025!" -AsPlainText -Force
 
 .EXAMPLE
 # Beispiel 4: Erstellt Benutzer aus CSV, verwendet Passwort aus CSV (WARNUNG: Unsicher!) und speichert Log in C:\Logs
-.\Enhanced-ADManagement.ps1 -CreateUsersFromCSV -CsvPath "C:\temp\neue_benutzer_mit_passwort.csv" -TargetOU "OU=Vertrieb,DC=firma,DC=local" -LogPath "C:\Logs" -NoUserReport
+.\Enhanced-ADManagement.ps1 -CreateUsersFromCSV -CsvPath "C:\temp\neue_benutzer_mit_passwort.csv" -TargetOU "OU=Vertrieb,DC=firma,DC=local" -LogPath "C:\Logs"
+
+.EXAMPLE
+# Beispiel 5: Wendet Abteilungs-, Büro- und Gruppeninformationen von 'RefUser' auf den existierenden Benutzer 'ExistingUser' an
+.\Enhanced-ADManagement.ps1 -ApplyPropertiesToExistingUser -ReferenceUserSamAccountName RefUser -TargetUserSamAccountName ExistingUser -Verbose
+
+.EXAMPLE
+# Beispiel 6: Exportiert alle Benutzer, deren Name mit 'L' beginnt, aus der OU 'OU=Lehrlinge,DC=firma,DC=local' in eine CSV-Datei
+.\Enhanced-ADManagement.ps1 -ExportUserData -UserFilter "SamAccountName -like 'L*'" -SearchBaseOU "OU=Lehrlinge,DC=firma,DC=local" -ExportCsvPath "C:\temp\L_Benutzer_Export.csv" -Verbose
+
+.EXAMPLE
+# Beispiel 7: Exportiert Benutzer mit spezifischem LDAP-Filter und zusätzlichen Eigenschaften
+.\Enhanced-ADManagement.ps1 -ExportUserData -UserFilter "(|(sAMAccountName=L110*)(sAMAccountName=L114*))" -PropertiesToExport @("employeeID", "manager") -ExportCsvPath "C:\temp\Spezial_Export.csv"
+
+.EXAMPLE
+# Beispiel 8: Exportiert Benutzer aus OU '81', deren SamAccountName mit 'L110' oder 'L114' beginnt (analog zu L-Kennung-PWset_V2.ps1)
+# Hinweis: Für mehrere OUs (z.B. 81 und 82) muss der Befehl ggf. mehrfach ausgeführt oder ein komplexerer LDAP-Filter ohne -SearchBaseOU verwendet werden.
+$ldapFilter = "(|(sAMAccountName=L110*)(sAMAccountName=L114*))"
+$ouDN = "OU=81,DC=firma,DC=local" # Ersetzen Sie dies mit dem korrekten DN der OU '81'
+$exportPfad = "C:\temp\Export_L-Kennung_OU81.csv"
+.\Enhanced-ADManagement.ps1 -ExportUserData -UserFilter $ldapFilter -SearchBaseOU $ouDN -ExportCsvPath $exportPfad -Verbose
 
 .NOTES
 Autor: Gemini (basierend auf Nutzer-Input und Beispielen)
-Version: 2.0
+Version: 4.0
 Datum: 2025-05-02
 Benötigte Module: ActiveDirectory (wird durch #requires geprüft)
-Benötigte Berechtigungen: Ausreichende AD-Berechtigungen zum Lesen von Benutzern und zum Erstellen/Modifizieren von Benutzern. Schreibrechte im Zielverzeichnis für Logs/Berichte.
+Benötigte Berechtigungen: Ausreichende AD-Berechtigungen zum Lesen von Benutzern und zum Erstellen/Modifizieren von Benutzern. Schreibrechte im Zielverzeichnis für Logs/Berichte/Exporte.
+
+Modus ApplyPropertiesToExistingUser:
+- Kopiert standardmäßig folgende Eigenschaften: Description, Office, StreetAddress, City, State, PostalCode, Country, Department, Company, Title, OfficePhone, EmailAddress.
+- Fügt Gruppenmitgliedschaften hinzu, die der Referenzbenutzer hat, der Zielbenutzer aber nicht (ausgenommen 'Domain Users'). Bestehende Gruppen des Zielbenutzers bleiben erhalten.
+- Ändert KEINE sicherheitsrelevanten oder Identitäts-Attribute wie Passwort, SID, SamAccountName, UPN, Enabled-Status.
+
+Modus ExportUserData:
+- Standardmäßig exportierte Eigenschaften: SamAccountName, Name, GivenName, Surname, DisplayName, UserPrincipalName, Enabled, DistinguishedName, OU (extrahiert), GroupNames (kommasepariert).
+- Zusätzliche Eigenschaften können mit -PropertiesToExport angegeben werden. Immer mit exportiert werden 'MemberOf' (zur Gruppenauflösung) und 'DistinguishedName' (zur OU-Extraktion).
+- Der Export erfolgt als CSV mit Semikolon als Trennzeichen und UTF8-Kodierung.
 
 CSV-Format für CreateUsersFromCSV:
 - Trennzeichen: Semikolon (;)
@@ -95,7 +148,9 @@ CSV-Format für CreateUsersFromCSV:
 
 Passwort-Sicherheit: Das Speichern von Klartext-Passwörtern in CSV-Dateien ist ein erhebliches Sicherheitsrisiko! Verwenden Sie bevorzugt den Parameter -DefaultPassword oder generieren Sie zufällige Passwörter und kommunizieren Sie diese sicher.
 
-Standardpfade: Wenn -LogPath oder -UserReportCsvPath nicht angegeben werden, versucht das Skript, die Dateien im selben Verzeichnis wie das Skript selbst (`$PSScriptRoot`) zu speichern. Wenn das Skript nicht aus einer Datei ausgeführt wird (z.B. im ISE oder direkt in der Konsole), wird stattdessen das aktuelle Arbeitsverzeichnis (`$PWD`) verwendet. Stellen Sie sicher, dass Schreibberechtigungen im Zielverzeichnis vorhanden sind.
+Standardpfade: Wenn -LogPath, -UserReportCsvPath oder -ExportCsvPath (ohne Angabe) nicht angegeben werden, versucht das Skript, die Dateien im selben Verzeichnis wie das Skript selbst (`$PSScriptRoot`) zu speichern. Wenn das Skript nicht aus einer Datei ausgeführt wird (z.B. im ISE oder direkt in der Konsole), wird stattdessen das aktuelle Arbeitsverzeichnis (`$PWD`) verwendet. Stellen Sie sicher, dass Schreibberechtigungen im Zielverzeichnis vorhanden sind.
+
+Benutzerbericht: Der CSV-Bericht über durchgeführte Aktionen (Copy, Create, Apply) wird immer erstellt und im Verzeichnis gespeichert, das durch -UserReportCsvPath festgelegt ist (oder im Standardpfad).
 
 Testen: Führen Sie das Skript zuerst in einer Testumgebung aus!
 
@@ -122,6 +177,7 @@ Administrator
 
 .FUNCTIONALITY
 User Account Management
+User Data Export
 #>
 
 #requires -Version 5.1
@@ -136,22 +192,30 @@ param(
     [Parameter(ParameterSetName = 'CreateUsersFromCSV', Mandatory = $true, HelpMessage = "Aktiviert den Modus zur Benutzererstellung aus CSV.")]
     [switch]$CreateUsersFromCSV,
 
-    # --- Gemeinsame Parameter ---
+    [Parameter(ParameterSetName = 'ApplyPropertiesToExistingUser', Mandatory = $true, HelpMessage = "Aktiviert Modus zum Anwenden von Eigenschaften auf existierenden Benutzer.")]
+    [switch]$ApplyPropertiesToExistingUser,
+
+    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $true, HelpMessage = "Aktiviert Modus zum Exportieren von Benutzerdaten.")]
+    [switch]$ExportUserData,
+
+    # --- Gemeinsame Parameter für Copy, Create, Apply ---
     [Parameter(ParameterSetName = 'CopySingleUser', Mandatory = $true, HelpMessage = "SAMAccountName des Quellbenutzers für die Kopie.")]
     [Parameter(ParameterSetName = 'CreateUsersFromCSV', Mandatory = $false, HelpMessage = "SAMAccountName des Vorlagenbenutzers für Attribute/Gruppen.")]
+    [Parameter(ParameterSetName = 'ApplyPropertiesToExistingUser', Mandatory = $true, HelpMessage = "SAMAccountName des Benutzers, dessen Eigenschaften/Gruppen als Quelle dienen.")]
     [ValidateNotNullOrEmpty()]
     [string]$ReferenceUserSamAccountName,
+
+    [Parameter(ParameterSetName = 'CopySingleUser', Mandatory = $false, HelpMessage = "Gewünschter SAMAccountName für den NEUEN Benutzer.")]
+    [Parameter(ParameterSetName = 'ApplyPropertiesToExistingUser', Mandatory = $true, HelpMessage = "SAMAccountName des EXISTIERENDEN Benutzers, der modifiziert wird.")]
+    [ValidateNotNullOrEmpty()]
+    [string]$TargetUserSamAccountName, # Gilt für CopySingleUser (optional) und ApplyProperties (mandatory)
 
     [Parameter(ParameterSetName = 'CopySingleUser')]
     [Parameter(ParameterSetName = 'CreateUsersFromCSV')]
     [ValidateNotNullOrEmpty()]
-    [string]$TargetOU, # Gilt für beide ParameterSets
+    [string]$TargetOU, # Gilt für CopySingleUser und CreateUsersFromCSV
 
     # --- Parameter für CopySingleUser ---
-    [Parameter(ParameterSetName = 'CopySingleUser', Mandatory = $false, HelpMessage = "Gewünschter SAMAccountName für den neuen Benutzer.")]
-    [ValidateNotNullOrEmpty()]
-    [string]$TargetUserSamAccountName,
-
     [Parameter(ParameterSetName = 'CopySingleUser', Mandatory = $false, HelpMessage = "Initiales Passwort für den neuen Benutzer (SecureString).")]
     [System.Security.SecureString]$TargetUserPassword,
 
@@ -166,6 +230,22 @@ param(
     [Parameter(ParameterSetName = 'CreateUsersFromCSV', Mandatory = $false, HelpMessage = "Standardpasswort (SecureString) für CSV-Benutzer.")]
     [System.Security.SecureString]$DefaultPassword,
 
+    # --- Parameter für ExportUserData ---
+    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $true, HelpMessage = "Filter für Get-ADUser (z.B. ""SamAccountName -like 'L*'"" oder LDAP-Filter).")]
+    [ValidateNotNullOrEmpty()]
+    [string]$UserFilter,
+
+    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $false, HelpMessage = "Distinguished Name der OU, um die Suche einzuschränken.")]
+    [ValidateNotNullOrEmpty()]
+    [string]$SearchBaseOU,
+
+    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $false, HelpMessage = "Zusätzliche AD-Attribute, die exportiert werden sollen.")]
+    [string[]]$PropertiesToExport = @(), # Leeres Array als Standard
+
+    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $true, HelpMessage = "Pfad für die CSV-Exportdatei.")]
+    [ValidateNotNullOrEmpty()]
+    [string]$ExportCsvPath,
+
     # --- Globale Parameter ---
     [Parameter(Mandatory = $false, HelpMessage = "Verzeichnis für Log-Dateien. Standard: Skriptverzeichnis oder aktuelles Verzeichnis.")]
     [string]$LogPath,
@@ -174,11 +254,9 @@ param(
     [ValidateSet('Error', 'Warning', 'Info', 'Verbose')]
     [string]$LogLevel = 'Info',
 
-    [Parameter(Mandatory = $false, HelpMessage = "Pfad für den CSV-Benutzerbericht. Standard: Skriptverzeichnis oder aktuelles Verzeichnis.")]
-    [string]$UserReportCsvPath,
+    [Parameter(Mandatory = $false, HelpMessage = "Pfad für den CSV-Aktionsbericht (Copy/Create/Apply). Standard: Skriptverzeichnis oder aktuelles Verzeichnis.")]
+    [string]$UserReportCsvPath
 
-    [Parameter(Mandatory = $false, HelpMessage = "Unterdrückt die Erstellung des Benutzerberichts.")]
-    [switch]$NoUserReport
 )
 
 begin {
@@ -198,7 +276,7 @@ begin {
     # Fehlerbehandlung standardmäßig auf Stop setzen
     $ErrorActionPreference = 'Stop'
 
-    # Bestimme Basisverzeichnis für Logs/Reports
+    # Bestimme Basisverzeichnis für Logs/Reports/Exports
     $basePath = $PSScriptRoot # Bevorzugt Skriptverzeichnis
     if (-not $basePath) {
         $basePath = $PWD.Path # Fallback: Aktuelles Arbeitsverzeichnis
@@ -216,7 +294,7 @@ begin {
     } catch {
         Write-Warning "Konnte Skriptnamen nicht automatisch ermitteln. Verwende '$scriptBaseName' als Präfix."
     }
-    Write-Verbose "Verwende '$scriptBaseName' als Präfix für Log-/Berichtsdateien."
+    Write-Verbose "Verwende '$scriptBaseName' als Präfix für Log-/Berichts-/Exportdateien."
 
 
     # Logging Setup
@@ -243,29 +321,28 @@ begin {
         exit 1
     }
 
-    # User Report Setup
-    $global:userReportData = [System.Collections.Generic.List[PSObject]]::new() # Global für Sammlung über Modi hinweg
+    # User Report Setup (nur für Copy, Create, Apply Modi)
+    $global:userReportData = $null
     $global:fullUserReportPath = $null
-    if (-not $NoUserReport) {
+    if ($PSCmdlet.ParameterSetName -in @('CopySingleUser', 'CreateUsersFromCSV', 'ApplyPropertiesToExistingUser')) {
+        $global:userReportData = [System.Collections.Generic.List[PSObject]]::new() # Global für Sammlung über Modi hinweg
         # Standard-Reportpfad setzen, wenn nicht angegeben
         if (-not $PSBoundParameters.ContainsKey('UserReportCsvPath')) {
             $UserReportCsvPath = $basePath
         }
-         $reportFileName = "{0}_UserReport_{1}.csv" -f $scriptBaseName, $scriptStartTime.ToString('yyyyMMdd-HHmmss')
-         try {
-             # Sicherstellen, dass das Zielverzeichnis existiert
-             if (-not (Test-Path $UserReportCsvPath -PathType Container)) {
-                 Write-Verbose "Erstelle Berichts-Verzeichnis: $UserReportCsvPath"
-                 New-Item -Path $UserReportCsvPath -ItemType Directory -Force:$true -ErrorAction Stop | Out-Null
-             }
-             $global:fullUserReportPath = Join-Path -Path $UserReportCsvPath -ChildPath $reportFileName
-             Write-Verbose "Benutzerbericht wird erstellt: $fullUserReportPath"
-         } catch {
-             Write-Warning "Fehler beim Initialisieren des Benutzerberichts-Pfades '$UserReportCsvPath': $_. Bericht wird nicht erstellt."
-             $NoUserReport = $true # Deaktiviere Berichterstellung bei Fehler
-         }
-    } else {
-        Write-Verbose "Benutzerbericht wird nicht erstellt (-NoUserReport angegeben)."
+        $reportFileName = "{0}_UserReport_{1}.csv" -f $scriptBaseName, $scriptStartTime.ToString('yyyyMMdd-HHmmss')
+        try {
+            # Sicherstellen, dass das Zielverzeichnis existiert
+            if (-not (Test-Path $UserReportCsvPath -PathType Container)) {
+                Write-Verbose "Erstelle Berichts-Verzeichnis: $UserReportCsvPath"
+                New-Item -Path $UserReportCsvPath -ItemType Directory -Force:$true -ErrorAction Stop | Out-Null
+            }
+            $global:fullUserReportPath = Join-Path -Path $UserReportCsvPath -ChildPath $reportFileName
+            Write-Verbose "Aktionsbericht wird erstellt: $fullUserReportPath"
+        } catch {
+            Write-Error "Fehler beim Initialisieren des Aktionsberichts-Pfades '$UserReportCsvPath': $_. Bericht kann nicht erstellt werden. Breche ab."
+            exit 1 # Bericht ist obligatorisch für diese Modi
+        }
     }
 
 
@@ -308,17 +385,18 @@ begin {
         }
     }
 
-    # Funktion zum Hinzufügen von Daten zum Benutzerbericht
+    # Funktion zum Hinzufügen von Daten zum Aktionsbericht (für Copy, Create, Apply)
     function Add-UserReportEntry {
         param(
             [Parameter(Mandatory = $true)]
             [string]$SamAccountName,
             [Parameter(Mandatory = $true)]
-            [string]$Status, # z.B. "Erstellt", "Kopiert", "Fehler"
+            [string]$Status, # z.B. "Erstellt", "Kopiert", "Fehler", "Modifiziert"
             [Parameter(Mandatory = $false)]
             [string]$Detail = ""
         )
-        if (-not $NoUserReport) {
+        # Nur hinzufügen, wenn der Report für diesen Modus initialisiert wurde
+        if ($global:userReportData -ne $null) {
             $reportObject = [PSCustomObject]@{
                 Timestamp      = (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
                 SamAccountName = $SamAccountName
@@ -417,9 +495,6 @@ begin {
 
 
         # Parameter für New-ADUser vorbereiten
-        # Wichtige Attribute, die NICHT direkt kopiert werden sollten oder müssen:
-        # objectGUID, objectSid, sIDHistory, distinguishedName, lastLogon, lastLogonTimestamp, pwdLastSet, logonCount etc.
-        # New-ADUser mit -Instance kopiert viele, aber wir setzen die wichtigsten explizit.
         $newUserParams = @{
             SamAccountName        = $TargetSamAccountName
             Name                  = $TargetSamAccountName # Standard Name = SamAccountName, kann später angepasst werden
@@ -437,7 +512,13 @@ begin {
             Company               = $SourceUser.Company
             Title                 = $SourceUser.Title
             # Fügen Sie hier weitere Attribute hinzu, die kopiert werden sollen
-            # Beispiel: -OfficePhone = $SourceUser.OfficePhone
+            StreetAddress         = $SourceUser.StreetAddress
+            City                  = $SourceUser.City
+            State                 = $SourceUser.State
+            PostalCode            = $SourceUser.PostalCode
+            Country               = $SourceUser.Country
+            OfficePhone           = $SourceUser.OfficePhone
+            EmailAddress          = $SourceUser.EmailAddress
         }
 
         # Benutzer erstellen
@@ -659,9 +740,9 @@ begin {
              if ($UserData.ContainsKey($attr) -and $UserData.$attr) {
                  $newUserParams[$attr] = $UserData.$attr
                  Write-Verbose "Setze Attribut '$attr' für '$sam' aus Datenquelle."
-             } elseif ($TemplateUser -and $TemplateUser.$attr) {
+             } elseif ($TemplateUser) {
                  # Nur übernehmen, wenn Attribut im Template existiert und nicht leer ist
-                 if ($TemplateUser.PSObject.Properties[$attr] -ne $null -and $TemplateUser.$attr -ne '') {
+                 if ($TemplateUser.PSObject.Properties.Match($attr).Count -gt 0 -and $TemplateUser.$attr -ne $null -and $TemplateUser.$attr -ne '') {
                     $newUserParams[$attr] = $TemplateUser.$attr
                     Write-Verbose "Setze Attribut '$attr' für '$sam' vom Template-Benutzer."
                  }
@@ -719,6 +800,107 @@ begin {
          return $newUser
      }
 
+    # Funktion zum Anwenden von Eigenschaften auf einen existierenden Benutzer
+    function Apply-ADUserProperties {
+        [CmdletBinding(SupportsShouldProcess = $true)]
+        param(
+            [Parameter(Mandatory = $true)]
+            [Microsoft.ActiveDirectory.Management.ADUser]$ReferenceUser, # Quelle der Eigenschaften
+
+            [Parameter(Mandatory = $true)]
+            [Microsoft.ActiveDirectory.Management.ADUser]$TargetUser # Ziel der Modifikation
+        )
+
+        Write-Log -Level Info -Message "Beginne Anwenden von Eigenschaften von '$($ReferenceUser.SamAccountName)' auf '$($TargetUser.SamAccountName)'."
+
+        # --- Eigenschaften definieren, die angewendet werden sollen ---
+        $propertiesToApply = @(
+            'Description', 'Office', 'StreetAddress', 'City', 'State',
+            'PostalCode', 'Country', 'Department', 'Company', 'Title',
+            'OfficePhone', 'EmailAddress'
+            # Fügen Sie hier weitere Attribute hinzu oder entfernen Sie welche
+        )
+
+        # Hashtable für Set-ADUser vorbereiten
+        $setParams = @{ Identity = $TargetUser }
+        $changesDetected = $false
+
+        # Eigenschaften vergleichen und zur Hashtable hinzufügen, wenn unterschiedlich
+        foreach ($prop in $propertiesToApply) {
+            if ($ReferenceUser.$prop -ne $TargetUser.$prop) {
+                # Nur setzen, wenn der Wert im Referenzbenutzer nicht null oder leer ist
+                # (um zu vermeiden, dass existierende Werte im Ziel gelöscht werden, wenn sie in der Quelle fehlen)
+                 # Korrektur: Prüfen ob Property im Referenzobjekt existiert bevor Zugriff erfolgt
+                 if ($ReferenceUser.PSObject.Properties.Match($prop).Count -gt 0 -and $ReferenceUser.$prop -ne $null -and $ReferenceUser.$prop -ne '') {
+                    Write-Verbose "Änderung für '$($TargetUser.SamAccountName)' bei Eigenschaft '$prop': '$($TargetUser.$prop)' -> '$($ReferenceUser.$prop)'"
+                    $setParams[$prop] = $ReferenceUser.$prop
+                    $changesDetected = $true
+                } else {
+                    Write-Verbose "Eigenschaft '$prop' ist im Referenzbenutzer '$($ReferenceUser.SamAccountName)' leer, null oder nicht vorhanden, wird für '$($TargetUser.SamAccountName)' nicht überschrieben."
+                }
+            }
+        }
+
+        # --- Eigenschaften anwenden ---
+        if ($changesDetected) {
+            if ($PSCmdlet.ShouldProcess($TargetUser.SamAccountName, "Eigenschaften anwenden (Quelle: $($ReferenceUser.SamAccountName))")) {
+                try {
+                    Set-ADUser @setParams -ErrorAction Stop
+                    Write-Log -Level Info -Message "Eigenschaften erfolgreich auf '$($TargetUser.SamAccountName)' angewendet."
+                    Add-UserReportEntry -SamAccountName $TargetUser.SamAccountName -Status "Modifiziert" -Detail "Eigenschaften angewendet von $($ReferenceUser.SamAccountName)"
+                } catch {
+                    $msg = "Fehler beim Anwenden der Eigenschaften auf '$($TargetUser.SamAccountName)': $_"
+                    Write-Log -Level Error -Message $msg
+                    Add-UserReportEntry -SamAccountName $TargetUser.SamAccountName -Status "Fehler" -Detail "Fehler beim Anwenden der Eigenschaften: $_"
+                    # Nicht unbedingt abbrechen, vielleicht klappt das Gruppensetzen noch
+                }
+            } else {
+                Write-Log -Level Info -Message "Anwenden der Eigenschaften auf '$($TargetUser.SamAccountName)' übersprungen (ShouldProcess)."
+                Add-UserReportEntry -SamAccountName $TargetUser.SamAccountName -Status "Übersprungen" -Detail "Anwenden der Eigenschaften übersprungen (ShouldProcess)"
+            }
+        } else {
+            Write-Log -Level Info -Message "Keine unterschiedlichen Eigenschaften zum Anwenden auf '$($TargetUser.SamAccountName)' gefunden."
+            Add-UserReportEntry -SamAccountName $TargetUser.SamAccountName -Status "Keine Änderung" -Detail "Keine Eigenschaftsänderungen von $($ReferenceUser.SamAccountName) nötig"
+        }
+
+        # --- Gruppenmitgliedschaften hinzufügen (nur fehlende) ---
+        try {
+            Write-Verbose "Prüfe Gruppenmitgliedschaften für '$($TargetUser.SamAccountName)' (Quelle: $($ReferenceUser.SamAccountName))."
+            $referenceGroups = Get-ADPrincipalGroupMembership -Identity $ReferenceUser -ErrorAction Stop
+            $targetGroups = Get-ADPrincipalGroupMembership -Identity $TargetUser -ErrorAction Stop
+
+            # Gruppen filtern (z.B. Domain Users ausschließen)
+            $referenceGroupsFiltered = $referenceGroups | Where-Object {$_.Name -ne "Domain Users"}
+            # $targetGroupsFiltered = $targetGroups | Where-Object {$_.Name -ne "Domain Users"} # Target muss nicht gefiltert werden für Compare
+
+            # Gruppen finden, die der Referenzbenutzer hat, der Zielbenutzer aber nicht
+            $groupsToAdd = Compare-Object -ReferenceObject $referenceGroupsFiltered -DifferenceObject $targetGroups -Property DistinguishedName -PassThru | Where-Object {$_.SideIndicator -eq '<='}
+
+            if ($groupsToAdd) {
+                Write-Log -Level Info -Message "Füge $($groupsToAdd.Count) fehlende Gruppenmitgliedschaften zu '$($TargetUser.SamAccountName)' hinzu (Quelle: $($ReferenceUser.SamAccountName))."
+                if ($PSCmdlet.ShouldProcess($TargetUser.SamAccountName, "Fehlende Gruppenmitgliedschaften hinzufügen ($($groupsToAdd.Count) Gruppen)")) {
+                    Add-ADPrincipalGroupMembership -Identity $TargetUser -MemberOf $groupsToAdd -ErrorAction Stop
+                    Write-Log -Level Info -Message "Fehlende Gruppenmitgliedschaften erfolgreich zu '$($TargetUser.SamAccountName)' hinzugefügt."
+                    Add-UserReportEntry -SamAccountName $TargetUser.SamAccountName -Status "Modifiziert" -Detail "$($groupsToAdd.Count) Gruppen hinzugefügt von $($ReferenceUser.SamAccountName)"
+                } else {
+                    Write-Log -Level Info -Message "Hinzufügen fehlender Gruppenmitgliedschaften zu '$($TargetUser.SamAccountName)' übersprungen (ShouldProcess)."
+                    Add-UserReportEntry -SamAccountName $TargetUser.SamAccountName -Status "Übersprungen" -Detail "Hinzufügen fehlender Gruppen übersprungen (ShouldProcess)"
+                }
+            } else {
+                Write-Log -Level Info -Message "Keine fehlenden Gruppenmitgliedschaften bei '$($TargetUser.SamAccountName)' gefunden (basierend auf $($ReferenceUser.SamAccountName))."
+                 # Kein Report-Eintrag nötig, wenn nichts zu tun war
+            }
+        } catch {
+             $msg = "Fehler beim Verarbeiten der Gruppenmitgliedschaften für '$($TargetUser.SamAccountName)': $_"
+             Write-Log -Level Warning -Message $msg
+             Add-UserReportEntry -SamAccountName $TargetUser.SamAccountName -Status "Warnung" -Detail "Fehler beim Verarbeiten der Gruppen: $_"
+        }
+
+        Write-Log -Level Info -Message "Anwenden von Eigenschaften/Gruppen auf '$($TargetUser.SamAccountName)' abgeschlossen."
+
+    }
+
+
     Write-Verbose "Initialisierung abgeschlossen. Wechsle zur Prozess-Phase."
 } # End Begin Block
 
@@ -746,7 +928,7 @@ process {
             # 2. Zielbenutzernamen abfragen, wenn nicht angegeben
             if (-not $TargetUserSamAccountName) {
                 try {
-                    $TargetUserSamAccountName = Read-Host -Prompt "Bitte geben Sie den gewünschten SAMAccountName für den neuen Benutzer ein"
+                    $TargetUserSamAccountName = Read-Host -Prompt "Bitte geben Sie den gewünschten SAMAccountName für den NEUEN Benutzer ein"
                     if (-not $TargetUserSamAccountName) { throw "Eingabe darf nicht leer sein."}
                 } catch {
                      $msg = "Ungültige Eingabe für Zielbenutzernamen: $_"
@@ -852,10 +1034,171 @@ process {
 
         } # End CreateUsersFromCSV
 
+        # --- Modus: ApplyPropertiesToExistingUser ---
+        'ApplyPropertiesToExistingUser' {
+            Write-Log -Level Info -Message "Starte Modus: ApplyPropertiesToExistingUser"
+
+            # 1. Referenzbenutzer (Quelle) validieren
+            $referenceUserObject = $null
+            try {
+                $referenceUserObject = Get-ADUser -Identity $ReferenceUserSamAccountName -Properties * -ErrorAction Stop # Alle Properties laden
+                Write-Log -Level Info -Message "Referenzbenutzer (Quelle) '$($referenceUserObject.SamAccountName)' gefunden."
+            } catch {
+                $msg = "Referenzbenutzer (Quelle) '$ReferenceUserSamAccountName' konnte nicht gefunden werden: $_"
+                Write-Log -Level Error -Message $msg
+                Add-UserReportEntry -SamAccountName $ReferenceUserSamAccountName -Status "Fehler" -Detail $msg
+                return # Abbruch des Modus
+            }
+
+            # 2. Zielbenutzer validieren (muss existieren)
+            $targetUserObject = $null
+            try {
+                # Verwende den konsolidierten Parameter $TargetUserSamAccountName
+                $targetUserObject = Get-ADUser -Identity $TargetUserSamAccountName -Properties * -ErrorAction Stop # Alle Properties laden
+                Write-Log -Level Info -Message "Zielbenutzer '$($targetUserObject.SamAccountName)' gefunden."
+            } catch {
+                $msg = "Zielbenutzer '$TargetUserSamAccountName' konnte nicht gefunden werden oder existiert nicht: $_"
+                Write-Log -Level Error -Message $msg
+                Add-UserReportEntry -SamAccountName $TargetUserSamAccountName -Status "Fehler" -Detail $msg
+                return # Abbruch des Modus
+            }
+
+            # 3. Funktion zum Anwenden der Eigenschaften aufrufen
+            Apply-ADUserProperties -ReferenceUser $referenceUserObject `
+                                   -TargetUser $targetUserObject `
+                                   -Verbose:$VerbosePreference.ToString() -WarningAction $WarningPreference
+
+            # Report-Einträge werden innerhalb von Apply-ADUserProperties hinzugefügt
+            Write-Log -Level Info -Message "Modus ApplyPropertiesToExistingUser abgeschlossen für Ziel '$($targetUserObject.SamAccountName)'."
+
+        } # End ApplyPropertiesToExistingUser
+
+        # --- Modus: ExportUserData ---
+        'ExportUserData' {
+             Write-Log -Level Info -Message "Starte Modus: ExportUserData"
+
+             # 1. Eigenschaften für Get-ADUser zusammenstellen
+             $defaultExportProperties = @(
+                 'SamAccountName', 'Name', 'GivenName', 'Surname', 'DisplayName',
+                 'UserPrincipalName', 'Enabled', 'DistinguishedName'
+                 # 'MemberOf' wird immer benötigt
+             )
+             # Kombiniere Standard, explizit angeforderte und immer benötigte Properties
+             $allPropertiesToGet = ($defaultExportProperties + $PropertiesToExport + 'MemberOf', 'DistinguishedName' | Select-Object -Unique)
+             Write-Verbose "Folgende Eigenschaften werden für den Export abgefragt: $($allPropertiesToGet -join ', ')"
+
+             # 2. Benutzer suchen
+             $foundUsers = @()
+             $getADUserParams = @{
+                 Properties = $allPropertiesToGet
+                 ErrorAction = 'Stop' # Fehler bei der Suche ist kritisch für diesen Modus
+             }
+             # Entscheiden ob -Filter oder -LDAPFilter verwendet wird
+             if ($UserFilter -like '*=*' -and $UserFilter -notlike '(*') { # Einfacher Filter
+                 $getADUserParams.Filter = $UserFilter
+                 Write-Verbose "Verwende einfachen Filter: $UserFilter"
+             } else { # Annahme: LDAP Filter
+                 $getADUserParams.LDAPFilter = $UserFilter
+                 Write-Verbose "Verwende LDAP-Filter: $UserFilter"
+             }
+             if ($SearchBaseOU) {
+                 $getADUserParams.SearchBase = $SearchBaseOU
+                 Write-Verbose "Suche eingeschränkt auf OU: $SearchBaseOU"
+             }
+
+             try {
+                 Write-Log -Level Info -Message "Suche Benutzer mit Filter '$UserFilter'..."
+                 $foundUsers = Get-ADUser @getADUserParams
+                 Write-Log -Level Info -Message "$($foundUsers.Count) Benutzer gefunden."
+             } catch {
+                 Write-Log -Level Error -Message "Fehler beim Suchen von Benutzern mit Filter '$UserFilter': $_"
+                 return # Abbruch des Modus
+             }
+
+             if ($foundUsers.Count -eq 0) {
+                 Write-Log -Level Warning -Message "Keine Benutzer für Filter '$UserFilter' gefunden."
+                 return
+             }
+
+             # 3. Daten für den Export aufbereiten
+             $exportData = [System.Collections.Generic.List[PSObject]]::new()
+             Write-Log -Level Info -Message "Bereite Daten für den Export vor..."
+             foreach ($user in $foundUsers) {
+                 $userExportObject = [ordered]@{
+                     # Standard-Spalten zuerst
+                     SamAccountName = $user.SamAccountName
+                     Name = $user.Name
+                     GivenName = $user.GivenName
+                     Surname = $user.Surname
+                     DisplayName = $user.DisplayName
+                     UserPrincipalName = $user.UserPrincipalName
+                     Enabled = $user.Enabled
+                     DistinguishedName = $user.DistinguishedName
+                     OU = ($user.DistinguishedName -split ',', 2)[1] # OU extrahieren
+                 }
+
+                 # Explizit angeforderte Eigenschaften hinzufügen
+                 foreach ($prop in $PropertiesToExport) {
+                     if ($user.PSObject.Properties.Match($prop).Count -gt 0) {
+                         $userExportObject[$prop] = $user.$prop
+                     } else {
+                         $userExportObject[$prop] = $null # Spalte hinzufügen, auch wenn Eigenschaft nicht existiert
+                     }
+                 }
+
+                 # Gruppen hinzufügen (kommasepariert)
+                 $groupNames = @()
+                 try {
+                     # Sicherstellen, dass MemberOf nicht $null ist
+                     if ($user.MemberOf) {
+                         $groupNames = $user.MemberOf | ForEach-Object {
+                            try { (Get-ADGroup $_ -ErrorAction Stop).Name } catch { Write-Verbose "Konnte Gruppe '$_' nicht auflösen."; "FehlerhafteGruppe:$_" }
+                         } | Sort-Object
+                     }
+                 } catch {
+                     Write-Log -Level Warning -Message "Fehler beim Auflösen der Gruppen für '$($user.SamAccountName)': $_"
+                 }
+                 $userExportObject['GroupNames'] = $groupNames -join ',' # Komma als Trenner innerhalb der Zelle
+
+                 $exportData.Add([PSCustomObject]$userExportObject)
+             } # End foreach user
+
+             # 4. Nach CSV exportieren
+             $finalExportPath = $ExportCsvPath
+             # Standardpfad setzen, wenn nicht explizit angegeben (obwohl Mandatory)
+             # Da ExportCsvPath Mandatory ist, sollte dies nicht nötig sein, aber sicher ist sicher
+             if (-not $PSBoundParameters.ContainsKey('ExportCsvPath')) {
+                  $exportFileName = "{0}_ExportUserData_{1}.csv" -f $scriptBaseName, $scriptStartTime.ToString('yyyyMMdd-HHmmss')
+                  $finalExportPath = Join-Path -Path $basePath -ChildPath $exportFileName
+                  Write-Verbose "Kein -ExportCsvPath angegeben (obwohl Mandatory?), verwende Standard: $finalExportPath"
+             }
+
+             Write-Log -Level Info -Message "Exportiere $($exportData.Count) Benutzerdatensätze nach '$finalExportPath'."
+             if ($PSCmdlet.ShouldProcess($finalExportPath, "Benutzerdaten exportieren")) {
+                 try {
+                     # Sicherstellen, dass das Zielverzeichnis existiert
+                     $exportDir = Split-Path -Path $finalExportPath -Parent
+                     if (-not (Test-Path $exportDir -PathType Container)) {
+                         Write-Verbose "Erstelle Export-Verzeichnis: $exportDir"
+                         New-Item -Path $exportDir -ItemType Directory -Force:$true -ErrorAction Stop | Out-Null
+                     }
+
+                     $exportData | Export-Csv -Path $finalExportPath -Delimiter ';' -NoTypeInformation -Encoding UTF8 -Force -ErrorAction Stop
+                     Write-Log -Level Info -Message "Export erfolgreich abgeschlossen: $finalExportPath"
+                 } catch {
+                     Write-Log -Level Error -Message "Fehler beim Exportieren der Daten nach '$finalExportPath': $_"
+                 }
+             } else {
+                 Write-Log -Level Info -Message "Export nach '$finalExportPath' übersprungen (ShouldProcess)."
+             }
+
+        } # End ExportUserData
+
         default {
             # Sollte nicht passieren bei korrekter Parameternutzung
-            Write-Log -Level Error -Message "Unbekannter oder keiner der Hauptmodi wurde ausgewählt. Verwenden Sie -CopySingleUser oder -CreateUsersFromCSV."
-            Add-UserReportEntry -SamAccountName "(Skript)" -Status "Fehler" -Detail "Ungültiger Modus"
+            $msg = "Unbekannter oder keiner der Hauptmodi wurde ausgewählt. Verwenden Sie -CopySingleUser, -CreateUsersFromCSV, -ApplyPropertiesToExistingUser oder -ExportUserData."
+            Write-Log -Level Error -Message $msg
+            Add-UserReportEntry -SamAccountName "(Skript)" -Status "Fehler" -Detail $msg
         }
     } # End Switch ParameterSetName
 
@@ -868,21 +1211,21 @@ end {
     $duration = New-TimeSpan -Start $scriptStartTime -End $scriptEndTime
     Write-Verbose "Beginne End-Phase."
 
-    # Benutzerbericht schreiben, wenn aktiviert und Daten vorhanden
-    if (-not $NoUserReport -and $global:userReportData.Count -gt 0) {
-        Write-Log -Level Info -Message "Schreibe Benutzerbericht nach '$($global:fullUserReportPath)'..."
-        if ($PSCmdlet.ShouldProcess($global:fullUserReportPath, "Benutzerbericht exportieren")) {
+    # Aktionsbericht schreiben, wenn Daten vorhanden (nur für Copy, Create, Apply)
+    if ($global:userReportData -ne $null -and $global:userReportData.Count -gt 0) {
+        Write-Log -Level Info -Message "Schreibe Aktionsbericht nach '$($global:fullUserReportPath)'..."
+        if ($PSCmdlet.ShouldProcess($global:fullUserReportPath, "Aktionsbericht exportieren")) {
             try {
                 $global:userReportData | Export-Csv -Path $global:fullUserReportPath -Delimiter ';' -NoTypeInformation -Encoding UTF8 -Force -ErrorAction Stop
-                Write-Log -Level Info -Message "Benutzerbericht erfolgreich geschrieben."
+                Write-Log -Level Info -Message "Aktionsbericht erfolgreich geschrieben."
             } catch {
-                Write-Log -Level Error -Message "Fehler beim Schreiben des Benutzerberichts nach '$($global:fullUserReportPath)': $_"
+                Write-Log -Level Error -Message "Fehler beim Schreiben des Aktionsberichts nach '$($global:fullUserReportPath)': $_"
             }
         } else {
-             Write-Log -Level Info -Message "Schreiben des Benutzerberichts übersprungen (ShouldProcess)."
+             Write-Log -Level Info -Message "Schreiben des Aktionsberichts übersprungen (ShouldProcess)."
         }
-    } elseif (-not $NoUserReport) {
-         Write-Log -Level Info -Message "Keine Daten für Benutzerbericht vorhanden."
+    } elseif ($global:userReportData -ne $null) { # Report wurde initialisiert, aber keine Daten
+         Write-Log -Level Info -Message "Keine Daten für Aktionsbericht vorhanden."
     }
 
     Write-Log -Level Info -Message "Skriptausführung beendet. Gesamtdauer: $($duration.ToString('g'))"
