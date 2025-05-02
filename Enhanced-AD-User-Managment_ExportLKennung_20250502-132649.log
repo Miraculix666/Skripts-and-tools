@@ -9,3 +9,18 @@
 [2025-05-02 13:26:53] [Warning] Keine Benutzer für die angegebenen Kriterien gefunden.
 [2025-05-02 13:26:53] [Info] Skriptausführung beendet. Gesamtdauer: 0:00:03,8667884
 [2025-05-02 13:26:53] [Info] Log-Datei: C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment_ExportLKennung_20250502-132649.log
+
+
+[INFO] Suche Benutzer mit LDAP-Filter '(|(sAMAccountName=L110*)(sAMAccountName=L114*))' in den gefundenen OUs...
+WARNUNG: Fehler beim Durchsuchen der OU 'OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de' mit Filter '(|(sAMAccountName=L110*)
+(sAMAccountName=L114*))': Das Argument "collection" mit dem Wert  "System.Object[]" für "AddRange" kann nicht in den Typ "System.Colle
+ctions.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden: "Der Wert "System.Object[]" vom Typ "System.O
+bject[]" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden."
+WARNUNG: Fehler beim Durchsuchen der OU 'OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de' mit Filter '(|(sAMAccountName=L110*)
+(sAMAccountName=L114*))': Das Argument "collection" mit dem Wert  "System.Object[]" für "AddRange" kann nicht in den Typ "System.Colle
+ctions.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden: "Der Wert "System.Object[]" vom Typ "System.O
+bject[]" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden."
+[INFO] Insgesamt 0 eindeutige Benutzer gefunden.
+WARNUNG: Keine Benutzer für die angegebenen Kriterien gefunden.
+[INFO] Skriptausführung beendet. Gesamtdauer: 0:00:03,8667884
+[INFO] Log-Datei: C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment_ExportLKennung_20250502-132649.log
