@@ -1,3 +1,5 @@
+#Enhanced-AD-User-Managment.PromptHistory.log
+
 <#
 .SYNOPSIS
 Verwaltet Active Directory-Benutzer: Kopiert einzelne Benutzer, erstellt Benutzer aus CSV, wendet Eigenschaften an oder exportiert Benutzerdaten.
