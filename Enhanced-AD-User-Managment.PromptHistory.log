@@ -1,0 +1,33 @@
+Enhanced-AD-User-Managment.ps1
+# Enhanced-ADManagement Prompt History Log
+
+## v2.0 (2025-05-02) - Optimized & Summarized Prompt (Revision 1)
+Based on user feedback on v1.0 script.
+
+### Task Overview
+Analyze, debug, combine features from provided script examples, and enhance into a single PowerShell script named 'Enhanced-ADManagement.ps1'. Focus on AD user copying (single) and user creation (from CSV, optional template). Ensure code quality, usability, robust error handling, and detailed logging/verbose output. Implement localization for Germany (de-DE). **Removed:** Computer export functionality.
+
+### Target Environment
+- PowerShell version 5.1 (Strict Compatibility)
+
+### Key Requirements Summary (Changes from v1.0)
+1.  **Combined Functionality & Parameter Sets:** Implement distinct modes (CopySingleUser, CreateUsersFromCSV) using parameter sets. **Removed:** ExportComputers mode.
+2.  **Parameter Handling:** Support interactive prompts for missing mandatory parameters. **Consolidated:** `-SourceUserSamAccountName` and `-TemplateUserSamAccountName` into single `-ReferenceUserSamAccountName` (mandatory for Copy, optional for CSV).
+3.  **Code Enhancement:** Fix errors, add extensive comments, improve readability/maintainability (best practices), robust `try/catch` error handling, input validation (`ValidateScript`, etc.), comprehensive comment-based help (`Get-Help`).
+4.  **Localization (de-DE):** Set culture to 'de-DE'. Use semicolon (;) for CSV delimiters. Format dates/times according to German conventions where applicable.
+5.  **Verbose Output & Logging:** Integrate `Write-Verbose` for detailed execution flow (controlled by `-Verbose` switch). Implement a `Write-Log` function writing to a timestamped file in `$LogPath`, controlled by `-LogLevel` ('Error', 'Warning', 'Info', 'Verbose'). Default LogLevel 'Info'. **Changed Default:** Log path default is script directory (`$PSScriptRoot`) or current directory (`$PWD`) if `$PSScriptRoot` is null. Log filename prefixed with script name.
+6.  **Security:** Use `SecureString` for passwords. Warn about plaintext passwords in CSV. Use `SupportsShouldProcess`.
+7.  **CSV Handling (CreateUsersFromCSV):** Define expected CSV structure (mandatory: SamAccountName, GivenName, Surname; optional: Password, TargetOU, Enabled, etc.). Handle missing columns/data gracefully. Process rows individually, logging errors but continuing where possible. Use `-ReferenceUserSamAccountName` for template user.
+8.  **OU Handling:** Define clear precedence for TargetOU (Parameter > CSV > Template > Error).
+9.  **Group Handling:** Copy groups for `CopySingleUser` (from ReferenceUser). Add groups from template user (ReferenceUser) for `CreateUsersFromCSV` (if specified).
+10. **MAC Address Retrieval:** **Removed.**
+11. **Source References:** Include user-provided URLs in the script header comments.
+12. **User Report:** Add optional user report generation (CSV format, default on, disable with `-NoUserReport`). **Changed Default:** Report path default is script directory (`$PSScriptRoot`) or current directory (`$PWD`). Report filename prefixed with script name.
+13. **Deliverables:** Final script (`Enhanced-ADManagement.ps1` v2), explanation, usage examples, localization notes, this PromptHistory.log content.
+
+### User-Provided Script Examples & Concepts Integrated (Relevant subset):
+- AD-UserCopy-Tool.ps1 (Copying, Logging, OU)
+- Active Directory User Management Script v2.4 (Template-based logic, Logging)
+- CopyCreateNewUser.ps1 (Template Export concept, CSV Creation)
+- ~~Computer Export Script~~ (Removed)
+
