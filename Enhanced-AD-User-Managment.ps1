@@ -1,8 +1,6 @@
-#Enhanced-AD-User-Managment.ps1
-
 <#
 .SYNOPSIS
-Verwaltet Active Directory-Benutzer: Kopiert einzelne Benutzer, erstellt Benutzer aus CSV, wendet Eigenschaften an oder exportiert Benutzerdaten.
+Verwaltet Active Directory-Benutzer: Kopiert einzelne Benutzer, erstellt Benutzer aus CSV, wendet Eigenschaften an oder exportiert Benutzerdaten (allgemein oder spezifisch für L-Kennung).
 
 .DESCRIPTION
 Dieses Skript bietet Werkzeuge zur Verwaltung von Active Directory (AD) Benutzern.
@@ -10,7 +8,8 @@ Es kann verwendet werden, um:
 - Einen einzelnen AD-Benutzer zu kopieren, einschließlich Gruppenzugehörigkeiten und optional der OU-Struktur (Modus: CopySingleUser).
 - Mehrere AD-Benutzer basierend auf einer CSV-Datei zu erstellen (Modus: CreateUsersFromCSV). Optional können Attribute und Gruppen von einem Referenzbenutzer (Vorlage) übernommen werden.
 - Ausgewählte Eigenschaften und Gruppenmitgliedschaften von einem Referenzbenutzer auf einen bereits existierenden Zielbenutzer anzuwenden (Modus: ApplyPropertiesToExistingUser).
-- Benutzerdaten basierend auf einem Filter zu suchen und relevante Eigenschaften (inkl. OU, Gruppen) in eine CSV-Datei zu exportieren (Modus: ExportUserData).
+- Benutzerdaten basierend auf einem allgemeinen Filter zu suchen und relevante Eigenschaften (inkl. OU, Gruppen) in eine CSV-Datei zu exportieren (Modus: ExportUserData).
+- Spezifisch Benutzer mit L-Kennung (L110*/L114*) aus definierten OUs (standardmäßig '81', '82') zu exportieren (Modus: ExportLKennung).
 
 Das Skript ist für PowerShell Version 5.1 optimiert und verwendet deutsche Lokalisierungseinstellungen für CSV-Exporte und Datums-/Zeitformate.
 Es implementiert detaillierte Protokollierung und unterstützt den -Verbose Parameter für ausführliche Ausgaben.
@@ -26,7 +25,10 @@ Schalter, um den Modus zur Erstellung von Benutzern aus einer CSV-Datei zu aktiv
 Schalter, um den Modus zum Anwenden von Eigenschaften/Gruppen auf einen existierenden Benutzer zu aktivieren.
 
 .PARAMETER ExportUserData
-Schalter, um den Modus zum Exportieren von Benutzerdaten in eine CSV-Datei zu aktivieren.
+Schalter, um den Modus zum Exportieren von Benutzerdaten mit einem allgemeinen Filter zu aktivieren.
+
+.PARAMETER ExportLKennung
+Schalter, um den Modus zum Exportieren spezifischer L-Kennung-Benutzer aus definierten OUs zu aktivieren.
 
 .PARAMETER ReferenceUserSamAccountName
 Der SAMAccountName des Referenzbenutzers.
@@ -47,7 +49,7 @@ Der Distinguished Name der Organisationseinheit (OU), in die der neue Benutzer k
 Für CopySingleUser: Optional; Standard ist die OU des Referenzbenutzers.
 Für CreateUsersFromCSV: Optional; Überschreibt die OU aus der CSV oder vom Referenzbenutzer.
 Für ApplyPropertiesToExistingUser: Nicht relevant.
-Für ExportUserData: Nicht relevant (siehe -SearchBaseOU).
+Für ExportUserData / ExportLKennung: Nicht relevant (siehe -SearchBaseOU / -LKennungOUNames).
 
 .PARAMETER Force
 Überschreibt einen bereits existierenden Zielbenutzer im Modus CopySingleUser, falls vorhanden. Standardmäßig wird ein Fehler ausgegeben.
@@ -67,10 +69,19 @@ Ein Filterausdruck für Get-ADUser (`-Filter` oder `-LDAPFilter`), um die zu exp
 Der Distinguished Name einer OU, um die Benutzersuche für den Export einzuschränken (nur für Modus ExportUserData). Optional.
 
 .PARAMETER PropertiesToExport
-Eine Liste von AD-Attributnamen (String-Array), die zusätzlich zu den Standardattributen exportiert werden sollen (nur für Modus ExportUserData). Standard: siehe .NOTES.
+Eine Liste von AD-Attributnamen (String-Array), die zusätzlich zu den Standardattributen exportiert werden sollen (für Modi ExportUserData und ExportLKennung). Standard: siehe .NOTES.
 
 .PARAMETER ExportCsvPath
 Pfad für die CSV-Exportdatei (nur für Modus ExportUserData). Mandatory.
+
+.PARAMETER LKennungOUNames
+Die Namen der OUs, die für den L-Kennung-Export durchsucht werden sollen (nur für Modus ExportLKennung). Standard: @('81', '82').
+
+.PARAMETER LKennungLDAPFilter
+Der LDAP-Filter, der für den L-Kennung-Export verwendet wird (nur für Modus ExportLKennung). Standard: "(|(sAMAccountName=L110*)(sAMAccountName=L114*))".
+
+.PARAMETER LKennungExportCsvPath
+Pfad für die CSV-Exportdatei im L-Kennung-Exportmodus (nur für Modus ExportLKennung). Mandatory.
 
 .PARAMETER LogPath
 Verzeichnis für die Log-Dateien. Standard ist das Verzeichnis, in dem das Skript liegt (`$PSScriptRoot`), oder das aktuelle Arbeitsverzeichnis (`$PWD`), wenn nicht aus einer Datei ausgeführt.
@@ -79,10 +90,10 @@ Verzeichnis für die Log-Dateien. Standard ist das Verzeichnis, in dem das Skrip
 Steuert die Detailtiefe der Log-Datei. Mögliche Werte: Error, Warning, Info, Verbose. Standard ist 'Info'.
 
 .PARAMETER UserReportCsvPath
-Pfad für die CSV-Datei, die einen Bericht über erstellte/kopierte/modifizierte Benutzer enthält (nicht für ExportUserData relevant). Standard ist das Skriptverzeichnis (`$PSScriptRoot` oder `$PWD`) mit dem Namen '{ScriptName}_UserReport_{Timestamp}.csv'. Der Bericht wird immer für die Modi Copy, Create, Apply erstellt.
+Pfad für die CSV-Datei, die einen Bericht über erstellte/kopierte/modifizierte Benutzer enthält (nicht für Export-Modi relevant). Standard ist das Skriptverzeichnis (`$PSScriptRoot` oder `$PWD`) mit dem Namen '{ScriptName}_UserReport_{Timestamp}.csv'. Der Bericht wird immer für die Modi Copy, Create, Apply erstellt.
 
 .EXAMPLE
-# Beispiel 1: Kopiert 'BenutzerA' zu 'BenutzerB' interaktiv (fragt nach Zielname und Passwort)
+# Beispiel 1: Kopiert 'BenutzerA' zu 'BenutzerB' interaktiv
 .\Enhanced-ADManagement.ps1 -CopySingleUser -ReferenceUserSamAccountName BenutzerA
 
 .EXAMPLE
@@ -104,24 +115,24 @@ $defaultPass = ConvertTo-SecureString "Sommer2025!" -AsPlainText -Force
 .\Enhanced-ADManagement.ps1 -ApplyPropertiesToExistingUser -ReferenceUserSamAccountName RefUser -TargetUserSamAccountName ExistingUser -Verbose
 
 .EXAMPLE
-# Beispiel 6: Exportiert alle Benutzer, deren Name mit 'L' beginnt, aus der OU 'OU=Lehrlinge,DC=firma,DC=local' in eine CSV-Datei
+# Beispiel 6: Exportiert alle Benutzer, deren Name mit 'L' beginnt, aus der OU 'OU=Lehrlinge,DC=firma,DC=local' in eine CSV-Datei (Allgemeiner Export)
 .\Enhanced-ADManagement.ps1 -ExportUserData -UserFilter "SamAccountName -like 'L*'" -SearchBaseOU "OU=Lehrlinge,DC=firma,DC=local" -ExportCsvPath "C:\temp\L_Benutzer_Export.csv" -Verbose
 
 .EXAMPLE
-# Beispiel 7: Exportiert Benutzer mit spezifischem LDAP-Filter und zusätzlichen Eigenschaften
+# Beispiel 7: Exportiert Benutzer mit spezifischem LDAP-Filter und zusätzlichen Eigenschaften (Allgemeiner Export)
 .\Enhanced-ADManagement.ps1 -ExportUserData -UserFilter "(|(sAMAccountName=L110*)(sAMAccountName=L114*))" -PropertiesToExport @("employeeID", "manager") -ExportCsvPath "C:\temp\Spezial_Export.csv"
 
 .EXAMPLE
-# Beispiel 8: Exportiert Benutzer aus OU '81', deren SamAccountName mit 'L110' oder 'L114' beginnt (analog zu L-Kennung-PWset_V2.ps1)
-# Hinweis: Für mehrere OUs (z.B. 81 und 82) muss der Befehl ggf. mehrfach ausgeführt oder ein komplexerer LDAP-Filter ohne -SearchBaseOU verwendet werden.
-$ldapFilter = "(|(sAMAccountName=L110*)(sAMAccountName=L114*))"
-$ouDN = "OU=81,DC=firma,DC=local" # Ersetzen Sie dies mit dem korrekten DN der OU '81'
-$exportPfad = "C:\temp\Export_L-Kennung_OU81.csv"
-.\Enhanced-ADManagement.ps1 -ExportUserData -UserFilter $ldapFilter -SearchBaseOU $ouDN -ExportCsvPath $exportPfad -Verbose
+# Beispiel 8: Exportiert spezifische L-Kennung-Benutzer (L110*/L114*) aus den Standard-OUs ('81', '82')
+.\Enhanced-ADManagement.ps1 -ExportLKennung -LKennungExportCsvPath "C:\temp\Export_L-Kennung_Standard.csv" -Verbose
+
+.EXAMPLE
+# Beispiel 9: Exportiert spezifische L-Kennung-Benutzer aus einer anderen OU ('99') mit Standardfilter
+.\Enhanced-ADManagement.ps1 -ExportLKennung -LKennungOUNames @('99') -LKennungExportCsvPath "C:\temp\Export_L-Kennung_OU99.csv" -Verbose
 
 .NOTES
 Autor: Gemini (basierend auf Nutzer-Input und Beispielen)
-Version: 4.0
+Version: 5.0
 Datum: 2025-05-02
 Benötigte Module: ActiveDirectory (wird durch #requires geprüft)
 Benötigte Berechtigungen: Ausreichende AD-Berechtigungen zum Lesen von Benutzern und zum Erstellen/Modifizieren von Benutzern. Schreibrechte im Zielverzeichnis für Logs/Berichte/Exporte.
@@ -131,10 +142,11 @@ Modus ApplyPropertiesToExistingUser:
 - Fügt Gruppenmitgliedschaften hinzu, die der Referenzbenutzer hat, der Zielbenutzer aber nicht (ausgenommen 'Domain Users'). Bestehende Gruppen des Zielbenutzers bleiben erhalten.
 - Ändert KEINE sicherheitsrelevanten oder Identitäts-Attribute wie Passwort, SID, SamAccountName, UPN, Enabled-Status.
 
-Modus ExportUserData:
+Modi ExportUserData / ExportLKennung:
 - Standardmäßig exportierte Eigenschaften: SamAccountName, Name, GivenName, Surname, DisplayName, UserPrincipalName, Enabled, DistinguishedName, OU (extrahiert), GroupNames (kommasepariert).
 - Zusätzliche Eigenschaften können mit -PropertiesToExport angegeben werden. Immer mit exportiert werden 'MemberOf' (zur Gruppenauflösung) und 'DistinguishedName' (zur OU-Extraktion).
 - Der Export erfolgt als CSV mit Semikolon als Trennzeichen und UTF8-Kodierung.
+- Der Modus ExportLKennung sucht standardmäßig in OUs mit Namen '81' und '82' nach Benutzern mit SamAccountName 'L110*' oder 'L114*'. Dies kann über -LKennungOUNames und -LKennungLDAPFilter angepasst werden.
 
 CSV-Format für CreateUsersFromCSV:
 - Trennzeichen: Semikolon (;)
@@ -148,7 +160,7 @@ CSV-Format für CreateUsersFromCSV:
 
 Passwort-Sicherheit: Das Speichern von Klartext-Passwörtern in CSV-Dateien ist ein erhebliches Sicherheitsrisiko! Verwenden Sie bevorzugt den Parameter -DefaultPassword oder generieren Sie zufällige Passwörter und kommunizieren Sie diese sicher.
 
-Standardpfade: Wenn -LogPath, -UserReportCsvPath oder -ExportCsvPath (ohne Angabe) nicht angegeben werden, versucht das Skript, die Dateien im selben Verzeichnis wie das Skript selbst (`$PSScriptRoot`) zu speichern. Wenn das Skript nicht aus einer Datei ausgeführt wird (z.B. im ISE oder direkt in der Konsole), wird stattdessen das aktuelle Arbeitsverzeichnis (`$PWD`) verwendet. Stellen Sie sicher, dass Schreibberechtigungen im Zielverzeichnis vorhanden sind.
+Standardpfade: Wenn -LogPath, -UserReportCsvPath, -ExportCsvPath oder -LKennungExportCsvPath nicht angegeben werden, versucht das Skript, die Dateien im selben Verzeichnis wie das Skript selbst (`$PSScriptRoot`) zu speichern. Wenn das Skript nicht aus einer Datei ausgeführt wird (z.B. im ISE oder direkt in der Konsole), wird stattdessen das aktuelle Arbeitsverzeichnis (`$PWD`) verwendet. Stellen Sie sicher, dass Schreibberechtigungen im Zielverzeichnis vorhanden sind.
 
 Benutzerbericht: Der CSV-Bericht über durchgeführte Aktionen (Copy, Create, Apply) wird immer erstellt und im Verzeichnis gespeichert, das durch -UserReportCsvPath festgelegt ist (oder im Standardpfad).
 
@@ -195,8 +207,11 @@ param(
     [Parameter(ParameterSetName = 'ApplyPropertiesToExistingUser', Mandatory = $true, HelpMessage = "Aktiviert Modus zum Anwenden von Eigenschaften auf existierenden Benutzer.")]
     [switch]$ApplyPropertiesToExistingUser,
 
-    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $true, HelpMessage = "Aktiviert Modus zum Exportieren von Benutzerdaten.")]
+    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $true, HelpMessage = "Aktiviert Modus zum Exportieren von Benutzerdaten mit allgemeinem Filter.")]
     [switch]$ExportUserData,
+
+    [Parameter(ParameterSetName = 'ExportLKennung', Mandatory = $true, HelpMessage = "Aktiviert Modus zum Exportieren spezifischer L-Kennung-Benutzer.")]
+    [switch]$ExportLKennung,
 
     # --- Gemeinsame Parameter für Copy, Create, Apply ---
     [Parameter(ParameterSetName = 'CopySingleUser', Mandatory = $true, HelpMessage = "SAMAccountName des Quellbenutzers für die Kopie.")]
@@ -239,12 +254,26 @@ param(
     [ValidateNotNullOrEmpty()]
     [string]$SearchBaseOU,
 
-    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $false, HelpMessage = "Zusätzliche AD-Attribute, die exportiert werden sollen.")]
-    [string[]]$PropertiesToExport = @(), # Leeres Array als Standard
-
     [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $true, HelpMessage = "Pfad für die CSV-Exportdatei.")]
+    [Parameter(ParameterSetName = 'ExportLKennung')] # Kann auch für L-Kennung Export verwendet werden
     [ValidateNotNullOrEmpty()]
-    [string]$ExportCsvPath,
+    [string]$ExportCsvPath, # Wird jetzt auch von ExportLKennung verwendet, wenn LKennungExportCsvPath nicht gesetzt ist
+
+    # --- Parameter für ExportLKennung ---
+    [Parameter(ParameterSetName = 'ExportLKennung', Mandatory = $false, HelpMessage = "Namen der OUs für L-Kennung Export.")]
+    [string[]]$LKennungOUNames = @('81', '82'), # Standard OUs
+
+    [Parameter(ParameterSetName = 'ExportLKennung', Mandatory = $false, HelpMessage = "LDAP-Filter für L-Kennung Export.")]
+    [string]$LKennungLDAPFilter = "(|(sAMAccountName=L110*)(sAMAccountName=L114*))", # Standard Filter
+
+    [Parameter(ParameterSetName = 'ExportLKennung', Mandatory = $true, HelpMessage = "Pfad für die CSV-Exportdatei des L-Kennung Exports.")]
+    [ValidateNotNullOrEmpty()]
+    [string]$LKennungExportCsvPath,
+
+    # --- Gemeinsame Parameter für Exporte ---
+    [Parameter(ParameterSetName = 'ExportUserData')]
+    [Parameter(ParameterSetName = 'ExportLKennung')]
+    [string[]]$PropertiesToExport = @(), # Gilt für beide Export-Modi
 
     # --- Globale Parameter ---
     [Parameter(Mandatory = $false, HelpMessage = "Verzeichnis für Log-Dateien. Standard: Skriptverzeichnis oder aktuelles Verzeichnis.")]
@@ -1073,7 +1102,7 @@ process {
 
         } # End ApplyPropertiesToExistingUser
 
-        # --- Modus: ExportUserData ---
+        # --- Modus: ExportUserData (Allgemeiner Export) ---
         'ExportUserData' {
              Write-Log -Level Info -Message "Starte Modus: ExportUserData"
 
@@ -1164,14 +1193,7 @@ process {
              } # End foreach user
 
              # 4. Nach CSV exportieren
-             $finalExportPath = $ExportCsvPath
-             # Standardpfad setzen, wenn nicht explizit angegeben (obwohl Mandatory)
-             # Da ExportCsvPath Mandatory ist, sollte dies nicht nötig sein, aber sicher ist sicher
-             if (-not $PSBoundParameters.ContainsKey('ExportCsvPath')) {
-                  $exportFileName = "{0}_ExportUserData_{1}.csv" -f $scriptBaseName, $scriptStartTime.ToString('yyyyMMdd-HHmmss')
-                  $finalExportPath = Join-Path -Path $basePath -ChildPath $exportFileName
-                  Write-Verbose "Kein -ExportCsvPath angegeben (obwohl Mandatory?), verwende Standard: $finalExportPath"
-             }
+             $finalExportPath = $ExportCsvPath # Mandatory Parameter
 
              Write-Log -Level Info -Message "Exportiere $($exportData.Count) Benutzerdatensätze nach '$finalExportPath'."
              if ($PSCmdlet.ShouldProcess($finalExportPath, "Benutzerdaten exportieren")) {
@@ -1194,9 +1216,121 @@ process {
 
         } # End ExportUserData
 
+        # --- Modus: ExportLKennung (Spezifischer Export) ---
+        'ExportLKennung' {
+             Write-Log -Level Info -Message "Starte Modus: ExportLKennung"
+
+             # 1. Ziel-OUs finden
+             $targetOUDNs = @()
+             $domainDN = (Get-ADDomain).DistinguishedName
+             Write-Log -Level Info -Message "Suche nach OUs: $($LKennungOUNames -join ', ')"
+             foreach ($ouName in $LKennungOUNames) {
+                 try {
+                     $foundOU = Get-ADOrganizationalUnit -Filter "Name -eq '$ouName'" -SearchBase $domainDN -SearchScope Subtree -ErrorAction Stop
+                     if ($foundOU) {
+                         $targetOUDNs += $foundOU.DistinguishedName
+                         Write-Verbose "OU '$ouName' gefunden: $($foundOU.DistinguishedName)"
+                     } else {
+                         Write-Log -Level Warning -Message "OU mit Namen '$ouName' nicht gefunden."
+                     }
+                 } catch {
+                      Write-Log -Level Warning -Message "Fehler beim Suchen der OU '$ouName': $_"
+                 }
+             }
+
+             if ($targetOUDNs.Count -eq 0) {
+                 Write-Log -Level Error -Message "Keine der angegebenen OUs gefunden ($($LKennungOUNames -join ', ')). Export wird abgebrochen."
+                 return
+             }
+             Write-Log -Level Info -Message "Gefundene OU DNs für die Suche: $($targetOUDNs -join '; ')"
+
+             # 2. Eigenschaften für Get-ADUser zusammenstellen (wie bei ExportUserData)
+             $defaultExportProperties = @(
+                 'SamAccountName', 'Name', 'GivenName', 'Surname', 'DisplayName',
+                 'UserPrincipalName', 'Enabled', 'DistinguishedName'
+             )
+             $allPropertiesToGet = ($defaultExportProperties + $PropertiesToExport + 'MemberOf', 'DistinguishedName' | Select-Object -Unique)
+             Write-Verbose "Folgende Eigenschaften werden für den L-Kennung Export abgefragt: $($allPropertiesToGet -join ', ')"
+
+             # 3. Benutzer in den gefundenen OUs suchen
+             $allFoundUsers = [System.Collections.Generic.List[PSObject]]::new()
+             Write-Log -Level Info -Message "Suche Benutzer mit LDAP-Filter '$LKennungLDAPFilter' in den gefundenen OUs..."
+             foreach ($ouDN in $targetOUDNs) {
+                 try {
+                     Write-Verbose "Durchsuche OU: $ouDN"
+                     $usersInOU = Get-ADUser -LDAPFilter $LKennungLDAPFilter -SearchBase $ouDN -Properties $allPropertiesToGet -SearchScope Subtree -ErrorAction Stop
+                     if ($usersInOU) {
+                         Write-Verbose "$($usersInOU.Count) Benutzer in OU '$ouDN' gefunden."
+                         $allFoundUsers.AddRange($usersInOU)
+                     } else {
+                          Write-Verbose "Keine passenden Benutzer in OU '$ouDN' gefunden."
+                     }
+                 } catch {
+                     Write-Log -Level Warning -Message "Fehler beim Durchsuchen der OU '$ouDN' mit Filter '$LKennungLDAPFilter': $_"
+                 }
+             }
+
+             # Duplikate entfernen, falls OUs verschachtelt waren
+             $uniqueFoundUsers = $allFoundUsers | Select-Object -Unique -Property DistinguishedName
+
+             Write-Log -Level Info -Message "Insgesamt $($uniqueFoundUsers.Count) eindeutige Benutzer gefunden."
+
+             if ($uniqueFoundUsers.Count -eq 0) {
+                 Write-Log -Level Warning -Message "Keine Benutzer für die angegebenen Kriterien gefunden."
+                 return
+             }
+
+             # 4. Daten für den Export aufbereiten (wie bei ExportUserData)
+             $exportData = [System.Collections.Generic.List[PSObject]]::new()
+             Write-Log -Level Info -Message "Bereite Daten für den L-Kennung Export vor..."
+             foreach ($user in $uniqueFoundUsers) {
+                 $userExportObject = [ordered]@{
+                     SamAccountName = $user.SamAccountName
+                     Name = $user.Name
+                     GivenName = $user.GivenName
+                     Surname = $user.Surname
+                     DisplayName = $user.DisplayName
+                     UserPrincipalName = $user.UserPrincipalName
+                     Enabled = $user.Enabled
+                     DistinguishedName = $user.DistinguishedName
+                     OU = ($user.DistinguishedName -split ',', 2)[1] # OU extrahieren
+                 }
+                 foreach ($prop in $PropertiesToExport) {
+                     if ($user.PSObject.Properties.Match($prop).Count -gt 0) { $userExportObject[$prop] = $user.$prop } else { $userExportObject[$prop] = $null }
+                 }
+                 $groupNames = @()
+                 try {
+                     if ($user.MemberOf) { $groupNames = $user.MemberOf | ForEach-Object { try { (Get-ADGroup $_ -ErrorAction Stop).Name } catch { Write-Verbose "Konnte Gruppe '$_' nicht auflösen."; "FehlerhafteGruppe:$_" } } | Sort-Object }
+                 } catch { Write-Log -Level Warning -Message "Fehler beim Auflösen der Gruppen für '$($user.SamAccountName)': $_" }
+                 $userExportObject['GroupNames'] = $groupNames -join ','
+                 $exportData.Add([PSCustomObject]$userExportObject)
+             }
+
+             # 5. Nach CSV exportieren
+             $finalExportPath = $LKennungExportCsvPath # Mandatory Parameter für diesen Modus
+
+             Write-Log -Level Info -Message "Exportiere $($exportData.Count) L-Kennung Benutzerdatensätze nach '$finalExportPath'."
+             if ($PSCmdlet.ShouldProcess($finalExportPath, "L-Kennung Benutzerdaten exportieren")) {
+                 try {
+                     $exportDir = Split-Path -Path $finalExportPath -Parent
+                     if (-not (Test-Path $exportDir -PathType Container)) {
+                         Write-Verbose "Erstelle Export-Verzeichnis: $exportDir"
+                         New-Item -Path $exportDir -ItemType Directory -Force:$true -ErrorAction Stop | Out-Null
+                     }
+                     $exportData | Export-Csv -Path $finalExportPath -Delimiter ';' -NoTypeInformation -Encoding UTF8 -Force -ErrorAction Stop
+                     Write-Log -Level Info -Message "L-Kennung Export erfolgreich abgeschlossen: $finalExportPath"
+                 } catch {
+                     Write-Log -Level Error -Message "Fehler beim Exportieren der L-Kennung Daten nach '$finalExportPath': $_"
+                 }
+             } else {
+                 Write-Log -Level Info -Message "L-Kennung Export nach '$finalExportPath' übersprungen (ShouldProcess)."
+             }
+
+        } # End ExportLKennung
+
         default {
             # Sollte nicht passieren bei korrekter Parameternutzung
-            $msg = "Unbekannter oder keiner der Hauptmodi wurde ausgewählt. Verwenden Sie -CopySingleUser, -CreateUsersFromCSV, -ApplyPropertiesToExistingUser oder -ExportUserData."
+            $msg = "Unbekannter oder keiner der Hauptmodi wurde ausgewählt. Verwenden Sie -CopySingleUser, -CreateUsersFromCSV, -ApplyPropertiesToExistingUser, -ExportUserData oder -ExportLKennung."
             Write-Log -Level Error -Message $msg
             Add-UserReportEntry -SamAccountName "(Skript)" -Status "Fehler" -Detail $msg
         }
