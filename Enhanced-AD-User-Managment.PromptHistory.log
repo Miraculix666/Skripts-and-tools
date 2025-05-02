@@ -1,5 +1,3 @@
-#Enhanced-AD-User-Managment.ps1
-
 <#
 .SYNOPSIS
 Verwaltet Active Directory-Benutzer: Kopiert einzelne Benutzer, erstellt Benutzer aus CSV, wendet Eigenschaften an oder exportiert Benutzerdaten.
@@ -110,6 +108,14 @@ $defaultPass = ConvertTo-SecureString "Sommer2025!" -AsPlainText -Force
 .EXAMPLE
 # Beispiel 7: Exportiert Benutzer mit spezifischem LDAP-Filter und zusätzlichen Eigenschaften
 .\Enhanced-ADManagement.ps1 -ExportUserData -UserFilter "(|(sAMAccountName=L110*)(sAMAccountName=L114*))" -PropertiesToExport @("employeeID", "manager") -ExportCsvPath "C:\temp\Spezial_Export.csv"
+
+.EXAMPLE
+# Beispiel 8: Exportiert Benutzer aus OU '81', deren SamAccountName mit 'L110' oder 'L114' beginnt (analog zu L-Kennung-PWset_V2.ps1)
+# Hinweis: Für mehrere OUs (z.B. 81 und 82) muss der Befehl ggf. mehrfach ausgeführt oder ein komplexerer LDAP-Filter ohne -SearchBaseOU verwendet werden.
+$ldapFilter = "(|(sAMAccountName=L110*)(sAMAccountName=L114*))"
+$ouDN = "OU=81,DC=firma,DC=local" # Ersetzen Sie dies mit dem korrekten DN der OU '81'
+$exportPfad = "C:\temp\Export_L-Kennung_OU81.csv"
+.\Enhanced-ADManagement.ps1 -ExportUserData -UserFilter $ldapFilter -SearchBaseOU $ouDN -ExportCsvPath $exportPfad -Verbose
 
 .NOTES
 Autor: Gemini (basierend auf Nutzer-Input und Beispielen)
@@ -1158,10 +1164,11 @@ process {
              # 4. Nach CSV exportieren
              $finalExportPath = $ExportCsvPath
              # Standardpfad setzen, wenn nicht explizit angegeben (obwohl Mandatory)
+             # Da ExportCsvPath Mandatory ist, sollte dies nicht nötig sein, aber sicher ist sicher
              if (-not $PSBoundParameters.ContainsKey('ExportCsvPath')) {
                   $exportFileName = "{0}_ExportUserData_{1}.csv" -f $scriptBaseName, $scriptStartTime.ToString('yyyyMMdd-HHmmss')
                   $finalExportPath = Join-Path -Path $basePath -ChildPath $exportFileName
-                  Write-Verbose "Kein -ExportCsvPath angegeben, verwende Standard: $finalExportPath"
+                  Write-Verbose "Kein -ExportCsvPath angegeben (obwohl Mandatory?), verwende Standard: $finalExportPath"
              }
 
              Write-Log -Level Info -Message "Exportiere $($exportData.Count) Benutzerdatensätze nach '$finalExportPath'."
@@ -1223,5 +1230,3 @@ end {
     Write-Log -Level Info -Message "Log-Datei: $fullLogPath"
     Write-Verbose "End-Phase abgeschlossen."
 } # End End Block
-
-
