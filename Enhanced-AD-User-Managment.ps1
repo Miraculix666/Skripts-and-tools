@@ -134,7 +134,7 @@ $defaultPass = ConvertTo-SecureString "Sommer2025!" -AsPlainText -Force
 
 .NOTES
 Autor: Gemini (basierend auf Nutzer-Input und Beispielen)
-Version: 6.0
+Version: 6.1
 Datum: 2025-05-05
 Benötigte Module: ActiveDirectory (wird durch #requires geprüft)
 Benötigte Berechtigungen: Ausreichende AD-Berechtigungen zum Lesen von Benutzern und zum Erstellen/Modifizieren von Benutzern. Schreibrechte im Zielverzeichnis für Logs/Berichte/Exporte.
@@ -313,8 +313,15 @@ begin {
     # Bestimme Basisverzeichnis für Logs/Reports/Exports
     $basePath = $PSScriptRoot # Bevorzugt Skriptverzeichnis
     if (-not $basePath) {
-        $basePath = $PWD.Path # Fallback: Aktuelles Arbeitsverzeichnis
-        Write-Verbose "Variable `$PSScriptRoot ist leer. Verwende aktuelles Arbeitsverzeichnis als Basis für Standardpfade: $basePath"
+        try {
+            # Versuch, das Verzeichnis der aufrufenden Datei zu bekommen (funktioniert oft in ISE/VSCode)
+            $basePath = Split-Path $MyInvocation.MyCommand.Path -Parent -ErrorAction Stop
+            Write-Verbose "Variable `$PSScriptRoot ist leer. Verwende Verzeichnis der aufrufenden Datei als Basis: $basePath"
+        } catch {
+            # Fallback: Aktuelles Arbeitsverzeichnis
+            $basePath = $PWD.Path
+            Write-Verbose "Variable `$PSScriptRoot und Aufrufkontext nicht ermittelbar. Verwende aktuelles Arbeitsverzeichnis als Basis für Standardpfade: $basePath"
+        }
     } else {
         Write-Verbose "Verwende Skriptverzeichnis als Basis für Standardpfade: $basePath"
     }
@@ -1132,8 +1139,8 @@ process {
                          Write-Log -Level Info -Message "$($searchBases.Count) passende OUs gefunden: $($searchBases -join '; ')"
                      } else {
                          Write-Log -Level Warning -Message "Keine OUs für Filter '$OUFilter' gefunden."
-                         # Nicht abbrechen, Suche ohne OU-Filter fortsetzen (oder je nach Anforderung hier return)
-                         $searchBases = @($domainDN) # Fallback auf ganze Domain? Oder Fehler? Hier: Fallback Domain
+                         # Suche in der gesamten Domäne fortsetzen, wenn keine passende OU gefunden wurde
+                         $searchBases = @($domainDN)
                          Write-Log -Level Warning -Message "Durchsuche stattdessen die gesamte Domäne."
                      }
                  } catch {
@@ -1158,8 +1165,22 @@ process {
                   try {
                       Write-Verbose "Versuche Get-ADUser -Identity '$IdentityFilter'"
                       $userById = Get-ADUser -Identity $IdentityFilter @getADUserParams -ErrorAction Stop
-                      $allFoundUsers += $userById # Fügt das einzelne Objekt hinzu
-                      Write-Log -Level Info -Message "Benutzer '$IdentityFilter' über -Identity gefunden."
+                      # Stelle sicher, dass der gefundene Benutzer in einer der erlaubten SearchBases liegt
+                      $userIsInAllowedOU = $false
+                      foreach($base in $searchBases){
+                          if($userById.DistinguishedName -like "*,$base"){
+                              $userIsInAllowedOU = $true
+                              break
+                          }
+                      }
+                      if($userIsInAllowedOU){
+                          $allFoundUsers += $userById # Fügt das einzelne Objekt hinzu
+                          Write-Log -Level Info -Message "Benutzer '$IdentityFilter' über -Identity gefunden (in erlaubter OU)."
+                      } else {
+                           Write-Log -Level Info -Message "Benutzer '$IdentityFilter' über -Identity gefunden, aber nicht in einer der spezifizierten Suchbasen ($($searchBases -join '; '))."
+                           # Setze Filter für Fallback-Suche, falls Identity gefunden wurde, aber nicht in der richtigen OU
+                           $getADUserParams.Filter = "SamAccountName -eq '$IdentityFilter' -or Name -eq '$IdentityFilter' -or UserPrincipalName -eq '$IdentityFilter'"
+                      }
                   } catch {
                       Write-Verbose "Benutzer '$IdentityFilter' nicht über -Identity gefunden, versuche Filter..."
                       # Wenn -Identity fehlschlägt, Fallback auf -Filter
@@ -1172,7 +1193,7 @@ process {
                  Write-Verbose "Verwende Filter: $filterString"
              }
 
-             # Wenn Benutzer nicht schon über -Identity gefunden wurde, suche mit -Filter in den Suchbasen
+             # Wenn Benutzer nicht schon über -Identity gefunden wurde ODER Identity gefunden wurde aber nicht in der richtigen OU, suche mit -Filter in den Suchbasen
              if ($allFoundUsers.Count -eq 0 -and $getADUserParams.ContainsKey('Filter')) {
                  Write-Log -Level Info -Message "Suche Benutzer mit Filter '$($getADUserParams.Filter)' in $($searchBases.Count) Suchbasis(en)..."
                  foreach ($base in $searchBases) {
@@ -1203,6 +1224,7 @@ process {
              $exportData = [System.Collections.Generic.List[PSObject]]::new()
              Write-Log -Level Info -Message "Bereite Daten für den Export vor..."
              foreach ($user in $uniqueFoundUsers) {
+                 Write-Verbose "Verarbeite Benutzer für Export: $($user.SamAccountName)" # Debugging hinzugefügt
                  $userExportObject = [ordered]@{
                      SamAccountName = $user.SamAccountName
                      Name = $user.Name
@@ -1226,6 +1248,10 @@ process {
              }
 
              # 5. Nach CSV exportieren
+             if($exportData.Count -eq 0){
+                 Write-Log -Level Warning -Message "Keine Daten zum Exportieren nach der Aufbereitung vorhanden (möglicherweise Fehler bei der Eigenschaftsextraktion)."
+                 return
+             }
              $finalExportPath = $ExportCsvPath # Mandatory Parameter
 
              Write-Log -Level Info -Message "Exportiere $($exportData.Count) Benutzerdatensätze nach '$finalExportPath'."
@@ -1325,6 +1351,7 @@ process {
              $exportData = [System.Collections.Generic.List[PSObject]]::new()
              Write-Log -Level Info -Message "Bereite Daten für den L-Kennung Export vor..."
              foreach ($user in $uniqueFoundUsers) {
+                 Write-Verbose "Verarbeite Benutzer für Export: $($user.SamAccountName)" # Debugging hinzugefügt
                  $userExportObject = [ordered]@{
                      SamAccountName = $user.SamAccountName
                      Name = $user.Name
@@ -1348,6 +1375,10 @@ process {
              }
 
              # 5. Nach CSV exportieren
+             if($exportData.Count -eq 0){
+                 Write-Log -Level Warning -Message "Keine Daten zum Exportieren nach der Aufbereitung vorhanden (möglicherweise Fehler bei der Eigenschaftsextraktion)."
+                 return
+             }
              $finalExportPath = $LKennungExportCsvPath # Mandatory Parameter für diesen Modus
 
              Write-Log -Level Info -Message "Exportiere $($exportData.Count) L-Kennung Benutzerdatensätze nach '$finalExportPath'."
