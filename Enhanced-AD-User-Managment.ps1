@@ -134,7 +134,7 @@ $defaultPass = ConvertTo-SecureString "Sommer2025!" -AsPlainText -Force
 
 .NOTES
 Autor: Gemini (basierend auf Nutzer-Input und Beispielen)
-Version: 6.1
+Version: 6.2
 Datum: 2025-05-05
 Benötigte Module: ActiveDirectory (wird durch #requires geprüft)
 Benötigte Berechtigungen: Ausreichende AD-Berechtigungen zum Lesen von Benutzern und zum Erstellen/Modifizieren von Benutzern. Schreibrechte im Zielverzeichnis für Logs/Berichte/Exporte.
@@ -1168,6 +1168,7 @@ process {
                       # Stelle sicher, dass der gefundene Benutzer in einer der erlaubten SearchBases liegt
                       $userIsInAllowedOU = $false
                       foreach($base in $searchBases){
+                          # Prüfe ob der DN des Benutzers mit ",$base" endet (korrekte Prüfung für OU-Zugehörigkeit)
                           if($userById.DistinguishedName -like "*,$base"){
                               $userIsInAllowedOU = $true
                               break
@@ -1338,41 +1339,48 @@ process {
              }
 
              # Duplikate entfernen, falls OUs verschachtelt waren oder Benutzer in mehreren gefunden wurden
-             $uniqueFoundUsers = $allFoundUsers | Select-Object -Unique -Property DistinguishedName
+             # KORREKTUR: Eindeutige DNs extrahieren, DANN die vollen Objekte neu laden
+             $uniqueUserDNs = $allFoundUsers | Select-Object -ExpandProperty DistinguishedName -Unique
+             Write-Log -Level Info -Message "Insgesamt $($uniqueUserDNs.Count) eindeutige Benutzer-DNs gefunden."
 
-             Write-Log -Level Info -Message "Insgesamt $($uniqueFoundUsers.Count) eindeutige Benutzer gefunden."
-
-             if ($uniqueFoundUsers.Count -eq 0) {
+             if ($uniqueUserDNs.Count -eq 0) {
                  Write-Log -Level Warning -Message "Keine Benutzer für die angegebenen Kriterien gefunden."
                  return
              }
 
-             # 4. Daten für den Export aufbereiten (wie bei ExportUserData)
+             # 4. Daten für den Export aufbereiten (JETZT mit vollständigen Objekten)
              $exportData = [System.Collections.Generic.List[PSObject]]::new()
              Write-Log -Level Info -Message "Bereite Daten für den L-Kennung Export vor..."
-             foreach ($user in $uniqueFoundUsers) {
-                 Write-Verbose "Verarbeite Benutzer für Export: $($user.SamAccountName)" # Debugging hinzugefügt
-                 $userExportObject = [ordered]@{
-                     SamAccountName = $user.SamAccountName
-                     Name = $user.Name
-                     GivenName = $user.GivenName
-                     Surname = $user.Surname
-                     DisplayName = $user.DisplayName
-                     UserPrincipalName = $user.UserPrincipalName
-                     Enabled = $user.Enabled
-                     DistinguishedName = $user.DistinguishedName
-                     OU = ($user.DistinguishedName -split ',', 2)[1] # OU extrahieren
-                 }
-                 foreach ($prop in $PropertiesToExport) {
-                     if ($user.PSObject.Properties.Match($prop).Count -gt 0) { $userExportObject[$prop] = $user.$prop } else { $userExportObject[$prop] = $null }
-                 }
-                 $groupNames = @()
+             foreach ($dn in $uniqueUserDNs) {
                  try {
-                     if ($user.MemberOf) { $groupNames = $user.MemberOf | ForEach-Object { try { (Get-ADGroup $_ -ErrorAction Stop).Name } catch { Write-Verbose "Konnte Gruppe '$_' nicht auflösen."; "FehlerhafteGruppe:$_" } } | Sort-Object }
-                 } catch { Write-Log -Level Warning -Message "Fehler beim Auflösen der Gruppen für '$($user.SamAccountName)': $_" }
-                 $userExportObject['GroupNames'] = $groupNames -join ','
-                 $exportData.Add([PSCustomObject]$userExportObject)
-             }
+                     # Hole das vollständige Benutzerobjekt erneut
+                     $user = Get-ADUser -Identity $dn -Properties $allPropertiesToGet -ErrorAction Stop
+                     Write-Verbose "Verarbeite Benutzer für Export: $($user.SamAccountName)"
+
+                     $userExportObject = [ordered]@{
+                         SamAccountName = $user.SamAccountName
+                         Name = $user.Name
+                         GivenName = $user.GivenName
+                         Surname = $user.Surname
+                         DisplayName = $user.DisplayName
+                         UserPrincipalName = $user.UserPrincipalName
+                         Enabled = $user.Enabled
+                         DistinguishedName = $user.DistinguishedName
+                         OU = ($user.DistinguishedName -split ',', 2)[1] # OU extrahieren
+                     }
+                     foreach ($prop in $PropertiesToExport) {
+                         if ($user.PSObject.Properties.Match($prop).Count -gt 0) { $userExportObject[$prop] = $user.$prop } else { $userExportObject[$prop] = $null }
+                     }
+                     $groupNames = @()
+                     try {
+                         if ($user.MemberOf) { $groupNames = $user.MemberOf | ForEach-Object { try { (Get-ADGroup $_ -ErrorAction Stop).Name } catch { Write-Verbose "Konnte Gruppe '$_' nicht auflösen."; "FehlerhafteGruppe:$_" } } | Sort-Object }
+                     } catch { Write-Log -Level Warning -Message "Fehler beim Auflösen der Gruppen für '$($user.SamAccountName)': $_" }
+                     $userExportObject['GroupNames'] = $groupNames -join ','
+                     $exportData.Add([PSCustomObject]$userExportObject)
+                 } catch {
+                      Write-Log -Level Warning -Message "Fehler beim erneuten Abrufen oder Verarbeiten des Benutzers mit DN '$dn': $_"
+                 }
+             } # End foreach dn
 
              # 5. Nach CSV exportieren
              if($exportData.Count -eq 0){
