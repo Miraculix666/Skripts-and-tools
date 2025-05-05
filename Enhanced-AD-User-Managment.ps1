@@ -8,7 +8,7 @@ Es kann verwendet werden, um:
 - Einen einzelnen AD-Benutzer zu kopieren, einschließlich Gruppenzugehörigkeiten und optional der OU-Struktur (Modus: CopySingleUser).
 - Mehrere AD-Benutzer basierend auf einer CSV-Datei zu erstellen (Modus: CreateUsersFromCSV). Optional können Attribute und Gruppen von einem Referenzbenutzer (Vorlage) übernommen werden.
 - Ausgewählte Eigenschaften und Gruppenmitgliedschaften von einem Referenzbenutzer auf einen bereits existierenden Zielbenutzer anzuwenden (Modus: ApplyPropertiesToExistingUser).
-- Benutzerdaten basierend auf einem allgemeinen Filter zu suchen und relevante Eigenschaften (inkl. OU, Gruppen) in eine CSV-Datei zu exportieren (Modus: ExportUserData).
+- Benutzerdaten basierend auf Identitäts- und/oder OU-Filtern zu suchen und relevante Eigenschaften (inkl. OU, Gruppen) in eine CSV-Datei zu exportieren (Modus: ExportUserData).
 - Spezifisch Benutzer mit L-Kennung (L110*/L114*) aus definierten OUs (standardmäßig '81', '82') zu exportieren (Modus: ExportLKennung).
 
 Das Skript ist für PowerShell Version 5.1 optimiert und verwendet deutsche Lokalisierungseinstellungen für CSV-Exporte und Datums-/Zeitformate.
@@ -25,7 +25,7 @@ Schalter, um den Modus zur Erstellung von Benutzern aus einer CSV-Datei zu aktiv
 Schalter, um den Modus zum Anwenden von Eigenschaften/Gruppen auf einen existierenden Benutzer zu aktivieren.
 
 .PARAMETER ExportUserData
-Schalter, um den Modus zum Exportieren von Benutzerdaten mit einem allgemeinen Filter zu aktivieren.
+Schalter, um den Modus zum Exportieren von Benutzerdaten mit allgemeinen Filtern zu aktivieren.
 
 .PARAMETER ExportLKennung
 Schalter, um den Modus zum Exportieren spezifischer L-Kennung-Benutzer aus definierten OUs zu aktivieren.
@@ -48,8 +48,7 @@ Das initiale Passwort für den neuen (kopierten) Benutzer als SecureString (nur 
 Der Distinguished Name der Organisationseinheit (OU), in die der neue Benutzer kopiert/erstellt werden soll.
 Für CopySingleUser: Optional; Standard ist die OU des Referenzbenutzers.
 Für CreateUsersFromCSV: Optional; Überschreibt die OU aus der CSV oder vom Referenzbenutzer.
-Für ApplyPropertiesToExistingUser: Nicht relevant.
-Für ExportUserData / ExportLKennung: Nicht relevant (siehe -SearchBaseOU / -LKennungOUNames).
+Für ApplyPropertiesToExistingUser / Export*: Nicht relevant.
 
 .PARAMETER Force
 Überschreibt einen bereits existierenden Zielbenutzer im Modus CopySingleUser, falls vorhanden. Standardmäßig wird ein Fehler ausgegeben.
@@ -62,11 +61,14 @@ Optionale Spalten: Password (Klartext - NICHT EMPFOHLEN!), TargetOU, Enabled, De
 .PARAMETER DefaultPassword
 Ein Standardpasswort (als SecureString), das für alle Benutzer aus der CSV verwendet wird, es sei denn, die CSV enthält eine 'Password'-Spalte. Wenn weder DefaultPassword noch eine 'Password'-Spalte vorhanden sind, wird ein zufälliges Passwort generiert (empfohlen).
 
-.PARAMETER UserFilter
-Ein Filterausdruck für Get-ADUser (`-Filter` oder `-LDAPFilter`), um die zu exportierenden Benutzer zu definieren (nur für Modus ExportUserData). Beispiel: "SamAccountName -like 'L*'" oder "(|(sAMAccountName=L110*)(sAMAccountName=L114*))". Mandatory für ExportUserData.
+.PARAMETER IdentityFilter
+Ein Identitätsfilter (SamAccountName, Name, etc.) mit optionalen Wildcards (*), um die zu exportierenden Benutzer zu definieren (nur für Modus ExportUserData). Beispiel: 'Hans*', 'Benutzer1', '*Mueller'. Mandatory für ExportUserData.
+
+.PARAMETER OUFilter
+Ein Filter für den OU-Namen mit optionalen Wildcards (*), um die Suche für ExportUserData auf bestimmte OUs einzuschränken. Beispiel: '*Manag*', 'Vertrieb', '81'. Optional.
 
 .PARAMETER SearchBaseOU
-Der Distinguished Name einer OU, um die Benutzersuche für den Export einzuschränken (nur für Modus ExportUserData). Optional.
+Der Distinguished Name einer spezifischen OU, um die Benutzersuche für den ExportUserData *alternativ* zu -OUFilter einzuschränken. Optional. (Hinweis: -OUFilter hat Vorrang, wenn beides angegeben wird).
 
 .PARAMETER PropertiesToExport
 Eine Liste von AD-Attributnamen (String-Array), die zusätzlich zu den Standardattributen exportiert werden sollen (für Modi ExportUserData und ExportLKennung). Standard: siehe .NOTES.
@@ -115,12 +117,12 @@ $defaultPass = ConvertTo-SecureString "Sommer2025!" -AsPlainText -Force
 .\Enhanced-ADManagement.ps1 -ApplyPropertiesToExistingUser -ReferenceUserSamAccountName RefUser -TargetUserSamAccountName ExistingUser -Verbose
 
 .EXAMPLE
-# Beispiel 6: Exportiert alle Benutzer, deren Name mit 'L' beginnt, aus der OU 'OU=Lehrlinge,DC=firma,DC=local' in eine CSV-Datei (Allgemeiner Export)
-.\Enhanced-ADManagement.ps1 -ExportUserData -UserFilter "SamAccountName -like 'L*'" -SearchBaseOU "OU=Lehrlinge,DC=firma,DC=local" -ExportCsvPath "C:\temp\L_Benutzer_Export.csv" -Verbose
+# Beispiel 6: Exportiert alle Benutzer, deren SamAccountName mit 'L' beginnt (Allgemeiner Export)
+.\Enhanced-ADManagement.ps1 -ExportUserData -IdentityFilter "L*" -ExportCsvPath "C:\temp\L_Benutzer_Export.csv" -Verbose
 
 .EXAMPLE
-# Beispiel 7: Exportiert Benutzer mit spezifischem LDAP-Filter und zusätzlichen Eigenschaften (Allgemeiner Export)
-.\Enhanced-ADManagement.ps1 -ExportUserData -UserFilter "(|(sAMAccountName=L110*)(sAMAccountName=L114*))" -PropertiesToExport @("employeeID", "manager") -ExportCsvPath "C:\temp\Spezial_Export.csv"
+# Beispiel 7: Exportiert alle Benutzer, deren Name 'Hans' enthält, aus OUs, die 'Management' im Namen haben (Allgemeiner Export)
+.\Enhanced-ADManagement.ps1 -ExportUserData -IdentityFilter "*Hans*" -OUFilter "*Management*" -ExportCsvPath "C:\temp\Hans_Management_Export.csv"
 
 .EXAMPLE
 # Beispiel 8: Exportiert spezifische L-Kennung-Benutzer (L110*/L114*) aus den Standard-OUs ('81', '82')
@@ -132,8 +134,8 @@ $defaultPass = ConvertTo-SecureString "Sommer2025!" -AsPlainText -Force
 
 .NOTES
 Autor: Gemini (basierend auf Nutzer-Input und Beispielen)
-Version: 5.0
-Datum: 2025-05-02
+Version: 6.0
+Datum: 2025-05-05
 Benötigte Module: ActiveDirectory (wird durch #requires geprüft)
 Benötigte Berechtigungen: Ausreichende AD-Berechtigungen zum Lesen von Benutzern und zum Erstellen/Modifizieren von Benutzern. Schreibrechte im Zielverzeichnis für Logs/Berichte/Exporte.
 
@@ -147,6 +149,7 @@ Modi ExportUserData / ExportLKennung:
 - Zusätzliche Eigenschaften können mit -PropertiesToExport angegeben werden. Immer mit exportiert werden 'MemberOf' (zur Gruppenauflösung) und 'DistinguishedName' (zur OU-Extraktion).
 - Der Export erfolgt als CSV mit Semikolon als Trennzeichen und UTF8-Kodierung.
 - Der Modus ExportLKennung sucht standardmäßig in OUs mit Namen '81' und '82' nach Benutzern mit SamAccountName 'L110*' oder 'L114*'. Dies kann über -LKennungOUNames und -LKennungLDAPFilter angepasst werden.
+- Der Modus ExportUserData verwendet -IdentityFilter für die Benutzersuche (SamAccountName, Name etc.) und optional -OUFilter oder -SearchBaseOU, um den Suchbereich einzuschränken.
 
 CSV-Format für CreateUsersFromCSV:
 - Trennzeichen: Semikolon (;)
@@ -207,7 +210,7 @@ param(
     [Parameter(ParameterSetName = 'ApplyPropertiesToExistingUser', Mandatory = $true, HelpMessage = "Aktiviert Modus zum Anwenden von Eigenschaften auf existierenden Benutzer.")]
     [switch]$ApplyPropertiesToExistingUser,
 
-    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $true, HelpMessage = "Aktiviert Modus zum Exportieren von Benutzerdaten mit allgemeinem Filter.")]
+    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $true, HelpMessage = "Aktiviert Modus zum Exportieren von Benutzerdaten mit allgemeinen Filtern.")]
     [switch]$ExportUserData,
 
     [Parameter(ParameterSetName = 'ExportLKennung', Mandatory = $true, HelpMessage = "Aktiviert Modus zum Exportieren spezifischer L-Kennung-Benutzer.")]
@@ -246,18 +249,20 @@ param(
     [System.Security.SecureString]$DefaultPassword,
 
     # --- Parameter für ExportUserData ---
-    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $true, HelpMessage = "Filter für Get-ADUser (z.B. ""SamAccountName -like 'L*'"" oder LDAP-Filter).")]
+    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $true, HelpMessage = "Identitätsfilter (SamAccountName, Name etc.) mit optionalen Wildcards (*).")]
     [ValidateNotNullOrEmpty()]
-    [string]$UserFilter,
+    [string]$IdentityFilter,
 
-    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $false, HelpMessage = "Distinguished Name der OU, um die Suche einzuschränken.")]
+    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $false, HelpMessage = "Filter für OU-Namen mit optionalen Wildcards (*), um die Suche einzuschränken.")]
+    [string]$OUFilter,
+
+    [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $false, HelpMessage = "Alternativ zu -OUFilter: Der DN einer spezifischen OU als Suchbasis.")]
     [ValidateNotNullOrEmpty()]
     [string]$SearchBaseOU,
 
     [Parameter(ParameterSetName = 'ExportUserData', Mandatory = $true, HelpMessage = "Pfad für die CSV-Exportdatei.")]
-    [Parameter(ParameterSetName = 'ExportLKennung')] # Kann auch für L-Kennung Export verwendet werden
     [ValidateNotNullOrEmpty()]
-    [string]$ExportCsvPath, # Wird jetzt auch von ExportLKennung verwendet, wenn LKennungExportCsvPath nicht gesetzt ist
+    [string]$ExportCsvPath,
 
     # --- Parameter für ExportLKennung ---
     [Parameter(ParameterSetName = 'ExportLKennung', Mandatory = $false, HelpMessage = "Namen der OUs für L-Kennung Export.")]
@@ -1112,49 +1117,93 @@ process {
                  'UserPrincipalName', 'Enabled', 'DistinguishedName'
                  # 'MemberOf' wird immer benötigt
              )
-             # Kombiniere Standard, explizit angeforderte und immer benötigte Properties
              $allPropertiesToGet = ($defaultExportProperties + $PropertiesToExport + 'MemberOf', 'DistinguishedName' | Select-Object -Unique)
              Write-Verbose "Folgende Eigenschaften werden für den Export abgefragt: $($allPropertiesToGet -join ', ')"
 
-             # 2. Benutzer suchen
-             $foundUsers = @()
-             $getADUserParams = @{
-                 Properties = $allPropertiesToGet
-                 ErrorAction = 'Stop' # Fehler bei der Suche ist kritisch für diesen Modus
-             }
-             # Entscheiden ob -Filter oder -LDAPFilter verwendet wird
-             if ($UserFilter -like '*=*' -and $UserFilter -notlike '(*') { # Einfacher Filter
-                 $getADUserParams.Filter = $UserFilter
-                 Write-Verbose "Verwende einfachen Filter: $UserFilter"
-             } else { # Annahme: LDAP Filter
-                 $getADUserParams.LDAPFilter = $UserFilter
-                 Write-Verbose "Verwende LDAP-Filter: $UserFilter"
-             }
-             if ($SearchBaseOU) {
-                 $getADUserParams.SearchBase = $SearchBaseOU
-                 Write-Verbose "Suche eingeschränkt auf OU: $SearchBaseOU"
+             # 2. Suchbasen bestimmen (OUFilter oder SearchBaseOU)
+             $searchBases = @()
+             $domainDN = (Get-ADDomain).DistinguishedName
+             if ($OUFilter) {
+                 Write-Log -Level Info -Message "Suche OUs mit Filter '$OUFilter'..."
+                 try {
+                     $foundOUs = Get-ADOrganizationalUnit -Filter "Name -like '$OUFilter'" -SearchBase $domainDN -SearchScope Subtree -ErrorAction Stop
+                     if ($foundOUs) {
+                         $searchBases = $foundOUs.DistinguishedName
+                         Write-Log -Level Info -Message "$($searchBases.Count) passende OUs gefunden: $($searchBases -join '; ')"
+                     } else {
+                         Write-Log -Level Warning -Message "Keine OUs für Filter '$OUFilter' gefunden."
+                         # Nicht abbrechen, Suche ohne OU-Filter fortsetzen (oder je nach Anforderung hier return)
+                         $searchBases = @($domainDN) # Fallback auf ganze Domain? Oder Fehler? Hier: Fallback Domain
+                         Write-Log -Level Warning -Message "Durchsuche stattdessen die gesamte Domäne."
+                     }
+                 } catch {
+                     Write-Log -Level Error -Message "Fehler beim Suchen von OUs mit Filter '$OUFilter': $_"
+                     return # Abbruch bei Fehler in OU-Suche
+                 }
+             } elseif ($SearchBaseOU) {
+                 Write-Verbose "Verwende spezifische SearchBase OU: $SearchBaseOU"
+                 $searchBases = @($SearchBaseOU)
+             } else {
+                 Write-Verbose "Kein OU-Filter oder SearchBaseOU angegeben, durchsuche gesamte Domäne."
+                 $searchBases = @($domainDN)
              }
 
-             try {
-                 Write-Log -Level Info -Message "Suche Benutzer mit Filter '$UserFilter'..."
-                 $foundUsers = Get-ADUser @getADUserParams
-                 Write-Log -Level Info -Message "$($foundUsers.Count) Benutzer gefunden."
-             } catch {
-                 Write-Log -Level Error -Message "Fehler beim Suchen von Benutzern mit Filter '$UserFilter': $_"
-                 return # Abbruch des Modus
+             # 3. Benutzer suchen (innerhalb der bestimmten Suchbasen)
+             $allFoundUsers = @() # Standard PowerShell Array
+             $getADUserParams = @{ Properties = $allPropertiesToGet }
+
+             # Filter für Get-ADUser vorbereiten
+             if ($IdentityFilter -notlike '*?' -and $IdentityFilter -notlike '*`*' -and $IdentityFilter -notlike '`**') {
+                 # Versuche zuerst Identity, wenn keine Wildcards enthalten sind (potenziell schneller)
+                  try {
+                      Write-Verbose "Versuche Get-ADUser -Identity '$IdentityFilter'"
+                      $userById = Get-ADUser -Identity $IdentityFilter @getADUserParams -ErrorAction Stop
+                      $allFoundUsers += $userById # Fügt das einzelne Objekt hinzu
+                      Write-Log -Level Info -Message "Benutzer '$IdentityFilter' über -Identity gefunden."
+                  } catch {
+                      Write-Verbose "Benutzer '$IdentityFilter' nicht über -Identity gefunden, versuche Filter..."
+                      # Wenn -Identity fehlschlägt, Fallback auf -Filter
+                      $getADUserParams.Filter = "SamAccountName -eq '$IdentityFilter' -or Name -eq '$IdentityFilter' -or UserPrincipalName -eq '$IdentityFilter'"
+                  }
+             } else {
+                 # Verwende -Filter mit -like für Wildcards
+                 $filterString = "SamAccountName -like '$IdentityFilter' -or Name -like '$IdentityFilter' -or DisplayName -like '$IdentityFilter'"
+                 $getADUserParams.Filter = $filterString
+                 Write-Verbose "Verwende Filter: $filterString"
              }
 
-             if ($foundUsers.Count -eq 0) {
-                 Write-Log -Level Warning -Message "Keine Benutzer für Filter '$UserFilter' gefunden."
+             # Wenn Benutzer nicht schon über -Identity gefunden wurde, suche mit -Filter in den Suchbasen
+             if ($allFoundUsers.Count -eq 0 -and $getADUserParams.ContainsKey('Filter')) {
+                 Write-Log -Level Info -Message "Suche Benutzer mit Filter '$($getADUserParams.Filter)' in $($searchBases.Count) Suchbasis(en)..."
+                 foreach ($base in $searchBases) {
+                     $getADUserParams.SearchBase = $base
+                     try {
+                         Write-Verbose "Durchsuche Basis: $base"
+                         $usersInBase = Get-ADUser @getADUserParams -ErrorAction SilentlyContinue # Fehler hier nicht kritisch, weiter mit nächster Basis
+                         if ($usersInBase) {
+                             Write-Verbose "$($usersInBase.Count) Benutzer in Basis '$base' gefunden."
+                             $allFoundUsers += $usersInBase
+                         }
+                     } catch {
+                         Write-Log -Level Warning -Message "Fehler beim Durchsuchen der Basis '$base': $_"
+                     }
+                 }
+             }
+
+             # Duplikate entfernen
+             $uniqueFoundUsers = $allFoundUsers | Select-Object -Unique -Property DistinguishedName
+             Write-Log -Level Info -Message "Insgesamt $($uniqueFoundUsers.Count) eindeutige Benutzer gefunden."
+
+             if ($uniqueFoundUsers.Count -eq 0) {
+                 Write-Log -Level Warning -Message "Keine Benutzer für die angegebenen Kriterien gefunden."
                  return
              }
 
-             # 3. Daten für den Export aufbereiten
+             # 4. Daten für den Export aufbereiten
              $exportData = [System.Collections.Generic.List[PSObject]]::new()
              Write-Log -Level Info -Message "Bereite Daten für den Export vor..."
-             foreach ($user in $foundUsers) {
+             foreach ($user in $uniqueFoundUsers) {
                  $userExportObject = [ordered]@{
-                     # Standard-Spalten zuerst
                      SamAccountName = $user.SamAccountName
                      Name = $user.Name
                      GivenName = $user.GivenName
@@ -1165,46 +1214,28 @@ process {
                      DistinguishedName = $user.DistinguishedName
                      OU = ($user.DistinguishedName -split ',', 2)[1] # OU extrahieren
                  }
-
-                 # Explizit angeforderte Eigenschaften hinzufügen
                  foreach ($prop in $PropertiesToExport) {
-                     if ($user.PSObject.Properties.Match($prop).Count -gt 0) {
-                         $userExportObject[$prop] = $user.$prop
-                     } else {
-                         $userExportObject[$prop] = $null # Spalte hinzufügen, auch wenn Eigenschaft nicht existiert
-                     }
+                     if ($user.PSObject.Properties.Match($prop).Count -gt 0) { $userExportObject[$prop] = $user.$prop } else { $userExportObject[$prop] = $null }
                  }
-
-                 # Gruppen hinzufügen (kommasepariert)
                  $groupNames = @()
                  try {
-                     # Sicherstellen, dass MemberOf nicht $null ist
-                     if ($user.MemberOf) {
-                         $groupNames = $user.MemberOf | ForEach-Object {
-                            try { (Get-ADGroup $_ -ErrorAction Stop).Name } catch { Write-Verbose "Konnte Gruppe '$_' nicht auflösen."; "FehlerhafteGruppe:$_" }
-                         } | Sort-Object
-                     }
-                 } catch {
-                     Write-Log -Level Warning -Message "Fehler beim Auflösen der Gruppen für '$($user.SamAccountName)': $_"
-                 }
-                 $userExportObject['GroupNames'] = $groupNames -join ',' # Komma als Trenner innerhalb der Zelle
-
+                     if ($user.MemberOf) { $groupNames = $user.MemberOf | ForEach-Object { try { (Get-ADGroup $_ -ErrorAction Stop).Name } catch { Write-Verbose "Konnte Gruppe '$_' nicht auflösen."; "FehlerhafteGruppe:$_" } } | Sort-Object }
+                 } catch { Write-Log -Level Warning -Message "Fehler beim Auflösen der Gruppen für '$($user.SamAccountName)': $_" }
+                 $userExportObject['GroupNames'] = $groupNames -join ','
                  $exportData.Add([PSCustomObject]$userExportObject)
-             } # End foreach user
+             }
 
-             # 4. Nach CSV exportieren
+             # 5. Nach CSV exportieren
              $finalExportPath = $ExportCsvPath # Mandatory Parameter
 
              Write-Log -Level Info -Message "Exportiere $($exportData.Count) Benutzerdatensätze nach '$finalExportPath'."
              if ($PSCmdlet.ShouldProcess($finalExportPath, "Benutzerdaten exportieren")) {
                  try {
-                     # Sicherstellen, dass das Zielverzeichnis existiert
                      $exportDir = Split-Path -Path $finalExportPath -Parent
                      if (-not (Test-Path $exportDir -PathType Container)) {
                          Write-Verbose "Erstelle Export-Verzeichnis: $exportDir"
                          New-Item -Path $exportDir -ItemType Directory -Force:$true -ErrorAction Stop | Out-Null
                      }
-
                      $exportData | Export-Csv -Path $finalExportPath -Delimiter ';' -NoTypeInformation -Encoding UTF8 -Force -ErrorAction Stop
                      Write-Log -Level Info -Message "Export erfolgreich abgeschlossen: $finalExportPath"
                  } catch {
@@ -1226,10 +1257,14 @@ process {
              Write-Log -Level Info -Message "Suche nach OUs: $($LKennungOUNames -join ', ')"
              foreach ($ouName in $LKennungOUNames) {
                  try {
-                     $foundOU = Get-ADOrganizationalUnit -Filter "Name -eq '$ouName'" -SearchBase $domainDN -SearchScope Subtree -ErrorAction Stop
-                     if ($foundOU) {
-                         $targetOUDNs += $foundOU.DistinguishedName
-                         Write-Verbose "OU '$ouName' gefunden: $($foundOU.DistinguishedName)"
+                     # Suche OU basierend auf dem Namen, unabhängig von der Ebene
+                     $foundOUs = Get-ADOrganizationalUnit -Filter "Name -eq '$ouName'" -SearchBase $domainDN -SearchScope Subtree -ErrorAction Stop
+                     if ($foundOUs) {
+                         # Es könnten mehrere OUs mit gleichem Namen existieren, füge alle hinzu
+                         foreach($foundOU in $foundOUs){
+                             $targetOUDNs += $foundOU.DistinguishedName
+                             Write-Verbose "OU '$ouName' gefunden: $($foundOU.DistinguishedName)"
+                         }
                      } else {
                          Write-Log -Level Warning -Message "OU mit Namen '$ouName' nicht gefunden."
                      }
@@ -1237,6 +1272,8 @@ process {
                       Write-Log -Level Warning -Message "Fehler beim Suchen der OU '$ouName': $_"
                  }
              }
+             # Eindeutige DNs sicherstellen
+             $targetOUDNs = $targetOUDNs | Select-Object -Unique
 
              if ($targetOUDNs.Count -eq 0) {
                  Write-Log -Level Error -Message "Keine der angegebenen OUs gefunden ($($LKennungOUNames -join ', ')). Export wird abgebrochen."
@@ -1253,24 +1290,28 @@ process {
              Write-Verbose "Folgende Eigenschaften werden für den L-Kennung Export abgefragt: $($allPropertiesToGet -join ', ')"
 
              # 3. Benutzer in den gefundenen OUs suchen
-             $allFoundUsers = [System.Collections.Generic.List[PSObject]]::new()
+             $allFoundUsers = @() # Standard PowerShell Array verwenden
              Write-Log -Level Info -Message "Suche Benutzer mit LDAP-Filter '$LKennungLDAPFilter' in den gefundenen OUs..."
              foreach ($ouDN in $targetOUDNs) {
                  try {
                      Write-Verbose "Durchsuche OU: $ouDN"
+                     # SearchScope Subtree, um auch Benutzer in Unter-OUs zu finden
                      $usersInOU = Get-ADUser -LDAPFilter $LKennungLDAPFilter -SearchBase $ouDN -Properties $allPropertiesToGet -SearchScope Subtree -ErrorAction Stop
                      if ($usersInOU) {
-                         Write-Verbose "$($usersInOU.Count) Benutzer in OU '$ouDN' gefunden."
-                         $allFoundUsers.AddRange($usersInOU)
+                         Write-Verbose "$($usersInOU.Count) Benutzer in OU '$ouDN' (und Unter-OUs) gefunden."
+                         # KORREKTUR: += verwenden statt AddRange
+                         $allFoundUsers += $usersInOU
                      } else {
-                          Write-Verbose "Keine passenden Benutzer in OU '$ouDN' gefunden."
+                          Write-Verbose "Keine passenden Benutzer in OU '$ouDN' (und Unter-OUs) gefunden."
                      }
                  } catch {
-                     Write-Log -Level Warning -Message "Fehler beim Durchsuchen der OU '$ouDN' mit Filter '$LKennungLDAPFilter': $_"
+                     # Fehler beim Durchsuchen loggen und mit nächster OU fortfahren
+                     $errorMessage = "Fehler beim Durchsuchen der OU '$ouDN' mit Filter '$LKennungLDAPFilter': $_"
+                     Write-Log -Level Warning -Message $errorMessage # Fehler wird nun geloggt
                  }
              }
 
-             # Duplikate entfernen, falls OUs verschachtelt waren
+             # Duplikate entfernen, falls OUs verschachtelt waren oder Benutzer in mehreren gefunden wurden
              $uniqueFoundUsers = $allFoundUsers | Select-Object -Unique -Property DistinguishedName
 
              Write-Log -Level Info -Message "Insgesamt $($uniqueFoundUsers.Count) eindeutige Benutzer gefunden."
