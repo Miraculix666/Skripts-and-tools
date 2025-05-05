@@ -1,3 +1,80 @@
+
+[2025-05-05 15:30:32] [Info] Skript 'Enhanced-AD-User-Managment.ps1' gestartet (Modus: ExportLKennung). LogLevel: Info. Ausgeführt von: nwob4746.
+[2025-05-05 15:30:32] [Info] Starte Modus: ExportLKennung
+[2025-05-05 15:30:32] [Info] Suche nach OUs: 81, 82
+[2025-05-05 15:30:32] [Info] Gefundene OU DNs für die Suche: OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de; OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de
+[2025-05-05 15:30:32] [Info] Suche Benutzer mit LDAP-Filter '(|(sAMAccountName=L110*)(sAMAccountName=L114*))' in den gefundenen OUs...
+[2025-05-05 15:30:33] [Warning] Fehler beim Durchsuchen der OU 'OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de' mit Filter '(|(sAMAccountName=L110*)(sAMAccountName=L114*))': Das Argument "collection" mit dem Wert  "System.Object[]" für "AddRange" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden: "Der Wert "System.Object[]" vom Typ "System.Object[]" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden."
+[2025-05-05 15:30:33] [Warning] Fehler beim Durchsuchen der OU 'OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de' mit Filter '(|(sAMAccountName=L110*)(sAMAccountName=L114*))': Das Argument "collection" mit dem Wert  "System.Object[]" für "AddRange" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden: "Der Wert "System.Object[]" vom Typ "System.Object[]" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden."
+[2025-05-05 15:30:33] [Info] Insgesamt 0 eindeutige Benutzer gefunden.
+[2025-05-05 15:30:33] [Warning] Keine Benutzer für die angegebenen Kriterien gefunden.
+[2025-05-05 15:30:33] [Info] Skriptausführung beendet. Gesamtdauer: 0:00:00,8907188
+[2025-05-05 15:30:33] [Info] Log-Datei: C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment_ExportLKennung_20250505-153032.log
+
+[2025-05-05 15:07:40] [Info] Skript 'Enhanced-AD-User-Managment.ps1' gestartet (Modus: ExportLKennung). LogLevel: Info. Ausgeführt von: nwob4746.
+[2025-05-05 15:07:40] [Info] Starte Modus: ExportLKennung
+[2025-05-05 15:07:40] [Info] Suche nach OUs: 81, 82
+[2025-05-05 15:07:40] [Info] Gefundene OU DNs für die Suche: OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de; OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de
+[2025-05-05 15:07:40] [Info] Suche Benutzer mit LDAP-Filter '(|(sAMAccountName=L110*)(sAMAccountName=L114*))' in den gefundenen OUs...
+[2025-05-05 15:07:41] [Warning] Fehler beim Durchsuchen der OU 'OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de' mit Filter '(|(sAMAccountName=L110*)(sAMAccountName=L114*))': Das Argument "collection" mit dem Wert  "System.Object[]" für "AddRange" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden: "Der Wert "System.Object[]" vom Typ "System.Object[]" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden."
+[2025-05-05 15:07:41] [Warning] Fehler beim Durchsuchen der OU 'OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de' mit Filter '(|(sAMAccountName=L110*)(sAMAccountName=L114*))': Das Argument "collection" mit dem Wert  "System.Object[]" für "AddRange" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden: "Der Wert "System.Object[]" vom Typ "System.Object[]" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden."
+[2025-05-05 15:07:41] [Info] Insgesamt 0 eindeutige Benutzer gefunden.
+[2025-05-05 15:07:41] [Warning] Keine Benutzer für die angegebenen Kriterien gefunden.
+[2025-05-05 15:07:41] [Info] Skriptausführung beendet. Gesamtdauer: 0:00:00,9218786
+[2025-05-05 15:07:41] [Info] Log-Datei: C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment_ExportLKennung_20250505-150740.log
+
+[2025-05-02 13:26:49] [Info] Skript 'Enhanced-AD-User-Managment.ps1' gestartet (Modus: ExportLKennung). LogLevel: Info. Ausgeführt von: nwob4746.
+[2025-05-02 13:26:49] [Info] Starte Modus: ExportLKennung
+[2025-05-02 13:26:50] [Info] Suche nach OUs: 81, 82
+[2025-05-02 13:26:51] [Info] Gefundene OU DNs für die Suche: OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de; OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de
+[2025-05-02 13:26:51] [Info] Suche Benutzer mit LDAP-Filter '(|(sAMAccountName=L110*)(sAMAccountName=L114*))' in den gefundenen OUs...
+[2025-05-02 13:26:52] [Warning] Fehler beim Durchsuchen der OU 'OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de' mit Filter '(|(sAMAccountName=L110*)(sAMAccountName=L114*))': Das Argument "collection" mit dem Wert  "System.Object[]" für "AddRange" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden: "Der Wert "System.Object[]" vom Typ "System.Object[]" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden."
+[2025-05-02 13:26:53] [Warning] Fehler beim Durchsuchen der OU 'OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de' mit Filter '(|(sAMAccountName=L110*)(sAMAccountName=L114*))': Das Argument "collection" mit dem Wert  "System.Object[]" für "AddRange" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden: "Der Wert "System.Object[]" vom Typ "System.Object[]" kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert werden."
+[2025-05-02 13:26:53] [Info] Insgesamt 0 eindeutige Benutzer gefunden.
+[2025-05-02 13:26:53] [Warning] Keine Benutzer für die angegebenen Kriterien gefunden.
+[2025-05-02 13:26:53] [Info] Skriptausführung beendet. Gesamtdauer: 0:00:03,8667884
+[2025-05-02 13:26:53] [Info] Log-Datei: C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment_ExportLKennung_20250502-132649.log
+
+
+PS C:\Daten\Scripte\WIP> .\Enhanced-AD-User-Managment.ps1 -ExportLKennung -LKennungExportCsvPath "C:\temp\Export_L-Kennung_Standard.csv" -Verbose
+
+AUSFÜHRLICH: Beginne Initialisierung des Skripts.
+AUSFÜHRLICH: Kultur auf 'de-DE' gesetzt.
+AUSFÜHRLICH: Verwende Skriptverzeichnis als Basis für Standardpfade: C:\Daten\Scripte\WIP
+AUSFÜHRLICH: Verwende 'Enhanced-AD-User-Managment' als Präfix für Log-/Berichts-/Exportdateien.
+AUSFÜHRLICH: Log-Datei wird sein: C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment_ExportLKennung_20250505-153032.log
+AUSFÜHRLICH: Initialisierung abgeschlossen. Wechsle zur Prozess-Phase.
+AUSFÜHRLICH: Beginne Prozess-Phase. Ausgewählter Modus: ExportLKennung
+[INFO] Starte Modus: ExportLKennung
+[INFO] Suche nach OUs: 81, 82
+AUSFÜHRLICH: OU '81' gefunden: OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de
+AUSFÜHRLICH: OU '82' gefunden: OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de
+[INFO] Gefundene OU DNs für die Suche: OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de; OU=82,OU=Polizei-NRW
+-PB-PE-2012,DC=polizei,DC=nrw,DC=de
+AUSFÜHRLICH: Folgende Eigenschaften werden für den L-Kennung Export abgefragt: SamAccountName, Name, GivenName, Surn
+ame, DisplayName, UserPrincipalName, Enabled, DistinguishedName, MemberOf
+[INFO] Suche Benutzer mit LDAP-Filter '(|(sAMAccountName=L110*)(sAMAccountName=L114*))' in den gefundenen OUs...
+AUSFÜHRLICH: Durchsuche OU: OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de
+AUSFÜHRLICH: 382 Benutzer in OU 'OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de' gefunden.
+WARNUNG: Fehler beim Durchsuchen der OU 'OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de' mit Filter '(|(sAM
+AccountName=L110*)(sAMAccountName=L114*))': Das Argument "collection" mit dem Wert  "System.Object[]" für "AddRange"
+ kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert
+ werden: "Der Wert "System.Object[]" vom Typ "System.Object[]" kann nicht in den Typ "System.Collections.Generic.IEn
+umerable`1[System.Management.Automation.PSObject]" konvertiert werden."
+AUSFÜHRLICH: Durchsuche OU: OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de
+AUSFÜHRLICH: 376 Benutzer in OU 'OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de' gefunden.
+WARNUNG: Fehler beim Durchsuchen der OU 'OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de' mit Filter '(|(sAM
+AccountName=L110*)(sAMAccountName=L114*))': Das Argument "collection" mit dem Wert  "System.Object[]" für "AddRange"
+ kann nicht in den Typ "System.Collections.Generic.IEnumerable`1[System.Management.Automation.PSObject]" konvertiert
+ werden: "Der Wert "System.Object[]" vom Typ "System.Object[]" kann nicht in den Typ "System.Collections.Generic.IEn
+umerable`1[System.Management.Automation.PSObject]" konvertiert werden."
+[INFO] Insgesamt 0 eindeutige Benutzer gefunden.
+WARNUNG: Keine Benutzer für die angegebenen Kriterien gefunden.
+AUSFÜHRLICH: Beginne End-Phase.
+[INFO] Skriptausführung beendet. Gesamtdauer: 0:00:00,8907188
+[INFO] Log-Datei: C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment_ExportLKennung_20250505-153032.log
+AUSFÜHRLICH: End-Phase abgeschlossen.
+
 ﻿[2025-05-02 13:26:49] [Info] Skript 'Enhanced-AD-User-Managment.ps1' gestartet (Modus: ExportLKennung). LogLevel: Info. Ausgeführt von: nwob4746.
 [2025-05-02 13:26:49] [Info] Starte Modus: ExportLKennung
 [2025-05-02 13:26:50] [Info] Suche nach OUs: 81, 82
