@@ -1,3 +1,119 @@
+.\Enhanced-AD-User-Managment.ps1 -CreateUsersFromCSV -csvpath C:\data\new_SHS_82.csv -DefaultPassword $defaultPass -Verbose
+
+AUSFÜHRLICH: Beginne Initialisierung des Skripts.
+AUSFÜHRLICH: Kultur auf 'de-DE' gesetzt.
+AUSFÜHRLICH: Verwende Skriptverzeichnis als Basis für Standardpfade: C:\Daten\Scripte\WIP
+AUSFÜHRLICH: Verwende 'Enhanced-AD-User-Managment' als Präfix für Log-/Berichts-/Exportdateien.
+AUSFÜHRLICH: Log-Datei wird sein: C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment_CreateUsersFromCSV_20250506-114140
+.log
+AUSFÜHRLICH: Aktionsbericht wird erstellt: C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment_UserReport_20250506-11414
+0.csv
+AUSFÜHRLICH: Initialisierung abgeschlossen. Wechsle zur Prozess-Phase.
+AUSFÜHRLICH: Beginne Prozess-Phase. Ausgewählter Modus: CreateUsersFromCSV
+[INFO] Starte Modus: CreateUsersFromCSV
+[INFO] Lese CSV-Datei: C:\data\new_SHS_82.csv
+[INFO] 28 Einträge in CSV-Datei gefunden.
+[INFO] Kein Referenzbenutzer (Template) angegeben (-ReferenceUserSamAccountName). Attribute/Gruppen werden nur aus C
+SV übernommen.
+[INFO] Beginne Verarbeitung der CSV-Einträge...
+C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1 : "System.String" kann nicht in den Typ 
+"System.Management.Automation.SwitchParameter" konvertiert werden, der für den Parameter "Verbose" erforderlich 
+ist. 
+In Zeile:1 Zeichen:1
++ .\Enhanced-AD-User-Managment.ps1 -CreateUsersFromCSV -csvpath C:\data ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidArgument: (:) [Enhanced-AD-User-Managment.ps1], ParameterBindingException
+    + FullyQualifiedErrorId : CannotConvertArgument,Enhanced-AD-User-Managment.ps1
+ 
+
+PS C:\Daten\Scripte\WIP> C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:202 Zeichen:1
++ [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Unerwartetes Attribut "CmdletBinding".
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:203 Zeichen:1
++ param(
++ ~~~~~
+Unerwartetes Token "param" in Ausdruck oder Anweisung.
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:270 Zeichen:34
++     [string[]]$LKennungOUNames = @('81', '82'), # Standard OUs
++                                  ~~~~~~~~~~~~~
+Der Zuweisungsausdruck ist ungültig. Die Eingabe für einen Zuweisungsoperator muss ein Objekt sein, das Zuweisungen 
+akzeptieren kann (z. B. eine Variable oder Eigenschaft).
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:273 Zeichen:35
++ ... DAPFilter = "(|(sAMAccountName=L110*)(sAMAccountName=L114*))", # Stan ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Der Zuweisungsausdruck ist ungültig. Die Eingabe für einen Zuweisungsoperator muss ein Objekt sein, das Zuweisungen 
+akzeptieren kann (z. B. eine Variable oder Eigenschaft).
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:282 Zeichen:37
++     [string[]]$PropertiesToExport = @(), # Gilt für beide Export-Modi
++                                     ~~~
+Der Zuweisungsausdruck ist ungültig. Die Eingabe für einen Zuweisungsoperator muss ein Objekt sein, das Zuweisungen 
+akzeptieren kann (z. B. eine Variable oder Eigenschaft).
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : UnexpectedAttribute
+ 
+
+PS C:\Daten\Scripte\WIP> .\Enhanced-AD-User-Managment.ps1 -CreateUsersFromCSV -csvpath C:\data\new_SHS_82.csv -DefaultPassword $defaultPass -Verbose
+
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:202 Zeichen:1
++ [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Unerwartetes Attribut "CmdletBinding".
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:203 Zeichen:1
++ param(
++ ~~~~~
+Unerwartetes Token "param" in Ausdruck oder Anweisung.
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:270 Zeichen:34
++     [string[]]$LKennungOUNames = @('81', '82'), # Standard OUs
++                                  ~~~~~~~~~~~~~
+Der Zuweisungsausdruck ist ungültig. Die Eingabe für einen Zuweisungsoperator muss ein Objekt sein, das Zuweisungen 
+akzeptieren kann (z. B. eine Variable oder Eigenschaft).
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:273 Zeichen:35
++ ... DAPFilter = "(|(sAMAccountName=L110*)(sAMAccountName=L114*))", # Stan ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Der Zuweisungsausdruck ist ungültig. Die Eingabe für einen Zuweisungsoperator muss ein Objekt sein, das Zuweisungen 
+akzeptieren kann (z. B. eine Variable oder Eigenschaft).
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:282 Zeichen:37
++     [string[]]$PropertiesToExport = @(), # Gilt für beide Export-Modi
++                                     ~~~
+Der Zuweisungsausdruck ist ungültig. Die Eingabe für einen Zuweisungsoperator muss ein Objekt sein, das Zuweisungen 
+akzeptieren kann (z. B. eine Variable oder Eigenschaft).
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : UnexpectedAttribute
+ 
+
+PS C:\Daten\Scripte\WIP> .\Enhanced-AD-User-Managment.ps1 -CreateUsersFromCSV -csvpath C:\data\new_SHS_82.csv  -Verbose
+
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:202 Zeichen:1
++ [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Unerwartetes Attribut "CmdletBinding".
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:203 Zeichen:1
++ param(
++ ~~~~~
+Unerwartetes Token "param" in Ausdruck oder Anweisung.
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:270 Zeichen:34
++     [string[]]$LKennungOUNames = @('81', '82'), # Standard OUs
++                                  ~~~~~~~~~~~~~
+Der Zuweisungsausdruck ist ungültig. Die Eingabe für einen Zuweisungsoperator muss ein Objekt sein, das Zuweisungen 
+akzeptieren kann (z. B. eine Variable oder Eigenschaft).
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:273 Zeichen:35
++ ... DAPFilter = "(|(sAMAccountName=L110*)(sAMAccountName=L114*))", # Stan ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Der Zuweisungsausdruck ist ungültig. Die Eingabe für einen Zuweisungsoperator muss ein Objekt sein, das Zuweisungen 
+akzeptieren kann (z. B. eine Variable oder Eigenschaft).
+In C:\Daten\Scripte\WIP\Enhanced-AD-User-Managment.ps1:282 Zeichen:37
++     [string[]]$PropertiesToExport = @(), # Gilt für beide Export-Modi
++                                     ~~~
+Der Zuweisungsausdruck ist ungültig. Die Eingabe für einen Zuweisungsoperator muss ein Objekt sein, das Zuweisungen 
+akzeptieren kann (z. B. eine Variable oder Eigenschaft).
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : UnexpectedAttribute
+ 
+
+
+
 
 [2025-05-05 15:30:32] [Info] Skript 'Enhanced-AD-User-Managment.ps1' gestartet (Modus: ExportLKennung). LogLevel: Info. Ausgeführt von: nwob4746.
 [2025-05-05 15:30:32] [Info] Starte Modus: ExportLKennung
