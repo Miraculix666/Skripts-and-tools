@@ -12,7 +12,7 @@ Es kann verwendet werden, um:
 - Spezifisch Benutzer mit L-Kennung (L110*/L114*) aus definierten OUs (standardmäßig '81', '82') zu exportieren (Modus: ExportLKennung).
 
 Das Skript ist für PowerShell Version 5.1 optimiert und verwendet deutsche Lokalisierungseinstellungen für CSV-Exporte und Datums-/Zeitformate.
-Es implementiert detaillierte Protokollierung und unterstützt den -Verbose Parameter für ausführliche Ausgaben.
+Es implementiert detaillierte Protokollierung und gibt standardmäßig ausführliche Meldungen aus (Verbose Output).
 Log-Dateien und ein Benutzerbericht (CSV) über durchgeführte Aktionen werden standardmäßig im Verzeichnis des Skripts gespeichert.
 
 .PARAMETER CopySingleUser
@@ -95,18 +95,18 @@ Steuert die Detailtiefe der Log-Datei. Mögliche Werte: Error, Warning, Info, Ve
 Pfad für die CSV-Datei, die einen Bericht über erstellte/kopierte/modifizierte Benutzer enthält (nicht für Export-Modi relevant). Standard ist das Skriptverzeichnis (`$PSScriptRoot` oder `$PWD`) mit dem Namen '{ScriptName}_UserReport_{Timestamp}.csv'. Der Bericht wird immer für die Modi Copy, Create, Apply erstellt.
 
 .EXAMPLE
-# Beispiel 1: Kopiert 'BenutzerA' zu 'BenutzerB' interaktiv
+# Beispiel 1: Kopiert 'BenutzerA' zu 'BenutzerB' interaktiv (mit Verbose-Ausgabe)
 .\Enhanced-ADManagement.ps1 -CopySingleUser -ReferenceUserSamAccountName BenutzerA
 
 .EXAMPLE
 # Beispiel 2: Kopiert 'BenutzerA' zu 'BenutzerC', setzt Passwort, legt in spezifischer OU ab und überschreibt Ziel falls vorhanden
 $password = ConvertTo-SecureString "P@sswOrd123!" -AsPlainText -Force
-.\Enhanced-ADManagement.ps1 -CopySingleUser -ReferenceUserSamAccountName BenutzerA -TargetUserSamAccountName BenutzerC -TargetUserPassword $password -TargetOU "OU=NeueMitarbeiter,DC=firma,DC=local" -Force -Verbose
+.\Enhanced-ADManagement.ps1 -CopySingleUser -ReferenceUserSamAccountName BenutzerA -TargetUserSamAccountName BenutzerC -TargetUserPassword $password -TargetOU "OU=NeueMitarbeiter,DC=firma,DC=local" -Force
 
 .EXAMPLE
-# Beispiel 3: Erstellt Benutzer aus CSV mit Standardpasswort und Gruppen/Attributen von 'TemplateUser'
+# Beispiel 3: Erstellt Benutzer aus CSV mit Standardpasswort und Gruppen/Attributen von 'TemplateUser' (LogLevel steuert nur Datei, Konsole ist immer Verbose)
 $defaultPass = ConvertTo-SecureString "Sommer2025!" -AsPlainText -Force
-.\Enhanced-ADManagement.ps1 -CreateUsersFromCSV -CsvPath "C:\temp\neue_benutzer.csv" -ReferenceUserSamAccountName TemplateUser -DefaultPassword $defaultPass -LogLevel Verbose
+.\Enhanced-ADManagement.ps1 -CreateUsersFromCSV -CsvPath "C:\temp\neue_benutzer.csv" -ReferenceUserSamAccountName TemplateUser -DefaultPassword $defaultPass -LogLevel Info
 
 .EXAMPLE
 # Beispiel 4: Erstellt Benutzer aus CSV, verwendet Passwort aus CSV (WARNUNG: Unsicher!) und speichert Log in C:\Logs
@@ -114,11 +114,11 @@ $defaultPass = ConvertTo-SecureString "Sommer2025!" -AsPlainText -Force
 
 .EXAMPLE
 # Beispiel 5: Wendet Abteilungs-, Büro- und Gruppeninformationen von 'RefUser' auf den existierenden Benutzer 'ExistingUser' an
-.\Enhanced-ADManagement.ps1 -ApplyPropertiesToExistingUser -ReferenceUserSamAccountName RefUser -TargetUserSamAccountName ExistingUser -Verbose
+.\Enhanced-ADManagement.ps1 -ApplyPropertiesToExistingUser -ReferenceUserSamAccountName RefUser -TargetUserSamAccountName ExistingUser
 
 .EXAMPLE
 # Beispiel 6: Exportiert alle Benutzer, deren SamAccountName mit 'L' beginnt (Allgemeiner Export)
-.\Enhanced-ADManagement.ps1 -ExportUserData -IdentityFilter "L*" -ExportCsvPath "C:\temp\L_Benutzer_Export.csv" -Verbose
+.\Enhanced-ADManagement.ps1 -ExportUserData -IdentityFilter "L*" -ExportCsvPath "C:\temp\L_Benutzer_Export.csv"
 
 .EXAMPLE
 # Beispiel 7: Exportiert alle Benutzer, deren Name 'Hans' enthält, aus OUs, die 'Management' im Namen haben (Allgemeiner Export)
@@ -126,16 +126,16 @@ $defaultPass = ConvertTo-SecureString "Sommer2025!" -AsPlainText -Force
 
 .EXAMPLE
 # Beispiel 8: Exportiert spezifische L-Kennung-Benutzer (L110*/L114*) aus den Standard-OUs ('81', '82')
-.\Enhanced-ADManagement.ps1 -ExportLKennung -LKennungExportCsvPath "C:\temp\Export_L-Kennung_Standard.csv" -Verbose
+.\Enhanced-ADManagement.ps1 -ExportLKennung -LKennungExportCsvPath "C:\temp\Export_L-Kennung_Standard.csv"
 
 .EXAMPLE
 # Beispiel 9: Exportiert spezifische L-Kennung-Benutzer aus einer anderen OU ('99') mit Standardfilter
-.\Enhanced-ADManagement.ps1 -ExportLKennung -LKennungOUNames @('99') -LKennungExportCsvPath "C:\temp\Export_L-Kennung_OU99.csv" -Verbose
+.\Enhanced-ADManagement.ps1 -ExportLKennung -LKennungOUNames @('99') -LKennungExportCsvPath "C:\temp\Export_L-Kennung_OU99.csv"
 
 .NOTES
 Autor: Gemini (basierend auf Nutzer-Input und Beispielen)
-Version: 6.2
-Datum: 2025-05-05
+Version: 6.4
+Datum: 2025-05-06
 Benötigte Module: ActiveDirectory (wird durch #requires geprüft)
 Benötigte Berechtigungen: Ausreichende AD-Berechtigungen zum Lesen von Benutzern und zum Erstellen/Modifizieren von Benutzern. Schreibrechte im Zielverzeichnis für Logs/Berichte/Exporte.
 
@@ -266,7 +266,7 @@ param(
 
     # --- Parameter für ExportLKennung ---
     [Parameter(ParameterSetName = 'ExportLKennung', Mandatory = $false, HelpMessage = "Namen der OUs für L-Kennung Export.")]
-    [string[]]$LKennungOUNames = @('81', '82'), # Standard OUs
+    [string[]]$LKennungOUNames = @('81', '82'), # KORREKTUR: Komma entfernt in v6.3
 
     [Parameter(ParameterSetName = 'ExportLKennung', Mandatory = $false, HelpMessage = "LDAP-Filter für L-Kennung Export.")]
     [string]$LKennungLDAPFilter = "(|(sAMAccountName=L110*)(sAMAccountName=L114*))", # Standard Filter
@@ -309,6 +309,9 @@ begin {
 
     # Fehlerbehandlung standardmäßig auf Stop setzen
     $ErrorActionPreference = 'Stop'
+    # KORREKTUR v6.4: Verbose Output standardmäßig aktivieren
+    $VerbosePreference = 'Continue'
+
 
     # Bestimme Basisverzeichnis für Logs/Reports/Exports
     $basePath = $PSScriptRoot # Bevorzugt Skriptverzeichnis
@@ -998,7 +1001,8 @@ process {
                                           -Password $TargetUserPassword `
                                           -DestinationOU $TargetOU `
                                           -OverwriteTarget:$Force `
-                                          -Verbose:$VerbosePreference.ToString() -WarningAction $WarningPreference # Explizit übergeben
+                                          -Verbose:$($PSBoundParameters.ContainsKey('Verbose')) ` # KORREKTUR v6.3
+                                          -WarningAction $WarningPreference
 
             if ($newUser) {
                 Write-Log -Level Info -Message "Benutzer '$($newUser.SamAccountName)' erfolgreich kopiert."
@@ -1061,7 +1065,8 @@ process {
                                               -TemplateUser $referenceUserObject `
                                               -GlobalDefaultPassword $DefaultPassword `
                                               -GlobalTargetOU $TargetOU `
-                                              -Verbose:$VerbosePreference.ToString() -WarningAction $WarningPreference
+                                              -Verbose:$($PSBoundParameters.ContainsKey('Verbose')) ` # KORREKTUR v6.3
+                                              -WarningAction $WarningPreference
 
                 if ($newUser) {
                     $SuccessCount++
@@ -1107,7 +1112,8 @@ process {
             # 3. Funktion zum Anwenden der Eigenschaften aufrufen
             Apply-ADUserProperties -ReferenceUser $referenceUserObject `
                                    -TargetUser $targetUserObject `
-                                   -Verbose:$VerbosePreference.ToString() -WarningAction $WarningPreference
+                                   -Verbose:$($PSBoundParameters.ContainsKey('Verbose')) ` # KORREKTUR v6.3
+                                   -WarningAction $WarningPreference
 
             # Report-Einträge werden innerhalb von Apply-ADUserProperties hinzugefügt
             Write-Log -Level Info -Message "Modus ApplyPropertiesToExistingUser abgeschlossen für Ziel '$($targetUserObject.SamAccountName)'."
@@ -1224,29 +1230,36 @@ process {
              # 4. Daten für den Export aufbereiten
              $exportData = [System.Collections.Generic.List[PSObject]]::new()
              Write-Log -Level Info -Message "Bereite Daten für den Export vor..."
-             foreach ($user in $uniqueFoundUsers) {
-                 Write-Verbose "Verarbeite Benutzer für Export: $($user.SamAccountName)" # Debugging hinzugefügt
-                 $userExportObject = [ordered]@{
-                     SamAccountName = $user.SamAccountName
-                     Name = $user.Name
-                     GivenName = $user.GivenName
-                     Surname = $user.Surname
-                     DisplayName = $user.DisplayName
-                     UserPrincipalName = $user.UserPrincipalName
-                     Enabled = $user.Enabled
-                     DistinguishedName = $user.DistinguishedName
-                     OU = ($user.DistinguishedName -split ',', 2)[1] # OU extrahieren
-                 }
-                 foreach ($prop in $PropertiesToExport) {
-                     if ($user.PSObject.Properties.Match($prop).Count -gt 0) { $userExportObject[$prop] = $user.$prop } else { $userExportObject[$prop] = $null }
-                 }
-                 $groupNames = @()
+             foreach ($userDN in ($uniqueFoundUsers | Select-Object -ExpandProperty DistinguishedName)) { # Iteriere über DNs
                  try {
-                     if ($user.MemberOf) { $groupNames = $user.MemberOf | ForEach-Object { try { (Get-ADGroup $_ -ErrorAction Stop).Name } catch { Write-Verbose "Konnte Gruppe '$_' nicht auflösen."; "FehlerhafteGruppe:$_" } } | Sort-Object }
-                 } catch { Write-Log -Level Warning -Message "Fehler beim Auflösen der Gruppen für '$($user.SamAccountName)': $_" }
-                 $userExportObject['GroupNames'] = $groupNames -join ','
-                 $exportData.Add([PSCustomObject]$userExportObject)
-             }
+                     # Hole das vollständige Benutzerobjekt erneut
+                     $user = Get-ADUser -Identity $userDN -Properties $allPropertiesToGet -ErrorAction Stop
+                     Write-Verbose "Verarbeite Benutzer für Export: $($user.SamAccountName)"
+
+                     $userExportObject = [ordered]@{
+                         SamAccountName = $user.SamAccountName
+                         Name = $user.Name
+                         GivenName = $user.GivenName
+                         Surname = $user.Surname
+                         DisplayName = $user.DisplayName
+                         UserPrincipalName = $user.UserPrincipalName
+                         Enabled = $user.Enabled
+                         DistinguishedName = $user.DistinguishedName
+                         OU = ($user.DistinguishedName -split ',', 2)[1] # OU extrahieren
+                     }
+                     foreach ($prop in $PropertiesToExport) {
+                         if ($user.PSObject.Properties.Match($prop).Count -gt 0) { $userExportObject[$prop] = $user.$prop } else { $userExportObject[$prop] = $null }
+                     }
+                     $groupNames = @()
+                     try {
+                         if ($user.MemberOf) { $groupNames = $user.MemberOf | ForEach-Object { try { (Get-ADGroup $_ -ErrorAction Stop).Name } catch { Write-Verbose "Konnte Gruppe '$_' nicht auflösen."; "FehlerhafteGruppe:$_" } } | Sort-Object }
+                     } catch { Write-Log -Level Warning -Message "Fehler beim Auflösen der Gruppen für '$($user.SamAccountName)': $_" }
+                     $userExportObject['GroupNames'] = $groupNames -join ','
+                     $exportData.Add([PSCustomObject]$userExportObject)
+                 } catch {
+                      Write-Log -Level Warning -Message "Fehler beim erneuten Abrufen oder Verarbeiten des Benutzers mit DN '$userDN': $_"
+                 }
+             } # End foreach userDN
 
              # 5. Nach CSV exportieren
              if($exportData.Count -eq 0){
@@ -1326,7 +1339,7 @@ process {
                      $usersInOU = Get-ADUser -LDAPFilter $LKennungLDAPFilter -SearchBase $ouDN -Properties $allPropertiesToGet -SearchScope Subtree -ErrorAction Stop
                      if ($usersInOU) {
                          Write-Verbose "$($usersInOU.Count) Benutzer in OU '$ouDN' (und Unter-OUs) gefunden."
-                         # KORREKTUR: += verwenden statt AddRange
+                         # KORREKTUR (v6.1): += verwenden statt AddRange
                          $allFoundUsers += $usersInOU
                      } else {
                           Write-Verbose "Keine passenden Benutzer in OU '$ouDN' (und Unter-OUs) gefunden."
@@ -1339,7 +1352,7 @@ process {
              }
 
              # Duplikate entfernen, falls OUs verschachtelt waren oder Benutzer in mehreren gefunden wurden
-             # KORREKTUR: Eindeutige DNs extrahieren, DANN die vollen Objekte neu laden
+             # KORREKTUR (v6.2): Eindeutige DNs extrahieren, DANN die vollen Objekte neu laden
              $uniqueUserDNs = $allFoundUsers | Select-Object -ExpandProperty DistinguishedName -Unique
              Write-Log -Level Info -Message "Insgesamt $($uniqueUserDNs.Count) eindeutige Benutzer-DNs gefunden."
 
