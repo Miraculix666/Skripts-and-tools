@@ -749,7 +749,13 @@ begin {
                  # KORREKTUR v6.7: Sofort abbrechen, wenn Benutzer existiert
                  return $null
              }
-         } catch { Write-Log -Level Warning -Message "Fehler beim Prüfen, ob Benutzer '$sam' existiert: $_." }
+         } catch {
+             # Fehler beim Suchen ist unwahrscheinlich, aber sicherheitshalber loggen und abbrechen
+             $msg = "Fehler beim Prüfen, ob Benutzer '$sam' existiert: $_."
+             Write-Log -Level Warning -Message $msg
+             Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
+             return $null
+         }
 
 
         # --- Prüfen ob Ziel-OU existiert ---
@@ -812,7 +818,7 @@ begin {
              }
          }
 
-         # --- Benutzer erstellen ---
+         # --- Benutzer erstellen (Jetzt NACH Prüfung auf Existenz) ---
          $newUser = $null
          # Detailliertere ShouldProcess-Meldung
          $shouldProcessTarget = "Benutzer '$sam' ($($newUserParams.Name))"
@@ -837,7 +843,7 @@ begin {
          }
 
          # --- Gruppen vom Template übernehmen ---
-         if ($TemplateUser) {
+         if ($TemplateUser -and $newUser) { # Nur wenn Template vorhanden UND Benutzer erfolgreich erstellt wurde
              try {
                  $templateGroups = Get-ADPrincipalGroupMembership -Identity $TemplateUser -ErrorAction Stop
                  $groupsToCopy = $templateGroups | Where-Object {$_.Name -ne "Domain Users"} # Filter
@@ -1063,8 +1069,16 @@ process {
                 Write-Log -Level Info -Message "Lese CSV-Datei: $CsvPath"
                 $usersData = Import-Csv -Path $CsvPath -Delimiter ';' -Encoding UTF8 -ErrorAction Stop
                 Write-Log -Level Info -Message "$($usersData.Count) Einträge in CSV-Datei gefunden."
+                # Prüfung auf essentielle Header
+                if($usersData.Count -gt 0){
+                    $headers = $usersData[0].PSObject.Properties.Name
+                    if(-not ($headers -contains 'SamAccountName' -and $headers -contains 'GivenName' -and $headers -contains 'Surname')){
+                       throw "CSV-Datei '$CsvPath' fehlen essentielle Header: SamAccountName, GivenName, Surname."
+                    }
+                }
+
             } catch {
-                $msg = "Fehler beim Lesen der CSV-Datei '$CsvPath': $_"
+                $msg = "Fehler beim Lesen oder Validieren der CSV-Datei '$CsvPath': $_"
                 Write-Log -Level Error -Message $msg
                 Add-UserReportEntry -SamAccountName "(CSV)" -Status "Fehler" -Detail $msg
                 return # Abbruch des Modus
