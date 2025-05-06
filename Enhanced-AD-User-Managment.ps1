@@ -14,6 +14,7 @@ Es kann verwendet werden, um:
 Das Skript ist für PowerShell Version 5.1 optimiert und verwendet deutsche Lokalisierungseinstellungen für CSV-Exporte und Datums-/Zeitformate.
 Es implementiert detaillierte Protokollierung und gibt standardmäßig ausführliche Meldungen aus (Verbose Output).
 Log-Dateien und ein Benutzerbericht (CSV) über durchgeführte Aktionen werden standardmäßig im Verzeichnis des Skripts gespeichert.
+Vor dem Erstellen oder Ändern von Benutzern wird eine detaillierte Bestätigungsaufforderung angezeigt (es sei denn, -Confirm:$false wird verwendet).
 
 .PARAMETER CopySingleUser
 Schalter, um den Modus zum Kopieren eines einzelnen Benutzers zu aktivieren.
@@ -95,25 +96,25 @@ Steuert die Detailtiefe der Log-Datei. Mögliche Werte: Error, Warning, Info, Ve
 Pfad für die CSV-Datei, die einen Bericht über erstellte/kopierte/modifizierte Benutzer enthält (nicht für Export-Modi relevant). Standard ist das Skriptverzeichnis (`$PSScriptRoot` oder `$PWD`) mit dem Namen '{ScriptName}_UserReport_{Timestamp}.csv'. Der Bericht wird immer für die Modi Copy, Create, Apply erstellt.
 
 .EXAMPLE
-# Beispiel 1: Kopiert 'BenutzerA' zu 'BenutzerB' interaktiv (mit Verbose-Ausgabe)
+# Beispiel 1: Kopiert 'BenutzerA' zu 'BenutzerB' interaktiv (mit Verbose-Ausgabe und Bestätigung)
 .\Enhanced-ADManagement.ps1 -CopySingleUser -ReferenceUserSamAccountName BenutzerA
 
 .EXAMPLE
-# Beispiel 2: Kopiert 'BenutzerA' zu 'BenutzerC', setzt Passwort, legt in spezifischer OU ab und überschreibt Ziel falls vorhanden
+# Beispiel 2: Kopiert 'BenutzerA' zu 'BenutzerC', setzt Passwort, legt in spezifischer OU ab und überschreibt Ziel falls vorhanden (mit Bestätigung)
 $password = ConvertTo-SecureString "P@sswOrd123!" -AsPlainText -Force
 .\Enhanced-ADManagement.ps1 -CopySingleUser -ReferenceUserSamAccountName BenutzerA -TargetUserSamAccountName BenutzerC -TargetUserPassword $password -TargetOU "OU=NeueMitarbeiter,DC=firma,DC=local" -Force
 
 .EXAMPLE
-# Beispiel 3: Erstellt Benutzer aus CSV mit Standardpasswort und Gruppen/Attributen von 'TemplateUser' (LogLevel steuert nur Datei, Konsole ist immer Verbose)
+# Beispiel 3: Erstellt Benutzer aus CSV mit Standardpasswort und Gruppen/Attributen von 'TemplateUser' (mit Bestätigung für jeden Benutzer)
 $defaultPass = ConvertTo-SecureString "Sommer2025!" -AsPlainText -Force
 .\Enhanced-ADManagement.ps1 -CreateUsersFromCSV -CsvPath "C:\temp\neue_benutzer.csv" -ReferenceUserSamAccountName TemplateUser -DefaultPassword $defaultPass -LogLevel Info
 
 .EXAMPLE
-# Beispiel 4: Erstellt Benutzer aus CSV, verwendet Passwort aus CSV (WARNUNG: Unsicher!) und speichert Log in C:\Logs
+# Beispiel 4: Erstellt Benutzer aus CSV, verwendet Passwort aus CSV (WARNUNG: Unsicher!) und speichert Log in C:\Logs (mit Bestätigung)
 .\Enhanced-ADManagement.ps1 -CreateUsersFromCSV -CsvPath "C:\temp\neue_benutzer_mit_passwort.csv" -TargetOU "OU=Vertrieb,DC=firma,DC=local" -LogPath "C:\Logs"
 
 .EXAMPLE
-# Beispiel 5: Wendet Abteilungs-, Büro- und Gruppeninformationen von 'RefUser' auf den existierenden Benutzer 'ExistingUser' an
+# Beispiel 5: Wendet Abteilungs-, Büro- und Gruppeninformationen von 'RefUser' auf den existierenden Benutzer 'ExistingUser' an (mit Bestätigung)
 .\Enhanced-ADManagement.ps1 -ApplyPropertiesToExistingUser -ReferenceUserSamAccountName RefUser -TargetUserSamAccountName ExistingUser
 
 .EXAMPLE
@@ -134,10 +135,17 @@ $defaultPass = ConvertTo-SecureString "Sommer2025!" -AsPlainText -Force
 
 .NOTES
 Autor: Gemini (basierend auf Nutzer-Input und Beispielen)
-Version: 6.4
+Version: 6.6
 Datum: 2025-05-06
 Benötigte Module: ActiveDirectory (wird durch #requires geprüft)
 Benötigte Berechtigungen: Ausreichende AD-Berechtigungen zum Lesen von Benutzern und zum Erstellen/Modifizieren von Benutzern. Schreibrechte im Zielverzeichnis für Logs/Berichte/Exporte.
+
+Bestätigungsaufforderungen:
+- Das Skript verwendet die PowerShell-Standardmechanismen für Bestätigungen (`SupportsShouldProcess`).
+- Vor jeder Aktion, die einen Benutzer erstellt oder modifiziert (Copy, Create, Apply), wird eine detaillierte Meldung angezeigt, was getan wird.
+- Standardmäßig fragt PowerShell nach Bestätigung (J/N/A/H).
+- Um alle Bestätigungen automatisch zu überspringen, verwenden Sie den Parameter `-Confirm:$false`.
+- Um nur zu sehen, was getan würde, ohne Änderungen vorzunehmen, verwenden Sie den Parameter `-WhatIf`.
 
 Modus ApplyPropertiesToExistingUser:
 - Kopiert standardmäßig folgende Eigenschaften: Description, Office, StreetAddress, City, State, PostalCode, Country, Department, Company, Title, OfficePhone, EmailAddress.
@@ -493,7 +501,10 @@ begin {
                 return $null # Fehler signalisieren
             } else {
                 Write-Log -Level Warning -Message "Zielbenutzer '$TargetSamAccountName' existiert und wird überschrieben (-Force)."
-                if ($PSCmdlet.ShouldProcess($TargetSamAccountName, "Vorhandenen Benutzer entfernen")) {
+                # Detailliertere ShouldProcess-Meldung für das Löschen
+                $shouldProcessTarget = "den vorhandenen Benutzer '$TargetSamAccountName' (DN: $($existingTargetUser.DistinguishedName))"
+                $shouldProcessAction = "Entfernen (wegen -Force)"
+                if ($PSCmdlet.ShouldProcess($shouldProcessTarget, $shouldProcessAction)) {
                     try {
                         Remove-ADUser -Identity $existingTargetUser -Confirm:$false -ErrorAction Stop
                         Write-Log -Level Info -Message "Vorhandener Benutzer '$TargetSamAccountName' entfernt."
@@ -567,7 +578,10 @@ begin {
 
         # Benutzer erstellen
         $newUser = $null
-        if ($PSCmdlet.ShouldProcess($TargetSamAccountName, "Neuen AD-Benutzer erstellen (Kopie von $($SourceUser.SamAccountName))")) {
+        # Detailliertere ShouldProcess-Meldung
+        $shouldProcessTarget = "Benutzer '$TargetSamAccountName' (Kopie von '$($SourceUser.SamAccountName)')"
+        $shouldProcessAction = "Erstellen in OU '$finalOU'"
+        if ($PSCmdlet.ShouldProcess($shouldProcessTarget, $shouldProcessAction)) {
             try {
                 Write-Log -Level Info -Message "Erstelle Benutzer '$TargetSamAccountName' in OU '$finalOU'."
                 # Verwende NICHT -Instance hier, um mehr Kontrolle zu haben
@@ -595,8 +609,12 @@ begin {
              $groupsToCopy = $sourceGroups | Where-Object {$_.Name -ne "Domain Users"} # Beispiel Filter
 
             if ($groupsToCopy) {
+                $groupNames = $groupsToCopy.Name -join ', '
                 Write-Log -Level Info -Message "Kopiere $($groupsToCopy.Count) Gruppenmitgliedschaften von $($SourceUser.SamAccountName) zu $($newUser.SamAccountName)."
-                if ($PSCmdlet.ShouldProcess($newUser.SamAccountName, "Gruppenmitgliedschaften hinzufügen ($($groupsToCopy.Count) Gruppen)")) {
+                # Detailliertere ShouldProcess-Meldung
+                $shouldProcessTarget = "Benutzer '$($newUser.SamAccountName)'"
+                $shouldProcessAction = "Hinzufügen zu Gruppen ($($groupsToCopy.Count)): $groupNames"
+                if ($PSCmdlet.ShouldProcess($shouldProcessTarget, $shouldProcessAction)) {
                     Add-ADPrincipalGroupMembership -Identity $newUser -MemberOf $groupsToCopy -ErrorAction Stop
                     Write-Log -Level Info -Message "Gruppenmitgliedschaften erfolgreich kopiert."
                     # Optional: Update Report
@@ -795,7 +813,10 @@ begin {
 
          # --- Benutzer erstellen ---
          $newUser = $null
-         if ($PSCmdlet.ShouldProcess($sam, "Neuen AD-Benutzer erstellen")) {
+         # Detailliertere ShouldProcess-Meldung
+         $shouldProcessTarget = "Benutzer '$sam' ($($newUserParams.Name))"
+         $shouldProcessAction = "Erstellen in OU '$finalOU'"
+         if ($PSCmdlet.ShouldProcess($shouldProcessTarget, $shouldProcessAction)) {
              try {
                  Write-Log -Level Info -Message "Erstelle Benutzer '$sam' in OU '$finalOU'."
                  $newUser = New-ADUser @newUserParams -PassThru -ErrorAction Stop
@@ -821,8 +842,12 @@ begin {
                  $groupsToCopy = $templateGroups | Where-Object {$_.Name -ne "Domain Users"} # Filter
 
                  if ($groupsToCopy) {
+                     $groupNames = $groupsToCopy.Name -join ', '
                      Write-Log -Level Info -Message "Füge Benutzer '$($newUser.SamAccountName)' zu $($groupsToCopy.Count) Gruppen hinzu (basierend auf Template '$($TemplateUser.SamAccountName)')."
-                     if ($PSCmdlet.ShouldProcess($newUser.SamAccountName, "Gruppenmitgliedschaften hinzufügen ($($groupsToCopy.Count) Gruppen)")) {
+                     # Detailliertere ShouldProcess-Meldung
+                     $shouldProcessTarget = "Benutzer '$($newUser.SamAccountName)'"
+                     $shouldProcessAction = "Hinzufügen zu Gruppen ($($groupsToCopy.Count)): $groupNames"
+                     if ($PSCmdlet.ShouldProcess($shouldProcessTarget, $shouldProcessAction)) {
                          Add-ADPrincipalGroupMembership -Identity $newUser -MemberOf $groupsToCopy -ErrorAction Stop
                          Write-Log -Level Info -Message "Gruppenmitgliedschaften für '$($newUser.SamAccountName)' erfolgreich hinzugefügt."
                          # Optional: Update Report
@@ -868,6 +893,7 @@ begin {
         # Hashtable für Set-ADUser vorbereiten
         $setParams = @{ Identity = $TargetUser }
         $changesDetected = $false
+        $changedPropsList = @()
 
         # Eigenschaften vergleichen und zur Hashtable hinzufügen, wenn unterschiedlich
         foreach ($prop in $propertiesToApply) {
@@ -879,6 +905,7 @@ begin {
                     Write-Verbose "Änderung für '$($TargetUser.SamAccountName)' bei Eigenschaft '$prop': '$($TargetUser.$prop)' -> '$($ReferenceUser.$prop)'"
                     $setParams[$prop] = $ReferenceUser.$prop
                     $changesDetected = $true
+                    $changedPropsList += $prop # Geänderte Eigenschaften für Meldung sammeln
                 } else {
                     Write-Verbose "Eigenschaft '$prop' ist im Referenzbenutzer '$($ReferenceUser.SamAccountName)' leer, null oder nicht vorhanden, wird für '$($TargetUser.SamAccountName)' nicht überschrieben."
                 }
@@ -887,7 +914,10 @@ begin {
 
         # --- Eigenschaften anwenden ---
         if ($changesDetected) {
-            if ($PSCmdlet.ShouldProcess($TargetUser.SamAccountName, "Eigenschaften anwenden (Quelle: $($ReferenceUser.SamAccountName))")) {
+            # Detailliertere ShouldProcess-Meldung
+            $shouldProcessTarget = "Benutzer '$($TargetUser.SamAccountName)'"
+            $shouldProcessAction = "Eigenschaften anwenden (Quelle: $($ReferenceUser.SamAccountName)): $($changedPropsList -join ', ')"
+            if ($PSCmdlet.ShouldProcess($shouldProcessTarget, $shouldProcessAction)) {
                 try {
                     Set-ADUser @setParams -ErrorAction Stop
                     Write-Log -Level Info -Message "Eigenschaften erfolgreich auf '$($TargetUser.SamAccountName)' angewendet."
@@ -921,8 +951,12 @@ begin {
             $groupsToAdd = Compare-Object -ReferenceObject $referenceGroupsFiltered -DifferenceObject $targetGroups -Property DistinguishedName -PassThru | Where-Object {$_.SideIndicator -eq '<='}
 
             if ($groupsToAdd) {
+                $groupNames = $groupsToAdd.Name -join ', '
                 Write-Log -Level Info -Message "Füge $($groupsToAdd.Count) fehlende Gruppenmitgliedschaften zu '$($TargetUser.SamAccountName)' hinzu (Quelle: $($ReferenceUser.SamAccountName))."
-                if ($PSCmdlet.ShouldProcess($TargetUser.SamAccountName, "Fehlende Gruppenmitgliedschaften hinzufügen ($($groupsToAdd.Count) Gruppen)")) {
+                # Detailliertere ShouldProcess-Meldung
+                $shouldProcessTarget = "Benutzer '$($TargetUser.SamAccountName)'"
+                $shouldProcessAction = "Hinzufügen zu Gruppen ($($groupsToAdd.Count)): $groupNames"
+                if ($PSCmdlet.ShouldProcess($shouldProcessTarget, $shouldProcessAction)) {
                     Add-ADPrincipalGroupMembership -Identity $TargetUser -MemberOf $groupsToAdd -ErrorAction Stop
                     Write-Log -Level Info -Message "Fehlende Gruppenmitgliedschaften erfolgreich zu '$($TargetUser.SamAccountName)' hinzugefügt."
                     Add-UserReportEntry -SamAccountName $TargetUser.SamAccountName -Status "Modifiziert" -Detail "$($groupsToAdd.Count) Gruppen hinzugefügt von $($ReferenceUser.SamAccountName)"
@@ -1000,9 +1034,10 @@ process {
                                           -TargetSamAccountName $TargetUserSamAccountName `
                                           -Password $TargetUserPassword `
                                           -DestinationOU $TargetOU `
-                                          -OverwriteTarget:$Force `
-                                          -Verbose:$($PSBoundParameters.ContainsKey('Verbose')) ` # KORREKTUR v6.3
-                                          -WarningAction $WarningPreference
+                                          -OverwriteTarget:$Force
+                                          # KORREKTUR v6.6: Explizite Parameterübergabe entfernt
+                                          # -Verbose:$($PSBoundParameters.ContainsKey('Verbose')) `
+                                          # -WarningAction $WarningPreference
 
             if ($newUser) {
                 Write-Log -Level Info -Message "Benutzer '$($newUser.SamAccountName)' erfolgreich kopiert."
@@ -1064,9 +1099,10 @@ process {
                 $newUser = New-ADUserFromData -UserData $userDataHash `
                                               -TemplateUser $referenceUserObject `
                                               -GlobalDefaultPassword $DefaultPassword `
-                                              -GlobalTargetOU $TargetOU `
-                                              -Verbose:$($PSBoundParameters.ContainsKey('Verbose')) ` # KORREKTUR v6.3
-                                              -WarningAction $WarningPreference
+                                              -GlobalTargetOU $TargetOU
+                                              # KORREKTUR v6.6: Explizite Parameterübergabe entfernt
+                                              # -Verbose:$($PSBoundParameters.ContainsKey('Verbose')) `
+                                              # -WarningAction $WarningPreference
 
                 if ($newUser) {
                     $SuccessCount++
@@ -1111,9 +1147,10 @@ process {
 
             # 3. Funktion zum Anwenden der Eigenschaften aufrufen
             Apply-ADUserProperties -ReferenceUser $referenceUserObject `
-                                   -TargetUser $targetUserObject `
-                                   -Verbose:$($PSBoundParameters.ContainsKey('Verbose')) ` # KORREKTUR v6.3
-                                   -WarningAction $WarningPreference
+                                   -TargetUser $targetUserObject
+                                   # KORREKTUR v6.6: Explizite Parameterübergabe entfernt
+                                   # -Verbose:$($PSBoundParameters.ContainsKey('Verbose')) `
+                                   # -WarningAction $WarningPreference
 
             # Report-Einträge werden innerhalb von Apply-ADUserProperties hinzugefügt
             Write-Log -Level Info -Message "Modus ApplyPropertiesToExistingUser abgeschlossen für Ziel '$($targetUserObject.SamAccountName)'."
