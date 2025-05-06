@@ -1,7 +1,23 @@
+
+PS C:\Daten\Scripte\wip> C:\Daten\Scripte\AD-Sync-tree.ps1
+In C:\Daten\Scripte\AD-Sync-tree.ps1:27 Zeichen:81
++ ... er beim Abrufen der Domänencontroller für Domäne $DomainName: $errorM ...
++                                                      ~~~~~~~~~~~~
+Ungültiger Variablenverweis. Nach ":" folgte kein Zeichen, das für einen Variablennamen gültig ist. Verwenden Sie ggf. "${}", 
+um den Namen zu begrenzen.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : InvalidVariableReferenceWithDrive
+ 
+
+
+
+
 Import-Module ActiveDirectory
 
 try {
     # Aktuellen AD-Forest abrufen
+
+
     $Forest = Get-ADForest
     if (-not $Forest) {
         Write-Error "Konnte den Active Directory Forest nicht abrufen. Stellen Sie sicher, dass das Skript auf einer domänenangebundenen Maschine mit installierten RSAT-AD-Tools ausgeführt wird."
