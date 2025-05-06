@@ -135,7 +135,7 @@ $defaultPass = ConvertTo-SecureString "Sommer2025!" -AsPlainText -Force
 
 .NOTES
 Autor: Gemini (basierend auf Nutzer-Input und Beispielen)
-Version: 6.6
+Version: 6.7
 Datum: 2025-05-06
 Benötigte Module: ActiveDirectory (wird durch #requires geprüft)
 Benötigte Berechtigungen: Ausreichende AD-Berechtigungen zum Lesen von Benutzern und zum Erstellen/Modifizieren von Benutzern. Schreibrechte im Zielverzeichnis für Logs/Berichte/Exporte.
@@ -746,6 +746,7 @@ begin {
                  $msg = "Benutzer '$sam' existiert bereits im AD. Überspringe Eintrag."
                  Write-Log -Level Error -Message $msg
                  Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
+                 # KORREKTUR v6.7: Sofort abbrechen, wenn Benutzer existiert
                  return $null
              }
          } catch { Write-Log -Level Warning -Message "Fehler beim Prüfen, ob Benutzer '$sam' existiert: $_." }
@@ -934,7 +935,8 @@ begin {
             }
         } else {
             Write-Log -Level Info -Message "Keine unterschiedlichen Eigenschaften zum Anwenden auf '$($TargetUser.SamAccountName)' gefunden."
-            Add-UserReportEntry -SamAccountName $TargetUser.SamAccountName -Status "Keine Änderung" -Detail "Keine Eigenschaftsänderungen von $($ReferenceUser.SamAccountName) nötig"
+            # Korrektur v6.5: Report-Eintrag nur wenn wirklich keine Änderung *geplant* war
+            # Add-UserReportEntry -SamAccountName $TargetUser.SamAccountName -Status "Keine Änderung" -Detail "Keine Eigenschaftsänderungen von $($ReferenceUser.SamAccountName) nötig"
         }
 
         # --- Gruppenmitgliedschaften hinzufügen (nur fehlende) ---
@@ -966,7 +968,10 @@ begin {
                 }
             } else {
                 Write-Log -Level Info -Message "Keine fehlenden Gruppenmitgliedschaften bei '$($TargetUser.SamAccountName)' gefunden (basierend auf $($ReferenceUser.SamAccountName))."
-                 # Kein Report-Eintrag nötig, wenn nichts zu tun war
+                 # Report-Eintrag nur, wenn auch bei Eigenschaften keine Änderung erfolgte
+                 if(-not $changesDetected) {
+                    Add-UserReportEntry -SamAccountName $TargetUser.SamAccountName -Status "Keine Änderung" -Detail "Keine Eigenschafts- oder Gruppenänderungen von $($ReferenceUser.SamAccountName) nötig"
+                 }
             }
         } catch {
              $msg = "Fehler beim Verarbeiten der Gruppenmitgliedschaften für '$($TargetUser.SamAccountName)': $_"
@@ -1036,8 +1041,6 @@ process {
                                           -DestinationOU $TargetOU `
                                           -OverwriteTarget:$Force
                                           # KORREKTUR v6.6: Explizite Parameterübergabe entfernt
-                                          # -Verbose:$($PSBoundParameters.ContainsKey('Verbose')) `
-                                          # -WarningAction $WarningPreference
 
             if ($newUser) {
                 Write-Log -Level Info -Message "Benutzer '$($newUser.SamAccountName)' erfolgreich kopiert."
@@ -1101,8 +1104,6 @@ process {
                                               -GlobalDefaultPassword $DefaultPassword `
                                               -GlobalTargetOU $TargetOU
                                               # KORREKTUR v6.6: Explizite Parameterübergabe entfernt
-                                              # -Verbose:$($PSBoundParameters.ContainsKey('Verbose')) `
-                                              # -WarningAction $WarningPreference
 
                 if ($newUser) {
                     $SuccessCount++
@@ -1149,8 +1150,6 @@ process {
             Apply-ADUserProperties -ReferenceUser $referenceUserObject `
                                    -TargetUser $targetUserObject
                                    # KORREKTUR v6.6: Explizite Parameterübergabe entfernt
-                                   # -Verbose:$($PSBoundParameters.ContainsKey('Verbose')) `
-                                   # -WarningAction $WarningPreference
 
             # Report-Einträge werden innerhalb von Apply-ADUserProperties hinzugefügt
             Write-Log -Level Info -Message "Modus ApplyPropertiesToExistingUser abgeschlossen für Ziel '$($targetUserObject.SamAccountName)'."
