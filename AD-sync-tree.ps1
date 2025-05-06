@@ -1,3 +1,18 @@
+
+In C:\Daten\Scripte\AD-Sync-tree.ps1:25 Zeichen:81
++ ... er beim Abrufen der Domänencontroller für Domäne $DomainName: $($_.Ex ...
++                                                      ~~~~~~~~~~~~
+Ungültiger Variablenverweis. Nach ":" folgte kein Zeichen, das für einen Variablennamen gültig ist. Verwenden Sie ggf. "${}", 
+um den Namen zu begrenzen.
+In C:\Daten\Scripte\AD-Sync-tree.ps1:75 Zeichen:67
++ ... -Warning "Fehler beim Ausführen von repadmin für $DCHostname: $($_.Ex ...
++                                                      ~~~~~~~~~~~~
+Ungültiger Variablenverweis. Nach ":" folgte kein Zeichen, das für einen Variablennamen gültig ist. Verwenden Sie ggf. "${}", 
+um den Namen zu begrenzen.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : InvalidVariableReferenceWithDrive
+
+
 Import-Module ActiveDirectory
 
 try {
