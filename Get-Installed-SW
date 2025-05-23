@@ -225,6 +225,7 @@ function Get-InstalledApp {
     catch {
         Write-Error "Failed to retrieve installed software on '${ComputerName}': ${_.Exception.Message}"
         Write-Verbose "Error details for Get-InstalledApp: $($_.Exception.ToString())"
+        Write-Error "Ensure SCCM client is installed and WinRM is enabled on '${ComputerName}'."
         return $null
     }
     # Sort and remove duplicates based on DisplayName (case-insensitive for uniqueness)
@@ -238,9 +239,8 @@ function Get-InstalledApp {
 .DESCRIPTION
     This function queries the CCM_Application WMI class on the target client to get
     comprehensive details about applications known to the SCCM client. It includes
-    information such as deployment status, whether it's an update, if it's user-installable,
-    and important IDs for triggering installations. It also converts WMI dates
-    to readable DateTime objects and status codes to descriptive names.
+    information such as deployment state, target type (machine/user), and availability for installation.
+    It also converts WMI dates to readable DateTime objects and status codes to descriptive names.
 
 .PARAMETER ComputerName
     The name or IP address of the computer to query. Defaults to the local computer.
@@ -348,7 +348,6 @@ function Get-SCCMAppAssignment {
         # CurrentState: 0=Unknown, 1=Installed, 2=NotInstalled, 3=Pending, 4=Failed
         $stateMap = @{
             0 = "Unknown"; 1 = "Installed"; 2 = "RequiresUninstall"; 3 = "Available"; 4 = "Mandatory";
-            # for CurrentState
             "Current_0" = "Unknown"; "Current_1" = "Installed"; "Current_2" = "NotInstalled";
             "Current_3" = "Pending"; "Current_4" = "Failed"
         }
@@ -478,12 +477,12 @@ function Invoke-SCCMClientCycle {
         Write-Verbose "Attempting to initiate SCCM '$CycleName' cycle (${cycleGuid}) on '${ComputerName}'."
         try {
             Invoke-Command -ComputerName $ComputerName -ScriptBlock {
-                param($guid)
+                param($guid, $cycleNameForOutput)
                 $SMSClient = New-Object -ComObject 'Microsoft.SMS.Client'
                 $SMSClient.TriggerSchedule($guid)
-                Write-Host "SCCM '$CycleName' cycle successfully triggered." -ForegroundColor Green
+                Write-Host "SCCM '$cycleNameForOutput' cycle successfully triggered." -ForegroundColor Green
                 Write-Verbose "SCCM TriggerSchedule method called for GUID '$guid'."
-            } -ArgumentList $cycleGuid
+            } -ArgumentList $cycleGuid, $CycleName
         }
         catch {
             Write-Error "Failed to trigger '$CycleName' cycle on '${ComputerName}': ${_.Exception.Message}"
@@ -542,7 +541,7 @@ function Invoke-SCCMClientCycle {
     # Refreshes policy on Client01, then automatically installs all pending apps.
 
 .EXAMPLE
-    Invoke-SCCMClientAppMgmt -ComputerName $env:COMPUTERNAME -ShowDifferences -PromptInstall:$false -DisableVerbose
+    Invoke-SCCMClientAppMgmt -ComputerName $env:COMPUTERNAME -ShowDifferences -PromptInstall:$false
     # Shows status and differences for the local PC, no prompts, verbose output disabled.
 
 .EXAMPLE
@@ -594,6 +593,7 @@ function Invoke-SCCMClientAppMgmt {
     }
 
     Write-Verbose "Starting Invoke-SCCMClientAppMgmt function."
+    # Corrected: Use the parameter $ComputerName directly.
     Write-Verbose "Parameters received: ComputerName='$ComputerName', InstallAll=$InstallAll, PromptInstall=$PromptInstall, RefreshPolicy=$RefreshPolicy, ShowDifferences=$ShowDifferences, AdditionalCycle='$AdditionalCycle', DisableVerbose=$DisableVerbose."
 
     # --- Interactive Parameter Prompts ---
@@ -623,8 +623,9 @@ function Invoke-SCCMClientAppMgmt {
     if ($ShowDifferences) {
         Write-Host "`n--- Current Policy Adherence & Software Installation Status (before sync) ---" -ForegroundColor Yellow
         Write-Host "This view compares applications assigned by the server (client's knowledge) with actual installations." -ForegroundColor Yellow
-        
+        Write-Verbose "Executing Get-SCCMAppAssignment for server intent comparison."
         $sccmAssignments = Get-SCCMAppAssignment -ComputerName $ComputerName
+        Write-Verbose "Executing Get-InstalledApp for local installation comparison."
         $installedApps = Get-InstalledApp -ComputerName $ComputerName
         
         if (-not $sccmAssignments) {
@@ -638,33 +639,40 @@ function Invoke-SCCMClientAppMgmt {
 
             $diffs = @()
 
-            # What is assigned by SCCM but not (yet) installed?
+            # --- Compare: What is assigned by SCCM but not (yet) installed? ---
+            Write-Verbose "Checking for SCCM assigned applications not found installed locally."
             foreach ($assignment in $assignedNormalizedNames) {
                 $match = $installedNormalizedNames | Where-Object { $_.NName -eq $assignment.NName }
-                if (-not $match -and $assignment.DesiredState -ne "Installed" -and $assignment.DesiredState -ne "Unknown") {
+                
+                # Condition 1: Assigned, but not found locally AND not explicitly installed according to assignment's CurrentState
+                if (-not $match -and $assignment.CurrentState -ne "Installed") {
                     $diffs += [PSCustomObject]@{
                         Category = "SCCM Assigned - Not Installed"
                         Application = $assignment.ApplicationName
-                        AssignedState = $assignment.DesiredState
-                        ClientActual = "Not Found (or not matching normalized name)"
+                        AssignedState = $assignment.DesiredState # Server's intent
+                        ClientActual = $assignment.CurrentState  # Client's reported current state for assignment
                         InstalledVersion = "N/A"
-                        Notes = "Server assigned, but not found locally."
+                        Notes = "Assigned by server, but client's CurrentState is '$($assignment.CurrentState)' (not 'Installed')."
                     }
-                    Write-Verbose "Difference found: SCCM assigned '$($assignment.ApplicationName)' (DesiredState: $($assignment.DesiredState)) but not installed."
-                } elseif ($match -and $assignment.DesiredState -ne "Installed" -and $assignment.CurrentState -eq "Installed") {
+                    Write-Verbose "Difference found: SCCM assigned '$($assignment.ApplicationName)' (Desired: $($assignment.DesiredState), Current: $($assignment.CurrentState)) but no local installation match."
+                } 
+                # Condition 2: Assigned, found locally, but assignment's CurrentState is NOT 'Installed'
+                elseif ($match -and $assignment.CurrentState -ne "Installed") {
                      $diffs += [PSCustomObject]@{
-                        Category = "SCCM Desired vs Actual"
+                        Category = "SCCM Assignment Status Discrepancy"
                         Application = $assignment.ApplicationName
                         AssignedState = $assignment.DesiredState
-                        ClientActual = "Installed"
+                        ClientActual = $assignment.CurrentState
                         InstalledVersion = $match.DisplayVersion
-                        Notes = "Assigned state is '$($assignment.DesiredState)', but already installed."
+                        Notes = "Installed locally, but client's SCCM assignment status is still '$($assignment.CurrentState)' (not 'Installed')."
                     }
-                    Write-Verbose "Difference found: SCCM assigned '$($assignment.ApplicationName)' (DesiredState: $($assignment.DesiredState)) but already installed."
+                    Write-Verbose "Discrepancy found: '$($assignment.ApplicationName)' installed locally, but SCCM CurrentState is '$($assignment.CurrentState)'."
                 }
             }
 
-            # What is installed but not (clearly) assigned by SCCM? (Potential manual installs or old versions)
+            # --- Compare: What is installed but not (clearly) assigned by SCCM? ---
+            # (Potential manual installs or old versions not managed by SCCM)
+            Write-Verbose "Checking for locally installed applications not matching SCCM assignments."
             foreach ($installedApp in $installedNormalizedNames) {
                 $match = $assignedNormalizedNames | Where-Object { $_.NName -eq $installedApp.NName }
                 if (-not $match) {
@@ -672,7 +680,7 @@ function Invoke-SCCMClientAppMgmt {
                         Category = "Locally Installed - Not SCCM Assigned"
                         Application = $installedApp.DisplayName
                         AssignedState = "N/A"
-                        ClientActual = "Installed"
+                        ClientActual = "Installed (Local)"
                         InstalledVersion = $installedApp.DisplayVersion
                         Notes = "Installed locally, but no matching SCCM assignment found."
                     }
@@ -681,8 +689,8 @@ function Invoke-SCCMClientAppMgmt {
             }
 
             if ($diffs.Count -gt 0) {
-                Write-Host "`nDetailed Differences Found:" -ForegroundColor Red
-                # Format output with German culture for dates/numbers if applicable
+                Write-Host "`nDetailed Differences Found (Server Intent vs. Client Actual):" -ForegroundColor Red
+                # Format output with German culture for dates/numbers if applicable - not directly for this table
                 $diffs | Format-Table Category, Application, AssignedState, ClientActual, InstalledVersion, Notes -AutoSize
             } else {
                 Write-Host "No significant differences found between SCCM assignments and local installations." -ForegroundColor Green
@@ -732,6 +740,9 @@ function Invoke-SCCMClientAppMgmt {
         $allRelevantSCCMApps | Format-Table Name, Status, IsUpdatePending, IsMachineTarget, UserInstallable, Deadline, EstimatedTime -AutoSize
 
         # --- Offer Installation Options ---
+        # The interactive prompt logic should come here, *after* showing relevant apps.
+        # This handles the case where -InstallAll or -PromptInstall was not specified,
+        # or where the user chose '1' or '2' from the interactive prompt.
         if ($InstallAll) {
             Write-Host "`nAutomatically installing all pending/relevant applications..." -ForegroundColor Magenta
             foreach ($appToInstall in $allRelevantSCCMApps) {
@@ -761,7 +772,7 @@ function Invoke-SCCMClientAppMgmt {
                 }
             }
         } else {
-            Write-Host "`nTo install the pending software, re-run the script with -InstallAll or -PromptInstall." -ForegroundColor Green
+            Write-Host "`nNo installation option selected by user/parameters. To install, re-run with -InstallAll or -PromptInstall." -ForegroundColor Green
             Write-Verbose "No installation option selected by user/parameters."
         }
     } else {
@@ -787,24 +798,24 @@ function Invoke-SCCMClientAppMgmt {
 # Invoke-SCCMClientAppMgmt
 
 # 2. Status prüfen, Detaillierte Differenzen zeigen, dann für jede App fragen (Remote-PC):
-#    Ersetze "L26PBZD70080021" durch den tatsächlichen Computernamen.
-# Invoke-SCCMClientAppMgmt -ComputerName "L26PBZD70080021" -ShowDifferences -PromptInstall
+#    Ersetze "L26PBZE70080022" durch den tatsächlichen Computernamen.
+# Invoke-SCCMClientAppMgmt -ComputerName "L26PBZE70080022" -ShowDifferences -PromptInstall
 
 # 3. Richtlinie aktualisieren und dann alle ausstehenden Apps automatisch installieren (Remote-PC):
-#    Ersetze "L26PBZD70080021" durch den tatsächlichen Computernamen.
-# Invoke-SCCMClientAppMgmt -ComputerName "L26PBZD70080021" -RefreshPolicy -InstallAll
+#    Ersetze "L26PBZE70080022" durch den tatsächlichen Computernamen.
+# Invoke-SCCMClientAppMgmt -ComputerName "L26PBZE70080022" -RefreshPolicy -InstallAll
 
 # 4. Nur Status und detaillierte Differenzen anzeigen (Remote-PC), OHNE Installationsoptionen:
 #    Hier wird PromptInstall explizit auf $false gesetzt, um die interaktive Abfrage zu überspringen.
-#    Ersetze "L26PBZD70080021" durch den tatsächlichen Computernamen.
-Invoke-SCCMClientAppMgmt -ComputerName "L26PBZD70080021" -ShowDifferences -PromptInstall:$false
+#    Ersetze "L26PBZE70080022" durch den tatsächlichen Computernamen.
+Invoke-SCCMClientAppMgmt -ComputerName "L26PBZE70080022" -ShowDifferences -PromptInstall:$false
 
 # 5. Nur Status anzeigen für den lokalen PC, OHNE Installationsoptionen:
 # Invoke-SCCMClientAppMgmt -ComputerName $env:COMPUTERNAME -PromptInstall:$false
 
 # 6. Einen spezifischen zusätzlichen Client-Zyklus auslösen (z.B. Hardware-Inventur)
 #    und dann den Status anzeigen (keine Installationsoptionen):
-# Invoke-SCCMClientAppMgmt -ComputerName "L26PBZD70080021" -AdditionalCycle "HardwareInventory" -PromptInstall:$false
+# Invoke-SCCMClientAppMgmt -ComputerName "L26PBZE70080022" -AdditionalCycle "HardwareInventory" -PromptInstall:$false
 
 # 7. Nur Status anzeigen, Verbose Output deaktivieren:
-# Invoke-SCCMClientAppMgmt -ComputerName "L26PBZD70080021" -PromptInstall:$false -DisableVerbose
+# Invoke-SCCMClientAppMgmt -ComputerName "L26PBZE70080022" -PromptInstall:$false -DisableVerbose
