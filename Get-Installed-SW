@@ -51,7 +51,7 @@ function Get-InstalledSoftware {
 #   -ComputerName: Der Name des Computers, von dem die SCCM-Informationen abgerufen werden sollen.
 #                  Standardwert ist der lokale Computer.
 # Rückgabe: Eine Liste von Objekten mit ApplicationName, InstallState, IsMachineTarget,
-#          UserInstallAvailable, IsUpdate, IsInstalled, und InstallStateName.
+#          UserInstallAvailable, IsUpdate, IsInstalled, InstallStateName und weiteren Details.
 #
 function Get-SCCMApplicationDetails {
     [CmdletBinding()]
@@ -96,22 +96,23 @@ function Get-SCCMApplicationDetails {
         # Wir müssen Invoke-Command verwenden, um auf dem Remote-Client die WMI-Informationen abzurufen.
         $rawSCCMApps = Invoke-Command -ComputerName $ComputerName -ScriptBlock {
             Get-WmiObject -Namespace "root\ccm\ClientSDK" -Class CCM_Application -ErrorAction Stop |
-                Select-Object Name, InstallState, IsMachineTarget, UserInstallAvailable, IsUpdate, Id, PolicyID # Id und PolicyID für Installation
+                Select-Object Name, InstallState, IsMachineTarget, UserInstallAvailable, IsUpdate, Id, PolicyID,
+                            InstallSource, LastUpdateTime, EstimatedInstallTime, Deadline, RequestedExecutionLevel # Weitere relevante Parameter
         }
 
         foreach ($app in $rawSCCMApps) {
-            # Prüfen, ob die Software bereits installiert ist (InstallState = 1)
+            # Ist die Software bereits installiert (InstallState = 1)?
             $isInstalled = ($app.InstallState -eq 1)
 
-            # Prüfen, ob ein Update dafür aussteht.
-            # Ein Update wäre eine App, die zwar installiert ist (InstallState = 1),
-            # aber auch 'IsUpdate' true ist und ein neueres Paket verfügbar wäre.
-            # Die CCM_Application Klasse hat leider keine direkte Eigenschaft "UpdatePending".
-            # Normalerweise würde man das über den InstallState (z.B. 'Pending' oder 'Available') erkennen,
-            # oder über separate Software Update Deployments.
-            # Hier simulieren wir "IsUpdate" basierend auf der Eigenschaft IsUpdate der CCM_Application
-            # und einem InstallState der nicht 'Installed' ist, aber auch nicht 'NotApplicable'.
-            $isUpdatePending = ($app.IsUpdate -and $app.InstallState -ne 1 -and $app.InstallState -ne 9)
+            # Ist ein Update ausstehend?
+            # Wir definieren "UpdatePending" als: Die App ist als Update markiert UND ist NICHT installiert (InstallState != 1).
+            # Dies ist eine starke Indikation für ein ausstehendes Update.
+            $isUpdatePending = ($app.IsUpdate -and -not $isInstalled)
+
+            # Ist die Anwendung generell als "ausstehend" für eine Aktion markiert (nicht installiert, aber relevant)?
+            # InstallState 2 (Available), 4 (Pending), 10 (PendingRestart), 11 (PendingInstall) sind gute Kandidaten.
+            # Aber wir nehmen hier alle Zustände, die nicht "Installed" sind, außer "NotApplicable" und "Unknown".
+            $isTrulyPending = ($app.InstallState -ne 1 -and $app.InstallState -ne 0 -and $app.InstallState -ne 9)
 
             [PSCustomObject]@{
                 ApplicationName = $app.Name
@@ -122,8 +123,18 @@ function Get-SCCMApplicationDetails {
                 IsUpdate = $app.IsUpdate # True, wenn dies ein Update ist (Indikator, kein Status)
                 IsInstalled = $isInstalled # True, wenn InstallState = 1 ist
                 IsUpdatePending = $isUpdatePending # Unser Indikator, ob ein Update aussteht
-                ApplicationID = $app.Id # Wichtig für die Installation
-                ApplicationPolicyID = $app.PolicyID # Wichtig für die Installation
+                IsTrulyPending = $isTrulyPending # Unser Indikator, ob *irgendeine* ausstehende Aktion vorliegt
+
+                # Details für die Installation
+                ApplicationID = $app.Id
+                ApplicationPolicyID = $app.PolicyID
+
+                # Weitere relevante Parameter aus dem SCCM Client
+                InstallSource = $app.InstallSource # Woher die Installation kommt
+                LastUpdateTime = if ($app.LastUpdateTime) { [DateTime]::ParseExact($app.LastUpdateTime.Substring(0,14), "yyyyMMddHHmmss", $null) } else { $null } # Datum des letzten Updates
+                EstimatedInstallTime = $app.EstimatedInstallTime # Geschätzte Installationszeit in Minuten
+                Deadline = if ($app.Deadline) { [DateTime]::ParseExact($app.Deadline.Substring(0,14), "yyyyMMddHHmmss", $null) } else { $null } # Deadline der Installation
+                RequestedExecutionLevel = $app.RequestedExecutionLevel # RequiredExecutionLevel
             }
         }
     }
@@ -155,7 +166,7 @@ function Request-SCCMApplicationInstallation {
         [string]$ApplicationPolicyID
     )
 
-    Write-Host "Versuche, Installation für Anwendung ID '${ApplicationID}' auf ${ComputerName} auszulösen..." -ForegroundColor Yellow
+    Write-Host "Versuche, Installation für Anwendung '${ApplicationID}' auf ${ComputerName} auszulösen..." -ForegroundColor Yellow
 
     try {
         Invoke-Command -ComputerName $ComputerName -ScriptBlock {
@@ -165,8 +176,10 @@ function Request-SCCMApplicationInstallation {
             
             if ($ApplicationManagement) {
                 # Install-Methode aufrufen. Dies ist der "Install Application" Button im Software Center
+                # Bei manchen Anwendungen kann es notwendig sein, zusätzlich eine Parameterhash zu übergeben,
+                # aber die Standardmethode ohne Parameter ist oft ausreichend.
                 $ApplicationManagement.InstallApplication($appId, $policyId)
-                Write-Host "Installation von Anwendung ID '${appId}' erfolgreich ausgelöst." -ForegroundColor Green
+                Write-Host "Installation von Anwendung '${appId}' erfolgreich ausgelöst." -ForegroundColor Green
             } else {
                 Write-Error "Konnte Application Management Interface nicht abrufen. Installation nicht ausgelöst."
             }
@@ -174,6 +187,34 @@ function Request-SCCMApplicationInstallation {
     }
     catch {
         Write-Error "Fehler beim Auslösen der Installation auf ${ComputerName}: ${_.Exception.Message}"
+        Write-Error "Stellen Sie sicher, dass der SCCM Client läuft und Berechtigungen vorhanden sind."
+    }
+}
+
+#
+# Funktion: Request-SCCMPolicyRefresh
+# Beschreibung: Initiiert einen sofortigen Abruf der Maschinenrichtlinie (Machine Policy Retrieval & Evaluation Cycle) im SCCM-Client.
+# Parameter:
+#   -ComputerName: Der Name des Computers, auf dem der Richtlinien-Abruf ausgelöst werden soll.
+#
+function Request-SCCMPolicyRefresh {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$ComputerName
+    )
+
+    Write-Host "Initiere SCCM Maschinenrichtlinien-Abruf auf ${ComputerName}..." -ForegroundColor Yellow
+
+    try {
+        Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+            $SMSClient = New-Object -ComObject 'Microsoft.SMS.Client'
+            $SMSClient.TriggerSchedule("{00000000-0000-0000-0000-000000000001}") # Machine Policy Retrieval & Evaluation Cycle
+            Write-Host "Maschinenrichtlinien-Abruf erfolgreich ausgelöst." -ForegroundColor Green
+        }
+    }
+    catch {
+        Write-Error "Fehler beim Auslösen des Maschinenrichtlinien-Abrufs auf ${ComputerName}: ${_.Exception.Message}"
         Write-Error "Stellen Sie sicher, dass der SCCM Client läuft und Berechtigungen vorhanden sind."
     }
 }
@@ -193,12 +234,11 @@ function Normalize-SoftwareName {
     $normalizedName = $Name.ToLower().Trim()
 
     # Entferne bekannte Präfixe und Suffixe
-    $normalizedName = $normalizedName -replace "(?i)^(microsoft|adobe|google|mozilla) " # Präfixe
-    $normalizedName = $normalizedName -replace "(?i) (x64|x86|64-bit|32-bit)$" # Architektur
-    $normalizedName = $normalizedName -replace "(?i) v?\d+(\.\d+){0,3}( \d+)?( \(.*\))?$" # Versionsnummern (v1.2.3, 1.2.3 (build), etc.)
-    $normalizedName = $normalizedName -replace "(?i) setup$" # " Setup"
-    $normalizedName = $normalizedName -replace "(?i) installer$" # " Installer"
-    $normalizedName = $normalizedName -replace "(?i) (freeware|shareware|community edition)$" # Editionen
+    $normalizedName = $normalizedName -replace "(?i)^(microsoft|adobe|google|mozilla|ibm|cisco) " # Präfixe
+    $normalizedName = $normalizedName -replace "(?i) (x64|x86|64-bit|32-bit|arm)$" # Architektur
+    $normalizedName = $normalizedName -replace "(?i) v?\d+(\.\d+){0,4}(\.\d+)?(-[a-z0-9]+)?( \d+)?( \(.*\))?$" # Versionsnummern (v1.2.3, 1.2.3 (build), -beta, etc.)
+    $normalizedName = $normalizedName -replace "(?i) (setup|installer|client|agent|runtime)$" # " Setup", " Installer" etc.
+    $normalizedName = $normalizedName -replace "(?i) (freeware|shareware|community edition|professional|enterprise|standard|plus)$" # Editionen
     $normalizedName = $normalizedName -replace "[^a-z0-9 ]", "" # Alle nicht-alphanumerischen Zeichen außer Leerzeichen entfernen
     $normalizedName = $normalizedName -replace " +", " " # Mehrere Leerzeichen durch eines ersetzen
     $normalizedName = $normalizedName.Trim()
@@ -208,19 +248,56 @@ function Normalize-SoftwareName {
 
 
 #
-# Hauptteil des Skripts: Abruf, Vergleich und optional Installation
+# Hauptteil des Skripts: Abruf, Vergleich und optional Installation/Synchronisation
 #
-function Compare-AndInstall-SoftwareAndSCCMStatus {
+function Compare-AndManage-SCCMSoftwareStatus {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory=$true)]
         [string]$ComputerName,
         [switch]$InstallAllPending, # Schalter, um alle ausstehenden automatisch zu installieren
-        [switch]$PromptForIndividualInstallation # Schalter, um für jede ausstehende Installation zu fragen
+        [switch]$PromptForIndividualInstallation, # Schalter, um für jede ausstehende Installation zu fragen
+        [switch]$InitiatePolicyRefresh, # Schalter, um den Maschinenrichtlinien-Abruf auszulösen
+        [switch]$ShowServerClientDifferences # Schalter, um potenzielle Server-Client-Differenzen anzuzeigen
     )
 
-    Write-Host "`n--- Start des erweiterten Vergleichs für ${ComputerName} ---" -ForegroundColor Green
+    Write-Host "`n--- Start des erweiterten SCCM-Software-Managements für ${ComputerName} ---" -ForegroundColor Green
 
+    # Zeige potenzielle Server-Client-Differenzen vor Synchronisation, falls angefordert
+    if ($ShowServerClientDifferences) {
+        Write-Host "`n--- Anzeige potenzieller Server-Client-Differenzen vor Synchronisation ---" -ForegroundColor Yellow
+        Write-Host "Hinweis: Diese Daten basieren auf dem letzten bekannten Zustand des Clients."
+        # Um echte Server-Daten abzugleichen, bräuchte man Zugriff auf die SCCM-Datenbank/APIs auf dem Server.
+        # Hier zeigen wir stattdessen, welche Apps der Client als 'Available' oder 'Pending' hat,
+        # die vom Server bereitgestellt wurden, aber noch nicht installiert sind.
+        # Dies ist die beste "Vorab-Sicht" ohne Serverzugriff.
+        $currentSCCMDetails = Get-SCCMApplicationDetails -ComputerName $ComputerName
+
+        if ($currentSCCMDetails) {
+            $serverDrivenPending = $currentSCCMDetails | Where-Object { 
+                $_.IsTrulyPending -and # Ist nicht installiert, aber relevant
+                $_.InstallState -ne 9 # Ist nicht "NotApplicable"
+            }
+            if ($serverDrivenPending.Count -gt 0) {
+                Write-Host "Folgende Anwendungen sind vom Server als 'Ausstehend' oder 'Verfügbar' vorgesehen (laut Client-Status):" -ForegroundColor Red
+                $serverDrivenPending | Format-Table ApplicationName, InstallStateName, IsMachineTarget, UserInstallAvailable, Deadline -AutoSize
+            } else {
+                Write-Host "Aktuell keine Anwendungen im SCCM-Client als 'Ausstehend' oder 'Verfügbar' gelistet." -ForegroundColor Green
+            }
+        } else {
+            Write-Warning "Konnte keine aktuellen SCCM-Client-Details abrufen, um Differenzen anzuzeigen."
+        }
+        Write-Host "--- Ende der Differenzanzeige ---" -ForegroundColor Green
+    }
+
+    # Richtlinien-Abruf initiieren, falls angefordert
+    if ($InitiatePolicyRefresh) {
+        Request-SCCMPolicyRefresh -ComputerName $ComputerName
+        Write-Host "Bitte warten Sie einen Moment, bis der Client die neue Richtlinie verarbeitet hat..." -ForegroundColor DarkYellow
+        Start-Sleep -Seconds 30 # Gib dem Client etwas Zeit, die Richtlinie zu verarbeiten
+    }
+
+    # Jetzt die aktuellen Daten abrufen
     $installedSoftware = Get-InstalledSoftware -ComputerName $ComputerName
     $sccmApplications = Get-SCCMApplicationDetails -ComputerName $ComputerName
 
@@ -235,61 +312,49 @@ function Compare-AndInstall-SoftwareAndSCCMStatus {
 
     # Normalisierte Namen für den Vergleich
     $installedNormalizedNames = $installedSoftware | Select-Object @{Name='NormalizedName'; Expression={Normalize-SoftwareName $_.DisplayName}}, DisplayName
-    $sccmNormalizedNames = $sccmApplications | Select-Object @{Name='NormalizedName'; Expression={Normalize-SoftwareName $_.ApplicationName}}, ApplicationName, ApplicationID, ApplicationPolicyID, InstallStateName, IsMachineTarget, UserInstallAvailable, IsUpdate, IsInstalled, IsUpdatePending
+    $sccmNormalizedNames = $sccmApplications | Select-Object @{Name='NormalizedName'; Expression={Normalize-SoftwareName $_.ApplicationName}}, * # * für alle Eigenschaften
 
-    Write-Host "`n--- Ausstehende/Relevante SCCM-Anwendungen, die nicht als installiert gefunden wurden (fuzzy matching) ---" -ForegroundColor Yellow
-    $potentialPendingInstallations = @()
+
+    Write-Host "`n--- Ausstehende/Relevante SCCM-Anwendungen (laut Client-Status) ---" -ForegroundColor Yellow
+    Write-Host "Dies beinhaltet Apps, die nicht 'Installed' sind oder ein Update benötigen." -ForegroundColor Yellow
+    $allRelevantSCCMApps = @()
 
     foreach ($sccmApp in $sccmNormalizedNames) {
-        # Prüfen, ob der normalisierte SCCM-Name in den normalisierten installierten Namen vorkommt
-        $match = $installedNormalizedNames | Where-Object { $_.NormalizedName -eq $sccmApp.NormalizedName }
-
-        # Wenn kein exakter normalisierter Match gefunden wurde UND die Anwendung nicht als installiert gemeldet wird
-        if (-not $match -and -not $sccmApp.IsInstalled) {
-            # Optional: Überprüfung auf ähnliche Namen (z.B. mit Levenshtein-Distanz oder String-Ähnlichkeit)
-            # Für diesen Beispielcode bleiben wir bei der Normalisierung.
-            
-            # Füge die SCCM-App zur Liste der potenziellen ausstehenden Installationen hinzu
-            $potentialPendingInstallations += [PSCustomObject]@{
-                SCCM_ApplicationName = $sccmApp.ApplicationName
-                SCCM_InstallState = $sccmApp.InstallStateName
-                SCCM_IsMachineTarget = $sccmApp.IsMachineTarget
-                SCCM_UserInstallAvailable = $sccmApp.UserInstallAvailable
-                SCCM_IsUpdate = $sccmApp.IsUpdate
-                SCCM_IsUpdatePending = $sccmApp.IsUpdatePending
-                ApplicationID = $sccmApp.ApplicationID
-                ApplicationPolicyID = $sccmApp.ApplicationPolicyID
-                MatchingInstalledName = if ($match) { $match.DisplayName } else { "Kein Match" } # Zeigt den gefundenen Match (falls vorhanden)
-            }
+        # Ist die App entweder "wirklich ausstehend" (InstallState != Installed)
+        # ODER ein Update und noch nicht installiert?
+        if ($sccmApp.IsTrulyPending -or $sccmApp.IsUpdatePending) {
+            $allRelevantSCCMApps += $sccmApp
         }
     }
 
-    if ($potentialPendingInstallations.Count -gt 0) {
-        Write-Host "Folgende Software ist im SCCM ausstehend/relevant, aber nicht als installiert gefunden:" -ForegroundColor Red
-        $potentialPendingInstallations | Format-Table SCCM_ApplicationName, SCCM_InstallState, SCCM_IsMachineTarget, SCCM_UserInstallAvailable, SCCM_IsUpdate, SCCM_IsUpdatePending -AutoSize
+    if ($allRelevantSCCMApps.Count -gt 0) {
+        Write-Host "Folgende SCCM-Anwendungen benötigen Aufmerksamkeit (Installationen/Updates):" -ForegroundColor Red
+        $allRelevantSCCMApps | Format-Table ApplicationName, InstallStateName, IsUpdatePending, IsMachineTarget, UserInstallAvailable, Deadline -AutoSize
 
         # Installationsoptionen
         if ($InstallAllPending) {
-            Write-Host "`nInstalliere alle ausstehenden Anwendungen automatisch..." -ForegroundColor Magenta
-            foreach ($appToInstall in $potentialPendingInstallations) {
+            Write-Host "`nInstalliere alle ausstehenden/relevanten Anwendungen automatisch..." -ForegroundColor Magenta
+            foreach ($appToInstall in $allRelevantSCCMApps) {
                 if ($appToInstall.ApplicationID -and $appToInstall.ApplicationPolicyID) {
+                    Write-Host "Starte Installation für: $($appToInstall.ApplicationName)" -ForegroundColor DarkYellow
                     Request-SCCMApplicationInstallation -ComputerName $ComputerName -ApplicationID $appToInstall.ApplicationID -ApplicationPolicyID $appToInstall.ApplicationPolicyID
                 } else {
-                    Write-Warning "Anwendung '${appToInstall.SCCM_ApplicationName}' hat keine gültige ID/PolicyID für die Installation."
+                    Write-Warning "Anwendung '${appToInstall.ApplicationName}' hat keine gültige ID/PolicyID für die Installation."
                 }
             }
         } elseif ($PromptForIndividualInstallation) {
-            Write-Host "`nInstalliere ausstehende Anwendungen einzeln (Aufforderung für jede)..." -ForegroundColor Magenta
-            foreach ($appToInstall in $potentialPendingInstallations) {
+            Write-Host "`nInstalliere ausstehende/relevante Anwendungen einzeln (Aufforderung für jede)..." -ForegroundColor Magenta
+            foreach ($appToInstall in $allRelevantSCCMApps) {
                 if ($appToInstall.ApplicationID -and $appToInstall.ApplicationPolicyID) {
-                    $confirm = Read-Host "Möchten Sie '${appToInstall.SCCM_ApplicationName}' installieren? (J/N)"
+                    $confirm = Read-Host "Möchten Sie '${appToInstall.ApplicationName}' (Status: $($appToInstall.InstallStateName), Update ausstehend: $($appToInstall.IsUpdatePending)) installieren? (J/N)"
                     if ($confirm -eq "J") {
+                        Write-Host "Starte Installation für: $($appToInstall.ApplicationName)" -ForegroundColor DarkYellow
                         Request-SCCMApplicationInstallation -ComputerName $ComputerName -ApplicationID $appToInstall.ApplicationID -ApplicationPolicyID $appToInstall.ApplicationPolicyID
                     } else {
-                        Write-Host "Installation von '${appToInstall.SCCM_ApplicationName}' übersprungen." -ForegroundColor Yellow
+                        Write-Host "Installation von '${appToInstall.ApplicationName}' übersprungen." -ForegroundColor Yellow
                     }
                 } else {
-                    Write-Warning "Anwendung '${appToInstall.SCCM_ApplicationName}' hat keine gültige ID/PolicyID für die Installation."
+                    Write-Warning "Anwendung '${appToInstall.ApplicationName}' hat keine gültige ID/PolicyID für die Installation."
                 }
             }
         } else {
@@ -297,28 +362,23 @@ function Compare-AndInstall-SoftwareAndSCCMStatus {
         }
 
     } else {
-        Write-Host "Keine ausstehenden/relevanten Installationen im SCCM gefunden, die nicht als installiert erkannt wurden." -ForegroundColor Green
+        Write-Host "Keine ausstehenden/relevanten Installationen oder Updates im SCCM gefunden." -ForegroundColor Green
     }
     
     Write-Host "`n--- Detaillierte Liste aller SCCM-Anwendungen und ihres Status ---" -ForegroundColor DarkCyan
-    $sccmApplications | Format-Table ApplicationName, InstallStateName, IsInstalled, IsUpdate, IsUpdatePending, IsMachineTarget, UserInstallAvailable -AutoSize
+    $sccmApplications | Format-Table ApplicationName, InstallStateName, IsInstalled, IsUpdate, IsUpdatePending, IsTrulyPending, IsMachineTarget, UserInstallAvailable, InstallSource, Deadline -AutoSize
 
-    Write-Host "`n--- Ende des Vergleichs für ${ComputerName} ---" -ForegroundColor Green
+    Write-Host "`n--- Ende des SCCM-Software-Managements für ${ComputerName} ---" -ForegroundColor Green
 }
 
 # --- Beispielaufrufe ---
 
-# Für einen Remote-PC mit manuellem Nachfragen bei ausstehenden Installationen:
+# Für einen Remote-PC mit manuellem Nachfragen bei ausstehenden/relevanten Installationen/Updates:
 # $remotePC = "L26PBZD70080021"
-# Compare-AndInstall-SoftwareAndSCCMStatus -ComputerName $remotePC -PromptForIndividualInstallation
+# Compare-AndManage-SCCMSoftwareStatus -ComputerName $remotePC -PromptForIndividualInstallation
 
-# Für einen Remote-PC, um alle ausstehenden Installationen automatisch zu triggern:
+# Für einen Remote-PC, um alle ausstehenden/relevanten Installationen automatisch zu triggern:
 # $remotePC = "L26PBZD70080021"
-# Compare-AndInstall-SoftwareAndSCCMStatus -ComputerName $remotePC -InstallAllPending
+# Compare-AndManage-SCCMSoftwareStatus -ComputerName $remotePC -InstallAllPending
 
-# Nur zur Anzeige der Status (ohne Installationsoptionen):
-$remotePC = "L26PBZD70080021"
-Compare-AndInstall-SoftwareAndSCCMStatus -ComputerName $remotePC
-
-# Für den lokalen PC (ersetze $remotePC durch $env:COMPUTERNAME in den Aufrufen):
-# Compare-AndInstall-SoftwareAndSCCMStatus -ComputerName $env:COMPUTERNAME
+# Nur zur
