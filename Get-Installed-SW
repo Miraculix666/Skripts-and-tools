@@ -1,0 +1,56 @@
+# Funktion zum Abrufen installierter Software
+function Get-InstalledSoftware {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$false)]
+        [string]$ComputerName = $env:COMPUTERNAME
+    )
+
+    Write-Host "Abfrage der installierten Software auf $ComputerName..." -ForegroundColor Cyan
+
+    try {
+        # Abrufen der 32-Bit-Software
+        $software32Bit = Get-WmiObject -Class Win32_Product -ComputerName $ComputerName -ErrorAction SilentlyContinue | Select-Object Name, Version, Vendor, InstallDate, Caption
+        if ($software32Bit) {
+            Write-Host "Gefundene 32-Bit-Software:" -ForegroundColor Green
+            $software32Bit | Format-Table -AutoSize
+        } else {
+            Write-Host "Keine 32-Bit-Software über Win32_Product gefunden (normalerweise für MSI-Installationen)." -ForegroundColor Yellow
+        }
+
+        # Abrufen der Software aus dem Uninstall-Register (umfassender)
+        $uninstallPath32 = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
+        $uninstallPath64 = "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
+
+        $installedPrograms = @()
+
+        # 32-Bit-Programme abrufen
+        $registry32Bit = Get-ItemProperty -Path "$uninstallPath32\*" -ErrorAction SilentlyContinue | Where-Object {$_.DisplayName -ne $null} | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate, InstallLocation
+        if ($registry32Bit) {
+            $installedPrograms += $registry32Bit
+        }
+
+        # 64-Bit-Programme abrufen (falls vorhanden)
+        $registry64Bit = Get-ItemProperty -Path "$uninstallPath64\*" -ErrorAction SilentlyContinue | Where-Object {$_.DisplayName -ne $null} | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate, InstallLocation
+        if ($registry64Bit) {
+            $installedPrograms += $registry64Bit
+        }
+        
+        if ($installedPrograms.Count -gt 0) {
+            Write-Host "Gefundene Software aus dem Uninstall-Register (umfassender):" -ForegroundColor Green
+            $installedPrograms | Sort-Object DisplayName | Format-Table -AutoSize
+        } else {
+            Write-Host "Keine Software im Uninstall-Register gefunden." -ForegroundColor Yellow
+        }
+
+    }
+    catch {
+        Write-Error "Fehler beim Abrufen der installierten Software auf $ComputerName: $($_.Exception.Message)"
+    }
+}
+
+# Aufruf der Funktion für den lokalen Computer:
+Get-InstalledSoftware
+
+# Beispiel für einen Remote-Computer (ersetze 'REMOTEPCNAME' durch den tatsächlichen Computernamen):
+# Get-InstalledSoftware -ComputerName "REMOTEPCNAME"
