@@ -29,7 +29,7 @@
 
 .NOTES
     Autor: PS-Coding
-    Version: 1.0
+    Version: 1.1 (Korrigierter Syntaxfehler)
     Datum: 2025-05-27
 
     Anforderungen:
@@ -152,7 +152,9 @@ catch {
 }
 
 if (-not $Users) {
-    Write-Warning "Keine Benutzer mit dem Suchmuster '$SearchPattern' gefunden $($((($OrganizationalUnit) ? "in der OU '$OrganizationalUnit'" : "im gesamten AD")))."
+    # Korrigierte Zeile: Vereinfachung des Ternäroperators im String
+    $LocationText = if ($OrganizationalUnit) { "in der OU '$OrganizationalUnit'" } else { "im gesamten AD" }
+    Write-Warning "Keine Benutzer mit dem Suchmuster '$SearchPattern' gefunden $LocationText."
     exit 0
 }
 
