@@ -1,14 +1,18 @@
-#BitLockerRecovery-v6.0-Local.ps1 -  für die lokale Datenrettung.
+# Start-IntelligentBitLockerRecovery-v6.2-Local-FINAL.ps1 - Finale, stabile Version für die lokale Datenrettung mit Auto-Setup.
 #Requires -RunAsAdministrator
 
 <#
 .SYNOPSIS
-  Eine finale, stabile Lösung zur Rettung von Daten aus beschädigten BitLocker-Laufwerken in eine VHDX-Datei auf einem lokalen Laufwerk (z.B. eine externe USB-Festplatte).
+  Eine finale, hochrobuste Lösung zur Rettung von Daten aus beschädigten BitLocker-Laufwerken in eine VHDX-Datei auf einem lokalen Laufwerk (z.B. eine externe USB-Festplatte).
 .DESCRIPTION
-  Diese Version ist die empfohlene und stabilste Methode, da sie alle Netzwerk- und Berechtigungsprobleme umgeht, indem sie ausschließlich lokal arbeitet.
+  Diese Version ist das Endprodukt unserer Analyse und umgeht alle Netzwerk- und Berechtigungsprobleme, indem sie ausschließlich lokal arbeitet.
+  Sie prüft und installiert bei Bedarf automatisch die für die Ausführung notwendigen Windows-Module (Hyper-V und BitLocker-Tools).
 .NOTES
   Autor: PS-Coding (AI-Assisted)
-  Version: 6.0 (Local Recovery - FINAL)
+  Version: 6.2 (Local Recovery - FINAL)
+  Änderungen:
+  - v6.2: Die Funktion zur automatischen Überprüfung und Installation der Voraussetzungen (Hyper-V und BitLocker-Module) wurde wieder hinzugefügt.
+  - v6.0: Komplette Entfernung aller Netzwerklogik. Das Skript ist nun ausschließlich für die Rettung auf ein lokales Ziel (z.B. externe USB-Festplatte) ausgelegt.
 #>
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
 param(
@@ -28,6 +32,49 @@ begin {
     Set-Culture de-DE | Out-Null
     [System.Threading.Thread]::CurrentThread.CurrentUICulture = 'de-DE'
     $VerbosePreference = 'Continue'
+
+    # --- START: Funktion zur Überprüfung und Installation von Abhängigkeiten ---
+    function Ensure-Prerequisites {
+        Write-Verbose "Prüfe und installiere erforderliche Komponenten..."
+
+        # 1. Hyper-V Modul (für VHD-Befehle)
+        if (-not (Get-Module -ListAvailable -Name Hyper-V)) {
+            Write-Warning "PowerShell-Modul 'Hyper-V' wurde nicht gefunden. Versuche automatische Installation..."
+            if ($PSCmdlet.ShouldProcess("Windows-Feature 'Microsoft-Hyper-V-Management-PowerShell'", "Installieren")) {
+                try {
+                    Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Management-PowerShell -NoRestart -ErrorAction Stop
+                    Write-Host "Hyper-V Management Tools erfolgreich installiert." -ForegroundColor Green
+                } catch {
+                    throw "Fehler bei der Installation der Hyper-V Tools. Bitte manuell installieren und das Skript neu starten."
+                }
+            } else {
+                throw "Die Installation des Hyper-V Moduls wurde abgelehnt. Das Skript kann nicht fortgesetzt werden."
+            }
+        } else {
+            Write-Verbose "Hyper-V Modul ist bereits vorhanden."
+        }
+
+        # 2. BitLocker-Tools (für repair-bde)
+        if (-not (Get-Command -Name "repair-bde" -ErrorAction SilentlyContinue)) {
+            Write-Warning "Befehl 'repair-bde' nicht gefunden. Versuche Installation der BitLocker RSAT-Tools..."
+             if ($PSCmdlet.ShouldProcess("Windows-Capability 'Rsat.BitLocker.Recovery.Tools'", "Installieren")) {
+                try {
+                    Get-WindowsCapability -Online -Name "Rsat.BitLocker.Recovery.Tools*" | Add-WindowsCapability -Online -ErrorAction Stop
+                    Write-Host "BitLocker RSAT-Tools erfolgreich installiert." -ForegroundColor Green
+                } catch {
+                     throw "Fehler bei der Installation der BitLocker RSAT-Tools. Bitte manuell installieren und das Skript neu starten."
+                }
+             } else {
+                throw "Die Installation der BitLocker-Tools wurde abgelehnt. Das Skript kann nicht fortgesetzt werden."
+             }
+        } else {
+             Write-Verbose "BitLocker-Tools (repair-bde) sind bereits vorhanden."
+        }
+        Write-Host "Prüfung der Voraussetzungen abgeschlossen." -ForegroundColor Green
+        Write-Host "----------------------------------------------------------------"
+    }
+    Ensure-Prerequisites
+    # --- ENDE: Funktion ---
 }
 
 process {
@@ -36,7 +83,7 @@ process {
     try {
         Clear-Host
         Write-Host "================================================================" -ForegroundColor Yellow
-        Write-Host "      Intelligentes BitLocker Recovery Skript v6.0 (Lokale Rettung)" -ForegroundColor Yellow
+        Write-Host "      Intelligentes BitLocker Recovery Skript v6.2 (Lokale Rettung)" -ForegroundColor Yellow
         Write-Host "================================================================" -ForegroundColor Yellow
         
         # --- Parameter interaktiv abfragen ---
