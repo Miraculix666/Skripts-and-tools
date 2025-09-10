@@ -2,7 +2,7 @@
 # FILE: Start-RemoteSessions.ps1
 # DESCRIPTION: Opens multiple remote sessions, tiles them on the second monitor, and provides a comprehensive connectivity test.
 #
-# VERSION: 1.5.0
+# VERSION: 1.6.0
 # DATE: 2025-08-28
 # AUTHOR: PS-Coding
 #
@@ -67,7 +67,7 @@
     .\Start-RemoteSessions.ps1 -InputFile C:\temp\computers.txt
 
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName='Default', SupportsShouldProcess=$true)]
 param (
     [Parameter(Position = 0)]
     [string[]]$ComputerName = @(),
@@ -124,6 +124,7 @@ function Test-RDPConnection {
     $jobs = @()
     $counter = 0
     $total = $Computers.Count
+    $jobCounter = 0
 
     foreach ($computer in $Computers) {
         $job = Start-Job -ScriptBlock {
@@ -135,31 +136,40 @@ function Test-RDPConnection {
             
             # DNS Resolution Test
             try {
+                Write-Verbose "  [$computer] Starte DNS-Lookup..."
                 $dnsResult = [System.Net.Dns]::GetHostAddresses($computer)
                 $dnsStatus = "Aufgelöst"
+                Write-Verbose "  [$computer] DNS-Lookup erfolgreich. IP: $($dnsResult[0].IPAddressToString)"
             }
             catch {
                 $dnsStatus = "Nicht aufgelöst"
+                Write-Verbose "  [$computer] DNS-Lookup fehlgeschlagen."
             }
             
             # Ping test
             try {
+                Write-Verbose "  [$computer] Starte Ping-Test..."
                 $pingResult = Test-Connection -ComputerName $computer -Count 1 -ErrorAction Stop -Quiet
                 $pingStatus = if ($pingResult) { "Erreichbar" } else { "Nicht erreichbar" }
+                Write-Verbose "  [$computer] Ping-Test: $pingStatus"
             }
             catch {
                 $pingStatus = "Nicht erreichbar"
+                Write-Verbose "  [$computer] Ping-Test fehlgeschlagen."
             }
             
             # RDP Port Test
             try {
+                Write-Verbose "  [$computer] Starte RDP-Port-Test (3389)..."
                 $tcpClient = New-Object System.Net.Sockets.TcpClient
                 $connect = $tcpClient.BeginConnect($computer, 3389, $null, $null)
                 $wait = $connect.AsyncWaitHandle.WaitOne(2000, $false)
                 $rdpPortStatus = if ($wait -and $tcpClient.Connected) { "Geöffnet" } else { "Geschlossen" }
+                Write-Verbose "  [$computer] RDP-Port-Test: $rdpPortStatus"
             }
             catch {
                 $rdpPortStatus = "Geschlossen"
+                Write-Verbose "  [$computer] RDP-Port-Test fehlgeschlagen."
             }
             finally {
                 if ($tcpClient) {
@@ -181,15 +191,18 @@ function Test-RDPConnection {
     Write-Host "Warte auf Testergebnisse. Bitte warten..."
     Write-Host "---"
     
-    $jobs | ForEach-Object {
-        Wait-Job $_ | Out-Null
-        $counter++
-        Write-Progress -Activity "Konnektivität wird getestet" -Status "Verarbeite $counter von $total" -PercentComplete (($counter / $total) * 100)
+    # Progress visualization loop
+    while ($jobs.State -notcontains "Completed") {
+        $completedJobs = $jobs | Where-Object { $_.State -eq "Completed" }
+        $percentComplete = ($completedJobs.Count / $total) * 100
+        Write-Progress -Activity "Konnektivität wird getestet" -Status "Verarbeite $($completedJobs.Count) von $total" -PercentComplete $percentComplete
+        Start-Sleep -Milliseconds 100
     }
 
-    $jobs | Receive-Job | ForEach-Object { $results += $_ }
-    $jobs | Remove-Job -Force
-
+    # Collect and display results
+    $results = $jobs | Receive-Job | Select-Object ComputerName, DNSStatus, PingStatus, RDPPortStatus
+    
+    $jobs | Remove-Job -Force | Out-Null
     Write-Progress -Activity "Konnektivität wird getestet" -Completed
     
     Write-Host "---"
