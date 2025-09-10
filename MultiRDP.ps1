@@ -2,7 +2,7 @@
 # FILE: Start-RemoteSessions.ps1
 # DESCRIPTION: Opens multiple remote sessions, tiles them on the second monitor, and provides a comprehensive connectivity test.
 #
-# VERSION: 1.4.0
+# VERSION: 1.5.0
 # DATE: 2025-08-28
 # AUTHOR: PS-Coding
 #
@@ -122,6 +122,8 @@ function Test-RDPConnection {
     
     $results = @()
     $jobs = @()
+    $counter = 0
+    $total = $Computers.Count
 
     foreach ($computer in $Computers) {
         $job = Start-Job -ScriptBlock {
@@ -142,8 +144,8 @@ function Test-RDPConnection {
             
             # Ping test
             try {
-                $pingResult = Test-Connection -ComputerName $computer -Count 1 -ErrorAction Stop
-                $pingStatus = if ($pingResult.StatusCode -eq 0) { "Erreichbar" } else { "Nicht erreichbar" }
+                $pingResult = Test-Connection -ComputerName $computer -Count 1 -ErrorAction Stop -Quiet
+                $pingStatus = if ($pingResult) { "Erreichbar" } else { "Nicht erreichbar" }
             }
             catch {
                 $pingStatus = "Nicht erreichbar"
@@ -175,9 +177,21 @@ function Test-RDPConnection {
         $jobs += $job
     }
 
-    $jobs | Wait-Job | Receive-Job | ForEach-Object { $results += $_ }
+    Write-Host "---"
+    Write-Host "Warte auf Testergebnisse. Bitte warten..."
+    Write-Host "---"
+    
+    $jobs | ForEach-Object {
+        Wait-Job $_ | Out-Null
+        $counter++
+        Write-Progress -Activity "Konnektivität wird getestet" -Status "Verarbeite $counter von $total" -PercentComplete (($counter / $total) * 100)
+    }
+
+    $jobs | Receive-Job | ForEach-Object { $results += $_ }
     $jobs | Remove-Job -Force
 
+    Write-Progress -Activity "Konnektivität wird getestet" -Completed
+    
     Write-Host "---"
     Write-Host "Konnektivitätsbericht:"
     $results | Format-Table -AutoSize
@@ -491,18 +505,3 @@ Write-Host "---"
 
 # End of script
 Write-Verbose "Skriptausführung beendet."
-```
-eof
-
-### **Anleitung zur Verwendung**
-
-Um die neuen Funktionen zu nutzen, führe das Skript wie folgt aus:
-
-* **Mehrere Presets kombinieren**: Gib einfach alle gewünschten Preset-Namen durch Kommas getrennt an. Das Skript erkennt die Namen und kombiniert die Listen automatisch.
-    ```powershell
-    .\Start-RemoteSessions.ps1 -Preset "R303", "R204", "R212"
-    ```
-* **Nur die Konnektivität prüfen**: Um die PCs schnell zu überprüfen, ohne eine RDP-Sitzung zu starten, nutze den Parameter **`-TestConnectionOnly`**.
-    ```powershell
-    .\Start-RemoteSessions.ps1 -Preset "R202" -TestConnectionOnly
-    
