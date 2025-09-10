@@ -1,15 +1,15 @@
 #
 # FILE: Start-RemoteSessions.ps1
-# DESCRIPTION: Opens multiple remote sessions, tiles them on the second monitor, and provides an optional connectivity test.
+# DESCRIPTION: Opens multiple remote sessions, tiles them on the second monitor, and provides a comprehensive connectivity test.
 #
-# VERSION: 1.3.0
+# VERSION: 1.4.0
 # DATE: 2025-08-28
 # AUTHOR: PS-Coding
 #
 <#
 .SYNOPSIS
     Starts multiple RDP sessions, tiles them on the second monitor, and handles credentials flexibly.
-    Includes an optional, parallel connectivity test for all target computers.
+    Includes an optional, parallel connectivity test (Ping, RDP Port, and DNS).
 
 .DESCRIPTION
     This script reads a list of computer names from an internal array, a text file, or a CSV file.
@@ -17,7 +17,7 @@
     It then opens a new Remote Desktop Connection (mstsc.exe) for each computer, placing the windows
     in a tiled layout on the second display. Credentials can be provided via parameters,
     interactively, or by modifying the script variables.
-    A new feature allows for an optional, parallel connectivity test to check host and RDP port availability.
+    A new feature allows for a comprehensive, parallel connectivity test to check host, RDP port, and DNS resolution.
 
 .PARAMETER ComputerName
     A comma-separated list of computer names to connect to. This parameter is ignored if -InputFile is used.
@@ -28,8 +28,8 @@
     For a CSV file, the column with computer names must be named "ComputerName".
 
 .PARAMETER Preset
-    The name of a predefined internal computer list to use. Available presets are defined
-    in the script's internal variable. Examples: 'Default', 'R303', 'Server'.
+    The name(s) of one or more predefined internal computer lists to use. Available presets are defined
+    in the script's internal variable. Examples: 'Default', 'R303', 'Server'. Multiple presets can be specified.
 
 .PARAMETER UserName
     The username to use for the RDP connections.
@@ -55,15 +55,15 @@
     Can be switched off by specifying `-Verbose:$false`.
 
 .EXAMPLE
-    # Starts RDP sessions for the 'R303' preset list with a prior connectivity test
-    .\Start-RemoteSessions.ps1 -Preset "R303" -TestConnection
+    # Starts RDP sessions for the 'R303' and 'Server' preset lists with a prior connectivity test.
+    .\Start-RemoteSessions.ps1 -Preset "R303", "Server" -TestConnection
 
 .EXAMPLE
-    # Performs a standalone connectivity test for the 'Server' preset list
-    .\Start-RemoteSessions.ps1 -Preset "Server" -TestConnectionOnly
+    # Performs a standalone connectivity test for the 'Server' and 'Testumgebung' preset lists.
+    .\Start-RemoteSessions.ps1 -Preset "Server", "Testumgebung" -TestConnectionOnly
 
 .EXAMPLE
-    # Starts RDP sessions for computers in a text file without a connectivity test
+    # Starts RDP sessions for computers in a text file without a connectivity test.
     .\Start-RemoteSessions.ps1 -InputFile C:\temp\computers.txt
 
 #>
@@ -76,7 +76,7 @@ param (
     [string]$InputFile,
 
     [Parameter(Position = 2)]
-    [string]$Preset,
+    [string[]]$Preset,
 
     [Parameter(Position = 3)]
     [string]$UserName,
@@ -100,11 +100,11 @@ Set-Culture -Culture de-DE
 #region Function Definition
 <#
 .SYNOPSIS
-    Tests if a computer is reachable and has the RDP port open.
+    Tests if a computer is reachable, has the RDP port open, and its DNS name can be resolved.
 
 .DESCRIPTION
-    This function performs a parallel test for network reachability (ping) and RDP port (3389)
-    connectivity for a given list of computers.
+    This function performs a parallel test for network reachability (ping), RDP port (3389)
+    connectivity, and DNS resolution for a given list of computers.
 
 .PARAMETER Computers
     An array of computer names or IP addresses to test.
@@ -118,7 +118,7 @@ function Test-RDPConnection {
         [string[]]$Computers
     )
 
-    Write-Verbose "Starting parallel connectivity test for $($Computers.Count) computers..."
+    Write-Verbose "Starte parallelen Konnektivitätstest für $($Computers.Count) Computer..."
     
     $results = @()
     $jobs = @()
@@ -127,8 +127,18 @@ function Test-RDPConnection {
         $job = Start-Job -ScriptBlock {
             param($computer)
             
-            $pingStatus = "Unknown"
-            $rdpPortStatus = "Unknown"
+            $pingStatus = "Unbekannt"
+            $rdpPortStatus = "Unbekannt"
+            $dnsStatus = "Unbekannt"
+            
+            # DNS Resolution Test
+            try {
+                $dnsResult = [System.Net.Dns]::GetHostAddresses($computer)
+                $dnsStatus = "Aufgelöst"
+            }
+            catch {
+                $dnsStatus = "Nicht aufgelöst"
+            }
             
             # Ping test
             try {
@@ -156,8 +166,9 @@ function Test-RDPConnection {
             }
             
             return [PSCustomObject]@{
-                ComputerName = $computer
-                PingStatus   = $pingStatus
+                ComputerName  = $computer
+                DNSStatus     = $dnsStatus
+                PingStatus    = $pingStatus
                 RDPPortStatus = $rdpPortStatus
             }
         } -ArgumentList $computer
@@ -165,9 +176,10 @@ function Test-RDPConnection {
     }
 
     $jobs | Wait-Job | Receive-Job | ForEach-Object { $results += $_ }
-    
+    $jobs | Remove-Job -Force
+
     Write-Host "---"
-    Write-Host "Erreichbarkeitsbericht:"
+    Write-Host "Konnektivitätsbericht:"
     $results | Format-Table -AutoSize
     Write-Host "---"
     
@@ -176,12 +188,12 @@ function Test-RDPConnection {
 #endregion
 
 #region Variable and Parameter Definitions
-Write-Verbose "Starting script execution on $(Get-Date -Format 'dd.MM.yyyy HH:mm:ss')."
+Write-Verbose "Starte Skriptausführung am $(Get-Date -Format 'dd.MM.yyyy HH:mm:ss')."
 Write-Verbose "---"
-Write-Verbose "Parameters:"
+Write-Verbose "Parameter:"
 Write-Verbose "  ComputerName:       '$($ComputerName -join ', ')'"
 Write-Verbose "  InputFile:          '$InputFile'"
-Write-Verbose "  Preset:             '$Preset'"
+Write-Verbose "  Preset:             '$($Preset -join ', ')'"
 Write-Verbose "  UserName:           '$UserName'"
 Write-Verbose "  RDPResolution:      '$RDPResolution'"
 Write-Verbose "  TestConnection:     '$TestConnection'"
@@ -195,7 +207,22 @@ $InternalLists = @{
         "Server02",
         "Server03"
     );
-    "R202"         = @(
+    "R303" = @(
+        "pc-r303-1",
+        "pc-r303-2",
+        "pc-r303-3",
+        "pc-r303-4"
+    );
+    "Server" = @(
+        "web-server01",
+        "sql-server02"
+    );
+    "Testumgebung" = @(
+        "dev-vm-01",
+        "dev-vm-02",
+        "test-vm-01"
+    );
+    "R202" = @(
         "C26PBZE70004200",
         "C26PBZE70004201",
         "C26PBZE70004202",
@@ -211,7 +238,7 @@ $InternalLists = @{
         "C26PBZE70004212",
         "C26PBZE70004299"
     );
-    "R204"         = @( 
+    "R204" = @(
         "C26PBZE70004400",
         "C26PBZE70004401",
         "C26PBZE70004402",
@@ -226,7 +253,7 @@ $InternalLists = @{
         "C26PBZE70004411",
         "C26PBZE70004412"
     );
-    "R206"         = @( 
+    "R206" = @(
         "C26PBZE70004600",
         "C26PBZE70004601",
         "C26PBZE70004602",
@@ -241,7 +268,7 @@ $InternalLists = @{
         "C26PBZE70004611",
         "C26PBZE70004612"
     );    
-    "R212"         = @(
+    "R212" = @(
       "C26PBZE70004100",
       "C26PBZE70004101",
       "C26PBZE70004102",
@@ -259,18 +286,8 @@ $InternalLists = @{
       "C26PBZE70004114",
       "C26PBZE70004115",
       "C26PBZE70004116"
-    );
-    "Server" = @(
-        "web-server01",
-        "sql-server02"
-    );
-    "Testumgebung" = @(
-        "dev-vm-01",
-        "dev-vm-02",
-        "test-vm-01"
     )
 }
-
 #endregion
 
 #region Get Computer List
@@ -308,14 +325,17 @@ elseif ($ComputerName) {
     $ComputersToConnect = $ComputerName
 }
 elseif ($Preset) {
-    Write-Verbose "Preset-Parameter angegeben. Verwende die Liste '$Preset'."
-    if ($InternalLists.ContainsKey($Preset)) {
-        $ComputersToConnect = $InternalLists[$Preset]
+    Write-Verbose "Preset-Parameter angegeben. Kombiniere die Listen: '$($Preset -join ', ')'."
+    $allComputersFromPresets = @()
+    foreach ($p in $Preset) {
+        if ($InternalLists.ContainsKey($p)) {
+            $allComputersFromPresets += $InternalLists[$p]
+        }
+        else {
+            Write-Warning "Das angegebene Preset '$p' existiert nicht und wird übersprungen. Verfügbare Presets: $($InternalLists.Keys -join ', ')."
+        }
     }
-    else {
-        Write-Error "Das angegebene Preset '$Preset' existiert nicht. Verfügbare Presets: $($InternalLists.Keys -join ', ')."
-        return
-    }
+    $ComputersToConnect = $allComputersFromPresets | Sort-Object -Unique
 }
 else {
     Write-Verbose "Keine Parameter angegeben. Verwende die interne 'Default'-Liste."
@@ -334,17 +354,16 @@ Write-Verbose "Es wurden $($ComputersToConnect.Count) Computer zum Verbinden gef
 #region Connectivity Test
 if ($TestConnection -or $TestConnectionOnly) {
     $testResults = Test-RDPConnection -Computers $ComputersToConnect
-
+    $failedTests = $testResults | Where-Object { $_.DNSStatus -eq "Nicht aufgelöst" -or $_.PingStatus -eq "Nicht erreichbar" -or $_.RDPPortStatus -eq "Geschlossen" }
+    
     if ($TestConnectionOnly) {
         Write-Host "---"
         Write-Verbose "Skriptausführung beendet, da der -TestConnectionOnly-Parameter angegeben wurde."
         return
     }
 
-    $unreachableComputers = $testResults | Where-Object { $_.RDPPortStatus -eq "Geschlossen" -or $_.PingStatus -eq "Nicht erreichbar" }
-    
-    if ($unreachableComputers.Count -gt 0) {
-        Write-Warning "Es wurden $($unreachableComputers.Count) Computer gefunden, die nicht erreichbar sind."
+    if ($failedTests.Count -gt 0) {
+        Write-Warning "Es wurden $($failedTests.Count) Computer gefunden, die nicht erreichbar sind oder deren DNS-Namen nicht aufgelöst werden konnten."
         Write-Host "Möchtest du trotzdem versuchen, die RDP-Sitzungen zu öffnen? (J/N)" -NoNewline
         $continue = Read-Host
         if ($continue -notmatch "^[jJ]$") {
@@ -375,30 +394,21 @@ if (-not $Password) {
 #region Get Screen Dimensions for Tiling
 Write-Verbose "Bildschirmkonfiguration wird erkannt..."
 try {
-    # Get the display information from the WMI class
-    $displays = Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorBasicDisplayParams
-    
-    # Check if a second monitor exists and is active
-    if ($displays.Count -lt 2) {
-        Write-Warning "Es wurde nur ein Bildschirm erkannt. Die RDP-Fenster werden normal und nicht gekachelt geöffnet."
+    # Dynamische Erkennung des zweiten Bildschirms
+    $secondaryMonitor = Get-CimInstance -ClassName Win32_DesktopMonitor | Where-Object { $_.Availability -eq 3 -and $_.IsPrimary -ne $true } | Select-Object -First 1
+
+    if ($null -eq $secondaryMonitor) {
+        Write-Warning "Es wurde kein zweiter aktiver Bildschirm erkannt. Die RDP-Fenster werden normal und nicht gekachelt geöffnet."
         $useTiling = $false
     }
     else {
-        $secondaryMonitor = Get-CimInstance -ClassName Win32_DesktopMonitor | Where-Object { $_.Availability -eq 3 -and $_.IsPrimary -ne $true } | Select-Object -First 1
-
-        if ($null -ne $secondaryMonitor) {
-            $xOffset = [int]($secondaryMonitor.Left)
-            $yOffset = [int]($secondaryMonitor.Top)
-            $secondScreen_width = [int]($secondaryMonitor.ScreenWidth)
-            $secondScreen_height = [int]($secondaryMonitor.ScreenHeight)
-        
-            Write-Verbose "Zweiter Bildschirm erkannt. Positionierung bei X-Offset: ${xOffset}px."
-            $useTiling = $true
-        }
-        else {
-            Write-Warning "Es wurde ein zweiter Bildschirm erkannt, aber die Position konnte nicht ermittelt werden. Die RDP-Fenster werden normal geöffnet."
-            $useTiling = $false
-        }
+        $xOffset = [int]($secondaryMonitor.Left)
+        $yOffset = [int]($secondaryMonitor.Top)
+        $secondScreen_width = [int]($secondaryMonitor.ScreenWidth)
+        $secondScreen_height = [int]($secondaryMonitor.ScreenHeight)
+    
+        Write-Verbose "Zweiter Bildschirm erkannt. Positionierung bei X-Offset: ${xOffset}px."
+        $useTiling = $true
     }
 }
 catch {
@@ -481,3 +491,18 @@ Write-Host "---"
 
 # End of script
 Write-Verbose "Skriptausführung beendet."
+```
+eof
+
+### **Anleitung zur Verwendung**
+
+Um die neuen Funktionen zu nutzen, führe das Skript wie folgt aus:
+
+* **Mehrere Presets kombinieren**: Gib einfach alle gewünschten Preset-Namen durch Kommas getrennt an. Das Skript erkennt die Namen und kombiniert die Listen automatisch.
+    ```powershell
+    .\Start-RemoteSessions.ps1 -Preset "R303", "R204", "R212"
+    ```
+* **Nur die Konnektivität prüfen**: Um die PCs schnell zu überprüfen, ohne eine RDP-Sitzung zu starten, nutze den Parameter **`-TestConnectionOnly`**.
+    ```powershell
+    .\Start-RemoteSessions.ps1 -Preset "R202" -TestConnectionOnly
+    
