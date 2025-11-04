@@ -1,544 +1,1179 @@
 #!/bin/bash
 
 # ==============================================================================
-# OPSI All-in-One Treiber-Skript
+# opsi-driver-sorter.sh V31.0 - Robuste Analyse ohne DriverVer-Zwang
+# Erstellt für: OPSI-Server (Debian-basiert)
+# Autor: PS-Coding
+# Erstelldatum: 23.09.2025
+# ==============================================================================
 #
-# Zweck:      Sortiert Windows-Treiber robust in die OPSI-Struktur für ein
-#             beliebiges Netboot-Produkt. Nutzt eine Cache-DB, liest optional
-#             Audits, vergleicht Versionen und verwendet absolute Pfade.
+# Zweck: Analysiert, versioniert und sortiert Windows-Treiber für automatische
+#        Treiberintegration in Windows-Netboot-Produkte (z.B. win10-x64).
 #
-# Autor:      PS-Coding
-# Version:    28.0 - Stabile Client-Abfrage & finale Korrekturen
-# Datum:      2025-09-22
+# Funktionen:
+# - Modus-Auswahl: Alle Treiber oder nur audit-basiert benötigte
+# - Hardware-Audit von OPSI-Clients mit korrekten API-Aufrufen
+# - Robuste INF-Analyse: Verarbeitet auch Treiber ohne explizite 'DriverVer'-Angabe
+# - Versionserkennung und Datenbankmanagement
+# - Strukturiertes Kopieren nach Gerätemanager-Kategorien
+# - OPSI-Paket-Erstellung und WinPE-Integration
+# - Universelle Pfadstruktur (produktübergreifend)
+# - 8.3-konforme Pfade und Dateinamen (max. 240 Zeichen)
 #
-# ANWENDUNG:
-# Das Skript kann nun eine Produkt-ID als Parameter annehmen.
+# Verwendung:
+# ./opsi-driver-sorter.sh [-p NETBOOT_PRODUKT] [-h] [-v] [-q] [-d]
+# 
+# Parameter:
+# -p NETBOOT_PRODUKT: OPSI-Netboot-Produkt-ID (Standard: win10-x64)
+# -h: Zeigt diese Hilfe an
+# -v: Verbose-Modus (Standard)
+# -q: Quiet-Modus
+# -d: Dry-Run-Modus (keine Änderungen)
 #
-# Standard (win10-x64):
-#   sudo ./opsi-driver-sorter.sh
+# Quellen:
+# - AI-entdeckt: OPSI-Dokumentation (https://docs.opsi.org/opsi-docs-de/4.3/)
+# - Benutzer-bereitgestellt: Analyse fehlgeschlagener Versionen
+# - Benutzer-bereitgestellt: Universelle Pfadstruktur-Anforderungen
+# - Benutzer-bereitgestellt: Gerätemanager-basierte Struktur
 #
-# Für ein anderes Produkt (z.B. win11-x64):
-#   sudo ./opsi-driver-sorter.sh -p win11-x64
-#
-# Hilfe anzeigen:
-#   ./opsi-driver-sorter.sh -h
 # ==============================================================================
 
-# --- KONFIGURATION ---
-# Standard-Produkt-ID, falls keine über Parameter übergeben wird.
-DEFAULT_PRODUCT_ID="win10-x64"
+# ==============================================================================
+# KONFIGURATION UND GLOBALE VARIABLEN
+# ==============================================================================
 
-# true: Nur Simulation, keine Änderungen am System.
-# false: Skript führt alle Aktionen aus.
-DRY_RUN=false
+# Standard-Konfiguration
+readonly DEFAULT_NETBOOT_PRODUCT="win11-x64"
+readonly SCRIPT_VERSION="31.0"
+readonly SCRIPT_NAME="$(basename "$0")"
 
-# true: Zeigt jeden Befehl an, der ausgeführt wird (für detailliertes Debugging).
-# false: Normale Ausgabe.
-DEBUG=true
+# Universelle Pfad-Konfiguration (produktübergreifend gemäß Vorgaben)
+readonly BASE_DEPOT_PATH="/var/lib/opsi/depot"
+readonly LOG_BASE_PATH="/var/log/opsi"
+readonly WORKBENCH_PATH="/var/lib/opsi/workbench"
 
-# true: Erstellt nach dem Kopieren automatisch die .opsi-Treiberpakete.
-# false: Überspringt die Paketerstellung.
-CREATE_DRIVER_PACKAGES=true
+# Universelle Datenverzeichnisse (nicht produktspezifisch)
+readonly UNIVERSAL_SOURCE_PATH="/var/lib/opsi/depot/drivers_source"
+readonly UNIVERSAL_CACHE_FILE="/var/lib/opsi/depot/audit_hw_ids.cache"
+readonly UNIVERSAL_DB_FILE="/var/lib/opsi/depot/driver.db"
 
-# Steuert das Verhalten zum Löschen der Quell-Treiber nach dem Kopieren.
-# Mögliche Werte:
-#   "per_file":   (Standard) Löscht jedes Quell-Verzeichnis sofort nach dem erfolgreichen Kopieren.
-#   "on_success": Löscht ALLE erfolgreich kopierten Quell-Verzeichnisse am Ende des Skripts.
-#   "never":      Behält alle Quell-Verzeichnisse bei.
-DELETE_SOURCE_AFTER_COPY="per_file"
-# --- ENDE DER KONFIGURATION ---
+# OPSI-Befehle (korrekte Pfade)
+readonly OPSI_PYTHON_PATH="/usr/bin/opsi-python"
+readonly OPSI_ADMIN_PATH="/usr/bin/opsi-admin"
+readonly OPSI_SET_RIGHTS_PATH="/usr/bin/opsi-set-rights"
+readonly OPSI_SETUP_PATH="/usr/bin/opsi-setup"
+readonly OPSI_PACKAGE_MANAGER_PATH="/usr/bin/opsi-package-manager"
 
+# Variablen für Laufzeit-Konfiguration
+NETBOOT_PRODUCT=""
+TARGET_PATH=""
+LOG_FILE=""
+VERBOSE_MODE=true
+DRY_RUN_MODE=false
+INTEGRATION_MODE=""
 
-# --- Skript-Logik (bitte nicht ändern) ---
-
-# Stellt die UTF-8 Kodierung für das gesamte Skript sicher, um Fehler bei der Log-Ausgabe zu vermeiden.
-export LANG=C.UTF-8
-
-# Farben für die Ausgabe
-GREEN='\033[1;32m'; YELLOW='\033[1;33m'; BLUE='\033[1;34m'; RED='\033[1;31m'; NC='\033[0m'
-
-# Zentrale Logging-Funktion (wird vor dem Logging-Setup definiert, um für Parameter-Parsing verfügbar zu sein)
-log_message() {
-    # Wenn LOG_FILE noch nicht gesetzt ist, nur in die Konsole ausgeben
-    if [ -z "$LOG_FILE" ]; then
-        echo -e "${2}"
-        return
-    fi
-    local level=$1; local message=$2; local color=$NC
-    local plain_message="[${level}] ${message}"
-    case "$level" in
-        INFO) color=$BLUE ;; OK) color=$GREEN ;; WARN) color=$YELLOW ;; ERROR) color=$RED ;; COPY) color=$GREEN ;;
-    esac
-    # Schreibt die Nachricht in die Konsole und in die Log-Datei
-    echo -e "${color}${plain_message}${NC}" | tee -a "$LOG_FILE"
-}
-
-# --- HILFEFUNKTION UND PARAMETER-PARSING ---
-show_help() {
-    echo "OPSI All-in-One Treiber-Skript V28.0"
-    echo ""
-    echo "Anwendung: $0 [-p PRODUKT_ID]"
-    echo ""
-    echo "Optionen:"
-    echo "  -p, --product   Die OPSI-Produkt-ID des zu bearbeitenden Netboot-Produkts."
-    echo "                  Standardwert, falls nicht angegeben: '${DEFAULT_PRODUCT_ID}'"
-    echo "  -h, --help        Diese Hilfe anzeigen."
-    echo ""
-}
-
-PRODUCT_ID="$DEFAULT_PRODUCT_ID"
-
-# Argumente verarbeiten
-while [[ "$#" -gt 0 ]]; do
-    case $1 in
-        -p|--product)
-            if [[ -n "$2" && ! "$2" =~ ^- ]]; then
-                PRODUCT_ID="$2"
-                shift 2
-            else
-                log_message "ERROR" "Fehler: Option '-p' erfordert ein Argument." >&2
-                exit 1
-            fi
-            ;;
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        *) # Unbekannte Option
-            log_message "ERROR" "Unbekannte Option: $1" >&2
-            show_help
-            exit 1
-            ;;
-    esac
-done
-
-
-# --- DYNAMISCHE PFADE & VARIABLEN ---
-OPSI_DEPOT_PATH="/var/lib/opsi/depot"
-PRODUCT_DEPOT_PATH="${OPSI_DEPOT_PATH}/${PRODUCT_ID}"
-TARGET_DRIVER_DIR="${PRODUCT_DEPOT_PATH}/drivers/drivers"
-UNSORTED_DRIVER_DIR="${PRODUCT_DEPOT_PATH}/drivers_source"
-CACHE_DB_FILE="${PRODUCT_DEPOT_PATH}/drivers/driver.db" # Cache-DB liegt eine Ebene höher
-AUDIT_CACHE_FILE="${PRODUCT_DEPOT_PATH}/drivers/audit_hw_ids.cache" # Cache für Audit-Ergebnisse
-
-# Definition der Befehlspfade
-OPSI_ADMIN_CMD="/usr/bin/opsi-admin"
-OPSI_SET_RIGHTS_CMD="/usr/bin/opsi-set-rights"
-CREATE_DRIVER_LINKS_CMD="${PRODUCT_DEPOT_PATH}/create_driver_links.py"
-OPSI_PKG_MGR_CMD="/usr/bin/opsi-package-manager"
-OPSI_SETUP_CMD="/usr/bin/opsi-setup"
-
-# Assoziative Arrays und Listen für die Logik
+# Status-Tracking-Arrays
 declare -A LATEST_DRIVERS
+declare -A PROCESSED_DIRS
 declare -A NEEDED_HW_IDS
-declare -a SUCCESSFULLY_COPIED_SOURCES=()
-INTEGRATE_ONLY_NEEDED_DRIVERS=false
+ERROR_COUNT=0
+WARNING_COUNT=0
+COPY_COUNT=0
 
-# --- Logging-Setup (Jetzt, da PRODUCT_ID final ist) ---
-LOG_DIR="/var/log/opsi"
-LOG_FILE="${LOG_DIR}/driver_sort_${PRODUCT_ID}_$(date +%Y-%m-%d_%H-%M-%S).log"
-mkdir -p "$LOG_DIR"
-touch "$LOG_FILE"
+# Deutsche Lokalisierung und Kodierung sicherstellen
+export LANG=de_DE.UTF-8
+export LC_ALL=de_DE.UTF-8
 
+# Gerätemanager-basierte Kategorien (gekürzt für 8.3-Kompatibilität)
+declare -A DEVICE_CATEGORIES=(
+    ["System"]="system"
+    ["Audio"]="audio" 
+    ["Bluetooth"]="bt"
+    ["Chipset"]="chipset"
+    ["Display"]="display"
+    ["Graphics"]="graphic"
+    ["Network"]="network"
+    ["LAN"]="lan"
+    ["WLAN"]="wlan"
+    ["USB"]="usb"
+    ["Storage"]="storage"
+    ["RAID"]="raid"
+    ["Security"]="security"
+    ["Sensor"]="sensor"
+    ["Monitor"]="monitor"
+    ["Printer"]="printer"
+    ["Scanner"]="scanner"
+    ["Camera"]="camera"
+    ["Modem"]="modem"
+    ["Input"]="input"
+    ["HID"]="hid"
+    ["Firmware"]="firmware"
+    ["Software"]="software"
+)
 
-if [[ $DEBUG = true ]]; then
-    set -x
-fi
+# ==============================================================================
+# HILFS- UND LOGGING-FUNKTIONEN
+# ==============================================================================
 
-# --- Skript-Start ---
-log_message "INFO" "Starte OPSI Treiber-Sortierungsskript V28.0"
-log_message "INFO" "Verarbeite Produkt-ID: ${PRODUCT_ID}"
-log_message "INFO" "Log-Datei: ${LOG_FILE}"
+# Hilfsfunktion anzeigen (vollständig deutsch)
+show_help() {
+    cat << EOF
+$SCRIPT_NAME V$SCRIPT_VERSION - OPSI-Treiber-Sortierungsskript
 
+VERWENDUNG:
+    $SCRIPT_NAME [OPTIONEN]
 
-# Funktion für optische Trennlinien in der Ausgabe
-print_header() {
-    log_message "INFO" "=================================================================="
-    log_message "OK"   "$1"
-    log_message "INFO" "=================================================================="
+OPTIONEN:
+    -p NETBOOT_PRODUKT  OPSI-Netboot-Produkt-ID verarbeiten (Standard: $DEFAULT_NETBOOT_PRODUCT)
+    -h                  Diese Hilfe anzeigen
+    -v                  Verbose-Modus (Standard: aktiviert)
+    -q                  Quiet-Modus (deaktiviert Verbose-Ausgabe)
+    -d                  Dry-Run-Modus (keine Änderungen durchführen)
+
+BEISPIELE:
+    sudo $SCRIPT_NAME                       # Standard win10-x64 verarbeiten
+    sudo $SCRIPT_NAME -p win11-x64          # Windows 11 x64 Netboot-Produkt
+    sudo $SCRIPT_NAME -p server2022-x64      # Windows Server 2022 x64 Netboot-Produkt
+    sudo $SCRIPT_NAME -d                      # Testlauf ohne Änderungen
+
+BESCHREIBUNG:
+    Dieses Skript analysiert Windows-Treiber aus dem universellen Quellverzeichnis
+    ($UNIVERSAL_SOURCE_PATH), identifiziert die neuesten Versionen 
+    basierend auf Hardware-Audits oder verarbeitet alle verfügbaren Treiber. 
+    Auch Treiber ohne explizite 'DriverVer'-Angabe werden verarbeitet, solange
+    gültige Hardware-Informationen oder System-Klassen vorhanden sind. 
+    Die Treiber werden in eine strukturierte Zielhierarchie kopiert und 
+    OPSI-Pakete für das angegebene Netboot-Produkt erstellt.
+
+UNIVERSELLE PFADSTRUKTUR:
+    Quelle:         $UNIVERSAL_SOURCE_PATH
+    Cache:          $UNIVERSAL_CACHE_FILE
+    Datenbank:      $UNIVERSAL_DB_FILE
+    Ziel:           /var/lib/opsi/depot/[NETBOOT_PRODUKT]/drivers/drivers/
+
+GERÄTEMANAGER-STRUKTUR:
+    Treiber werden nach Windows Gerätemanager-Kategorien sortiert:
+    - system, audio, bt, chipset, display, graphic
+    - network, lan, wlan, usb, storage, raid
+    - security, sensor, monitor, etc.
+
+PFAD-OPTIMIERUNGEN:
+    - 8.3-konforme Datei- und Verzeichnisnamen
+    - Maximale Pfadlänge von 240 Zeichen wird angestrebt
+    - Keine Leerzeichen oder Sonderzeichen in Pfaden
+    - Automatische Sanitization aller Pfadkomponenten
+
+VORAUSSETZUNGEN:
+    - OPSI-Server mit funktionierender Installation
+    - Zugriff auf $UNIVERSAL_SOURCE_PATH
+    - Ausreichende Berechtigungen für OPSI-Befehle
+    - Gültiges Netboot-Produkt in $BASE_DEPOT_PATH
+
+WEITERE INFORMATIONEN:
+    Siehe OPSI-Dokumentation: https://docs.opsi.org/opsi-docs-de/4.3/
+
+EOF
 }
 
-# 1. Start und grundlegende Überprüfungen
-if [[ $DRY_RUN = true ]]; then
-    print_header "!!! ACHTUNG: TROCKENLAUF (DRY RUN) IST AKTIV !!!"
-    log_message "WARN" "Es werden keine Änderungen vorgenommen."
-fi
-
-if [[ $EUID -ne 0 ]]; then
-   log_message "ERROR" "Dieses Skript muss mit root-Rechten ausgeführt werden."; exit 1
-fi
-if [ ! -d "$PRODUCT_DEPOT_PATH" ]; then
-    log_message "ERROR" "Produktverzeichnis für '${PRODUCT_ID}' nicht gefunden: ${PRODUCT_DEPOT_PATH}"; exit 1
-fi
-if [ ! -d "$UNSORTED_DRIVER_DIR" ]; then
-    log_message "ERROR" "Treiber-Quellverzeichnis nicht gefunden: ${UNSORTED_DRIVER_DIR}"; exit 1
-fi
-# Stellt sicher, dass das Ziel- und Cache-Verzeichnis existiert
-mkdir -p "$TARGET_DRIVER_DIR"
-mkdir -p "$(dirname "$CACHE_DB_FILE")"
-touch "$CACHE_DB_FILE"
-
-# HILFSFUNKTION: Konvertiert ein Treiberdatum und eine Version in eine vergleichbare Zahl
-normalize_version() {
-    local date_str version_str y m d a b c d
-    IFS=',' read -r date_str version_str <<< "$1"
-    IFS='/' read -r m d y <<< "$date_str"
-    IFS='.' read -r a b c d <<< "$version_str"
-    printf "%04d%02d%02d%04d%04d%06d%05d" "${y:-0}" "${m:-0}" "${d:-0}" "${a:-0}" "${b:-0}" "${c:-0}" "${d:-0}"
-}
-
-# HILFSFUNKTION: Liest den Inhalt einer INF-Datei mit Fallback für die Kodierung
-read_inf_content() {
-    local file_path="$1"
-    # Versucht die Konvertierung, wenn diese fehlschlägt, wird die Datei als Standardtext gelesen.
-    iconv -f UTF-16LE -t UTF-8 "$file_path" 2>/dev/null || cat "$file_path" 2>/dev/null
-}
-
-# PHASE 1: AUDIT-DATEN SAMMELN (OPTIONAL)
-print_header "Phase 1/5: Auswahl der Integrationsmethode"
-read -p "Sollen nur Treiber integriert werden, die laut OPSI-Audit benötigt werden? (j/N): " -n 1 -r; echo
-if [[ $REPLY =~ ^[Jj]$ ]]; then
-    INTEGRATE_ONLY_NEEDED_DRIVERS=true
-    log_message "OK" "Selektive Integration basierend auf Audit-Daten aktiviert."
-
-    PERFORM_NEW_AUDIT=false
-    if [ ! -f "$AUDIT_CACHE_FILE" ]; then
-        PERFORM_NEW_AUDIT=true
-        log_message "WARN" "Keine Audit-Cache-Datei gefunden. Ein neues Audit ist erforderlich."
-    elif [ -n "$(find "$AUDIT_CACHE_FILE" -mtime +365)" ]; then
-        PERFORM_NEW_AUDIT=true
-        log_message "WARN" "Die Audit-Cache-Datei ist älter als ein Jahr. Ein neues Audit wird empfohlen."
-    else
-        read -p "Eine aktuelle Audit-Cache-Datei wurde gefunden. Möchten Sie sie verwenden oder ein neues Audit erzwingen? (v)erwenden / (n)eu: " -n 1 -r; echo
-        if [[ $REPLY =~ ^[Nn]$ ]]; then
-            PERFORM_NEW_AUDIT=true
-        fi
-    fi
-
-    if [ "$PERFORM_NEW_AUDIT" = true ]; then
-        if [ ! -x "$OPSI_ADMIN_CMD" ]; then
-            log_message "ERROR" "Befehl '${OPSI_ADMIN_CMD}' nicht gefunden. Audit-Analyse nicht möglich."
-            exit 1
-        fi
-        
-        log_message "INFO" "Ermittle Client-Liste für neues Audit..."
-        client_ids=$($OPSI_ADMIN_CMD method getClientIds_list | tr -d '[],"')
-        client_count=$(echo "$client_ids" | wc -w)
-
-        if [ "$client_count" -eq 0 ]; then
-            log_message "ERROR" "Keine OPSI-Clients in der Datenbank gefunden."
-            exit 1
-        fi
-        
-        read -p "Ein neues Audit wird für ${client_count} Clients durchgeführt (nur Clients mit vorhandenen HW-Daten liefern Ergebnisse). Fortfahren? (j/N): " -n 1 -r; echo
-        if [[ $REPLY =~ ^[Jj]$ ]]; then
-            log_message "INFO" "Starte neues Audit. Sammle Hardware-Daten (dies kann dauern)..."
-            processed_clients=0
-            TEMP_AUDIT_CACHE=$(mktemp)
-            
-            for client_id in $client_ids; do
-                ((processed_clients++))
-                log_message "INFO" "Verarbeite Client ${processed_clients}/${client_count}: ${client_id}"
-                hw_data=$($OPSI_ADMIN_CMD method getHostHardware_hash "$client_id")
-                
-                if [ -z "$hw_data" ]; then
-                    log_message "WARN" "Keine Hardware-Daten für Client ${client_id} erhalten. Wird übersprungen."
-                    continue
-                fi
-
-                extracted_ids=$(echo "$hw_data" | tr -d '\0' | grep -o -i -E "(PCI|USB)\\\\[^]]*")
-
-                echo "$extracted_ids" | while read -r line; do
-                    shopt -s nocasematch
-                    if [[ "$line" =~ (VEN_([0-9A-F]{4})) ]] && [[ "$line" =~ (DEV_([0-9A-F]{4})) ]]; then
-                        echo "PCI\\${BASH_REMATCH[1]}&${BASH_REMATCH[3]}" >> "$TEMP_AUDIT_CACHE"
-                    elif [[ "$line" =~ (VID_([0-9A-F]{4})) ]] && [[ "$line" =~ (PID_([0-9A-F]{4})) ]]; then
-                        echo "USB\\${BASH_REMATCH[1]}&${BASH_REMATCH[3]}" >> "$TEMP_AUDIT_CACHE"
-                    fi
-                    shopt -u nocasematch
-                done
-            done
-            
-            sort -u "$TEMP_AUDIT_CACHE" > "$AUDIT_CACHE_FILE"
-            rm "$TEMP_AUDIT_CACHE"
-            log_message "OK" "Neues Audit abgeschlossen und in Cache-Datei gespeichert."
-        else
-            log_message "WARN" "Neues Audit vom Benutzer abgebrochen."
-            if [ ! -f "$AUDIT_CACHE_FILE" ]; then
-                log_message "ERROR" "Keine existierende Cache-Datei gefunden. Audit-basierte Integration nicht möglich. Breche ab."
-                exit 1
-            fi
-            log_message "INFO" "Fahre mit der alten, existierenden Cache-Datei fort."
-        fi
-    else
-        log_message "OK" "Verwende existierende Audit-Cache-Datei."
+# Erweiterte Logging-Funktion mit Zeitstempel und Farbcodierung (vollständig deutsch)
+log_message() {
+    local level="$1"
+    local message="$2"
+    local timestamp
+    local color_code=""
+    local reset_code="\033[0m"
+    local plain_message
+    
+    timestamp=$(date '+%d.%m.%Y %H:%M:%S')
+    plain_message="[$level] $message"
+    
+    # Farbcodes für verschiedene Log-Level
+    case "$level" in
+        "INFO")  color_code="\033[1;34m" ;;  # Blau
+        "OK")    color_code="\033[1;32m" ;;  # Grün
+        "WARN")  color_code="\033[1;33m" ;;  # Gelb
+        "ERROR") color_code="\033[1;31m" ;;  # Rot
+        "DEBUG") color_code="\033[1;35m" ;;  # Magenta
+        *)       color_code="" ;;
+    esac
+    
+    # Ausgabe auf Konsole mit Farbe (nur wenn Verbose-Modus aktiviert oder kritische Meldung)
+    if [[ "$VERBOSE_MODE" == true ]] || [[ "$level" == "ERROR" ]] || [[ "$level" == "WARN" ]]; then
+        echo -e "${color_code}${plain_message}${reset_code}"
     fi
     
-    # Lese benötigte HW-IDs aus der (neuen oder alten) Cache-Datei
-    if [ ! -s "$AUDIT_CACHE_FILE" ]; then # -s prüft, ob die Datei größer als 0 ist
-        log_message "ERROR" "Die Audit-Cache-Datei ist leer. Es wurden keine Hardware-IDs gefunden. Bitte führen Sie das Skript erneut aus und erzwingen Sie ein neues Audit."
-        exit 1
+    # Ausgabe in Log-Datei ohne Farbcodes
+    if [[ -n "$LOG_FILE" ]]; then
+        echo "[$timestamp] $plain_message" >> "$LOG_FILE"
     fi
+    
+    # Fehler- und Warnungszähler
+    case "$level" in
+        "ERROR") ((ERROR_COUNT++)) ;;
+        "WARN")  ((WARNING_COUNT++)) ;;
+    esac
+}
+
+# Header für Phasen ausgeben (vollständig deutsch)
+print_header() {
+    local message="$1"
+    log_message "INFO" "=================================================================="
+    log_message "OK" "$message"
+    log_message "INFO" "=================================================================="
+}
+
+# Validierung der Systemvoraussetzungen (vollständig deutsch)
+validate_prerequisites() {
+    log_message "INFO" "Überprüfe Systemvoraussetzungen..."
+    
+    # OPSI-Befehle verfügbar?
+    local required_commands=("$OPSI_ADMIN_PATH" "$OPSI_SET_RIGHTS_PATH" "$OPSI_PYTHON_PATH")
+    for cmd in "${required_commands[@]}"; do
+        if [[ ! -x "$cmd" ]]; then
+            log_message "ERROR" "Erforderlicher Befehl nicht gefunden oder nicht ausführbar: $cmd"
+            return 1
+        fi
+    done
+    
+    # Basis-Verzeichnisse verfügbar?
+    local required_dirs=("$BASE_DEPOT_PATH" "$LOG_BASE_PATH")
+    for dir in "${required_dirs[@]}"; do
+        if [[ ! -d "$dir" ]]; then
+            log_message "ERROR" "Erforderliches Verzeichnis nicht gefunden: $dir"
+            return 1
+        fi
+        if [[ ! -w "$dir" ]]; then
+            log_message "ERROR" "Keine Schreibberechtigung für: $dir"
+            return 1
+        fi
+    done
+    
+    # Universelles Quellverzeichnis erstellen falls nicht vorhanden
+    if [[ ! -d "$UNIVERSAL_SOURCE_PATH" ]]; then
+        log_message "WARN" "Universelles Quellverzeichnis nicht gefunden: $UNIVERSAL_SOURCE_PATH"
+        if [[ "$DRY_RUN_MODE" == false ]]; then
+            mkdir -p "$UNIVERSAL_SOURCE_PATH" || {
+                log_message "ERROR" "Konnte universelles Quellverzeichnis nicht erstellen: $UNIVERSAL_SOURCE_PATH"
+                return 1
+            }
+            log_message "OK" "Universelles Quellverzeichnis erstellt: $UNIVERSAL_SOURCE_PATH"
+        fi
+    fi
+    
+    log_message "OK" "Systemvoraussetzungen erfüllt."
+    return 0
+}
+
+# Netboot-Produkt validieren (vollständig deutsch)
+validate_netboot_product() {
+    local product_path="$BASE_DEPOT_PATH/$NETBOOT_PRODUCT"
+    
+    if [[ ! -d "$product_path" ]]; then
+        log_message "ERROR" "Netboot-Produkt-Verzeichnis nicht gefunden: $product_path"
+        log_message "ERROR" "Verfügbare Produkte:"
+        ls -1 "$BASE_DEPOT_PATH" 2>/dev/null | grep -E "^(win|server)" | head -10 | while read -r product; do
+            log_message "INFO" "  - $product"
+        done
+        return 1
+    fi
+    
+    log_message "OK" "Netboot-Produkt validiert: $NETBOOT_PRODUCT"
+    return 0
+}
+
+# ==============================================================================
+# GERÄTEMANAGER-STRUKTUR UND KATEGORISIERUNG
+# ==============================================================================
+
+# Gerätekategorie aus INF-Datei bestimmen (nach Windows Gerätemanager-Struktur)
+detect_device_category() {
+    local inf_content="$1"
+    local class_line device_class
+    
+    # Class= Zeile extrahieren
+    class_line=$(echo "$inf_content" | grep -i "^Class[[:space:]]*=" | head -1)
+    device_class=$(echo "$class_line" | cut -d'=' -f2 | tr -d ' "\r\n' | tr '[:upper:]' '[:lower:]')
+    
+    # Mapping auf Gerätemanager-Kategorien
+    case "$device_class" in
+        "system"|"computer"|"processor"|"systemdevices")
+            echo "system"
+            ;;
+        "sound"|"media"|"audioendpoint")
+            echo "audio"
+            ;;
+        "bluetooth"|"bluetoothradios")
+            echo "bt"
+            ;;
+        "chipset"|"smbus"|"dmacontroller")
+            echo "chipset"
+            ;;
+        "display"|"displayadapters")
+            echo "display"
+            ;;
+        "net"|"network"|"networkadapters")
+            echo "network"
+            ;;
+        "usb"|"universalserialbus")
+            echo "usb"
+            ;;
+        "hdc"|"diskdrive"|"scsiadapter"|"storagecontrollers")
+            echo "storage"
+            ;;
+        "security"|"tpm"|"securitydevices")
+            echo "security"
+            ;;
+        "monitor"|"monitors")
+            echo "monitor"
+            ;;
+        "printer"|"printqueue")
+            echo "printer"
+            ;;
+        "camera"|"imagingdevices")
+            echo "camera"
+            ;;
+        "modem"|"modems")
+            echo "modem"
+            ;;
+        "hid"|"humaninterfacedevices"|"keyboard"|"mouse")
+            echo "input"
+            ;;
+        "firmware"|"systemfirmware")
+            echo "firmware"
+            ;;
+        "softwarecomponent"|"softwaredevices")
+            echo "software"
+            ;;
+        *)
+            # Fallback: Versuche aus Description oder anderen Hinweisen zu erraten
+            if echo "$inf_content" | grep -qi -E "(graphic|video|vga|display)"; then
+                echo "graphic"
+            elif echo "$inf_content" | grep -qi -E "(network|ethernet|lan|nic)"; then
+                echo "lan"
+            elif echo "$inf_content" | grep -qi -E "(wireless|wifi|wlan|802\.11)"; then
+                echo "wlan"
+            elif echo "$inf_content" | grep -qi -E "(raid|scsi|sata|nvme)"; then
+                echo "raid"
+            elif echo "$inf_content" | grep -qi -E "(sensor|thermal|temperature)"; then
+                echo "sensor"
+            else
+                echo "system"  # Default fallback
+            fi
+            ;;
+    esac
+}
+
+# 8.3-konforme Verzeichnisnamen generieren
+sanitize_directory_name() {
+    local name="$1"
+    local max_length="${2:-8}"
+    
+    # Kleinbuchstaben, nur alphanumerisch
+    name=$(echo "$name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')
+    
+    # Länge begrenzen
+    if [[ ${#name} -gt $max_length ]]; then
+        name="${name:0:$max_length}"
+    fi
+    
+    echo "$name"
+}
+
+# ==============================================================================
+# PARAMETER-VERARBEITUNG UND INITIALISIERUNG
+# ==============================================================================
+
+# Kommandozeilenparameter verarbeiten (vollständig deutsch)
+process_arguments() {
+    while getopts "p:hvqd" opt; do
+        case $opt in
+            p)
+                NETBOOT_PRODUCT="$OPTARG"
+                ;;
+            h)
+                show_help
+                exit 0
+                ;;
+            v)
+                VERBOSE_MODE=true
+                ;;
+            q)
+                VERBOSE_MODE=false
+                ;;
+            d)
+                DRY_RUN_MODE=true
+                ;;
+            \?)
+                log_message "ERROR" "Ungültige Option: -$OPTARG"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+    
+    # Standardwerte setzen
+    if [[ -z "$NETBOOT_PRODUCT" ]]; then
+        NETBOOT_PRODUCT="$DEFAULT_NETBOOT_PRODUCT"
+    fi
+}
+
+# Pfade und Log-Datei initialisieren (vollständig deutsch)
+initialize_paths() {
+    # Produktspezifisches Zielverzeichnis gemäß OPSI-Doku
+    TARGET_PATH="$BASE_DEPOT_PATH/$NETBOOT_PRODUCT/drivers/drivers"
+    
+    # Log-Datei erstellen mit sicherem Namen
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d_%H-%M-%S')
+    local log_filename
+    log_filename="driver_sort_${NETBOOT_PRODUCT}_${timestamp}.log"
+    LOG_FILE="$LOG_BASE_PATH/$log_filename"
+    
+    # Netboot-Produkt validieren
+    validate_netboot_product || return 1
+    
+    # Universelles Quellverzeichnis validieren
+    if [[ ! -d "$UNIVERSAL_SOURCE_PATH" ]]; then
+        log_message "ERROR" "Universelles Quellverzeichnis nicht gefunden: $UNIVERSAL_SOURCE_PATH"
+        return 1
+    fi
+    
+    # Zielverzeichnis erstellen falls nötig
+    if [[ ! -d "$TARGET_PATH" ]] && [[ "$DRY_RUN_MODE" == false ]]; then
+        mkdir -p "$TARGET_PATH" || {
+            log_message "ERROR" "Konnte Zielverzeichnis nicht erstellen: $TARGET_PATH"
+            return 1
+        }
+    fi
+    
+    log_message "OK" "Pfade initialisiert (universelle Struktur):"
+    log_message "INFO" "  Universelle Quelle: $UNIVERSAL_SOURCE_PATH"
+    log_message "INFO" "  Produktspezifisches Ziel: $TARGET_PATH"
+    log_message "INFO" "  Universelle Datenbank: $UNIVERSAL_DB_FILE"
+    log_message "INFO" "  Universeller Cache: $UNIVERSAL_CACHE_FILE"
+    log_message "INFO" "  Log-Datei: $LOG_FILE"
+    
+    return 0
+}
+
+# ==============================================================================
+# MODUS-AUSWAHL UND AUDIT-FUNKTIONEN
+# ==============================================================================
+
+# Benutzer nach Integrationsmodus fragen (vollständig deutsch)
+select_integration_mode() {
+    print_header "Phase 1/5: Auswahl der Integrationsmethode"
+    
+    echo "Wählen Sie den Integrationsmodus für '$NETBOOT_PRODUCT':"
+    echo "1) Alle gefundenen Treiber verarbeiten (Standard-Integration)"
+    echo "2) Nur von OPSI-Hardware-Audit benötigte Treiber (Audit-basierte Integration)"
+    echo ""
+    
+    local choice
+    read -p "Ihre Wahl [1]: " choice
+    choice=${choice:-1}
+    
+    case $choice in
+        1)
+            INTEGRATION_MODE="all"
+            log_message "OK" "Standard-Integration: Alle gefundenen Treiber werden verarbeitet."
+            ;;
+        2)
+            INTEGRATION_MODE="audit"
+            log_message "OK" "Audit-basierte Integration: Nur benötigte Treiber werden verarbeitet."
+            ;;
+        *)
+            log_message "WARN" "Ungültige Auswahl. Verwende Standard-Integration."
+            INTEGRATION_MODE="all"
+            ;;
+    esac
+}
+
+# Hardware-IDs von OPSI-Clients sammeln (universeller Cache) (vollständig deutsch)
+collect_hardware_audit() {
+    print_header "Phase 2/5: Hardware-Audit wird durchgeführt"
+    
+    local force_audit=false
+    
+    # Prüfen ob universeller Cache existiert
+    if [[ -f "$UNIVERSAL_CACHE_FILE" ]]; then
+        local cache_age
+        cache_age=$(find "$UNIVERSAL_CACHE_FILE" -mtime +7 2>/dev/null | wc -l)
+        if [[ $cache_age -gt 0 ]]; then
+            echo "Universeller Audit-Cache ist älter als 7 Tage."
+        else
+            echo "Aktueller universeller Audit-Cache gefunden (weniger als 7 Tage alt)."
+        fi
+        
+        local use_cache
+        read -p "Vorhandenen universellen Cache verwenden? [j/N]: " -n 1 -r use_cache
+        echo
+        if [[ ! $use_cache =~ ^[Jj]$ ]]; then
+            force_audit=true
+        fi
+    else
+        force_audit=true
+    fi
+    
+    if [[ "$force_audit" == true ]]; then
+        log_message "INFO" "Führe neues Hardware-Audit durch (universeller Cache)..."
+        perform_hardware_audit "$UNIVERSAL_CACHE_FILE"
+    else
+        log_message "INFO" "Verwende vorhandenen universellen Audit-Cache: $UNIVERSAL_CACHE_FILE"
+    fi
+    
+    # Cache-Datei laden
+    if [[ ! -s "$UNIVERSAL_CACHE_FILE" ]]; then # -s prüft, ob die Datei größer als 0 ist
+        log_message "ERROR" "Die Audit-Cache-Datei ist leer. Es wurden keine Hardware-IDs gefunden. Bitte führen Sie das Skript erneut aus und erzwingen Sie ein neues Audit."
+        return 1
+    fi
+    
     log_message "INFO" "Lese benötigte Hardware-IDs aus dem Cache..."
     while read -r line; do
         NEEDED_HW_IDS["${line^^}"]=1
-    done < "$AUDIT_CACHE_FILE"
-    log_message "OK" "${#NEEDED_HW_IDS[@]} eindeutige, benötigte Hardware-IDs aus dem Cache geladen."
-else
-    log_message "INFO" "Standard-Integration: Alle gefundenen Treiber werden verarbeitet."
-fi
+    done < "$UNIVERSAL_CACHE_FILE"
+    
+    local hw_count=${#NEEDED_HW_IDS[@]}
+    log_message "OK" "Hardware-Audit abgeschlossen. $hw_count eindeutige Hardware-IDs aus dem Cache geladen."
+    return 0
+}
 
-# PHASE 2: CACHE-ABGLEICH
-print_header "Phase 2/5: Gleiche Treiber-DB mit dem Dateisystem ab..."
-TEMP_DB=$(mktemp)
-entry_count=0; pruned_count=0
-if [ -s "$CACHE_DB_FILE" ]; then
-    while IFS='|' read -r inf_path checksum version hwids || [[ -n "$inf_path" ]]; do
-        ((entry_count++))
-        if [ -f "$inf_path" ]; then
-            echo "$inf_path|$checksum|$version|$hwids" >> "$TEMP_DB"
-        else
-            log_message "WARN" "Entferne veralteten DB-Eintrag für nicht mehr existierende Datei: $inf_path"
-            ((pruned_count++))
-        fi
-    done < "$CACHE_DB_FILE"
-    mv "$TEMP_DB" "$CACHE_DB_FILE"
-fi
-log_message "OK" "Treiber-DB-Abgleich abgeschlossen. ${pruned_count} von ${entry_count} Einträgen entfernt."
-
-# PHASE 3: ANALYSE NEUER TREIBER
-print_header "Phase 3/5: Analysiere neue/geänderte Treiber..."
-TOTAL_INF_FILES=$(find "${UNSORTED_DRIVER_DIR}" -type f -iname "*.inf" 2>/dev/null | wc -l)
-log_message "OK" "${TOTAL_INF_FILES} .inf-Dateien zur Analyse gefunden."
-
-COUNT_PROCESSED_INF=0
-find "${UNSORTED_DRIVER_DIR}" -type f -iname "*.inf" -print0 2>/dev/null | while IFS= read -r -d '' inf_file; do
-    ((COUNT_PROCESSED_INF++))
-    log_message "INFO" "------------------------------------------------------------------"
-    log_message "INFO" "Prüfe Datei (${COUNT_PROCESSED_INF}/${TOTAL_INF_FILES}): ${inf_file}"
-    current_checksum=$(md5sum "$inf_file" | cut -d' ' -f1)
-    cached_entry=$(grep -F "|$current_checksum|" "$CACHE_DB_FILE" || true)
-
-    if [ -n "$cached_entry" ]; then
-        log_message "INFO" "Treiber ist unverändert (Cache-Treffer via Checksum). Überspringe Analyse."
-        continue
+# Eigentliches Hardware-Audit durchführen (vollständig deutsch, korrekte OPSI-API-Aufrufe)
+perform_hardware_audit() {
+    local cache_file="$1"
+    local temp_file
+    temp_file=$(mktemp)
+    local client_count=0
+    local processed_count=0
+    
+    log_message "INFO" "Sammle Client-Liste vom OPSI-Server..."
+    
+    # Client-IDs abrufen (bewährte Methode)
+    local clients
+    if ! clients=$($OPSI_ADMIN_PATH method getClientIds_list 2>/dev/null); then
+        log_message "ERROR" "Konnte Client-Liste nicht abrufen. OPSI-Admin-Zugriff prüfen."
+        rm -f "$temp_file"
+        return 1
     fi
-    sed -i -e "\|^${inf_file}|d" "$CACHE_DB_FILE"
+    
+    # Clients verarbeiten
+    local client_ids
+    mapfile -t client_ids < <(echo "$clients" | grep -o '"[^"]*"' | tr -d '"')
+    client_count=${#client_ids[@]}
+    
+    log_message "INFO" "$client_count Clients gefunden. Starte Abfrage der Hardware-Daten..."
+    
+    local current_client_num=0
+    for client_id in "${client_ids[@]}"; do
+        ((current_client_num++))
+        log_message "INFO" "Verarbeite Client $current_client_num/$client_count: $client_id"
+        
+        # Hardware-Daten für diesen Client abrufen (bewährte Methode)
+        local hw_data
+        hw_data=$($OPSI_ADMIN_PATH method hardware_getHashes "" "hardwareClass='pci' or hardwareClass='usb'" "$client_id" 2>/dev/null || true)
+        
+        if [[ -n "$hw_data" ]]; then
+            ((processed_count++))
+            # PCI/USB-IDs extrahieren und normalisieren (korrigiertes Regex)
+            echo "$hw_data" | grep -o -E '(pci|usb)-[0-9a-f_]+' | while read -r hw_id; do
+                # Format: pci-8086_1234 -> PCI\VEN_8086&DEV_1234
+                if [[ "$hw_id" =~ ^pci-([0-9a-f]{4})_([0-9a-f]{4}) ]]; then
+                    echo "PCI\\VEN_${BASH_REMATCH[1]^^}&DEV_${BASH_REMATCH[2]^^}"
+                elif [[ "$hw_id" =~ ^usb-([0-9a-f]{4})_([0-9a-f]{4}) ]]; then
+                    echo "USB\\VID_${BASH_REMATCH[1]^^}&PID_${BASH_REMATCH[2]^^}"
+                fi
+            done >> "$temp_file"
+        else
+             log_message "WARN" "Keine Hardware-Daten für Client ${client_id} erhalten. Wird übersprungen."
+        fi
+    done
+    
+    # Eindeutige IDs sortieren und universellen Cache erstellen
+    if [[ -s "$temp_file" ]]; then
+        sort -u "$temp_file" > "$cache_file"
+        log_message "OK" "Hardware-Audit abgeschlossen: $processed_count von $client_count Clients hatten verwertbare Daten."
+    else
+        log_message "WARN" "Keine Hardware-Daten gesammelt. Erstelle leeren universellen Cache."
+        touch "$cache_file"
+    fi
+    rm -f "$temp_file"
+}
+
+
+# ==============================================================================
+# TREIBER-ANALYSE-FUNKTIONEN (mit universeller DB und korrekter UTF-16LE Behandlung)
+# ==============================================================================
+
+# INF-Datei-Inhalt lesen und konvertieren (UTF-16LE zu UTF-8)
+read_inf_content() {
+    local inf_file="$1"
+    iconv -f UTF-16LE -t UTF-8 "$inf_file" 2>/dev/null || cat "$inf_file" 2>/dev/null
+}
+
+
+# Universelle Treiber-Datenbank mit Dateisystem abgleichen (vollständig deutsch)
+sync_driver_database() {
+    print_header "Phase 3/5: Gleiche universelle Treiber-DB mit dem Dateisystem ab..."
+    
+    local temp_db
+    temp_db=$(mktemp)
+    local removed_count=0
+    local total_count=0
+    
+    if [[ -f "$UNIVERSAL_DB_FILE" ]]; then
+        while IFS='|' read -r inf_path checksum version category hw_ids; do
+            ((total_count++))
+            if [[ -f "$inf_path" ]]; then
+                # Datei existiert noch, behalten
+                echo "$inf_path|$checksum|$version|$category|$hw_ids" >> "$temp_db"
+            else
+                # Datei existiert nicht mehr, aus DB entfernen
+                log_message "DEBUG" "Entferne verwaisten DB-Eintrag: $inf_path"
+                ((removed_count++))
+            fi
+        done < "$UNIVERSAL_DB_FILE"
+        
+        if [[ -f "$temp_db" ]]; then
+            mv "$temp_db" "$UNIVERSAL_DB_FILE"
+        else
+            # Wenn temp_db leer ist, wurde die Original-DB auch geleert
+            >"$UNIVERSAL_DB_FILE"
+        fi
+    else
+        touch "$UNIVERSAL_DB_FILE"
+    fi
+    
+    log_message "OK" "Universelle Treiber-DB-Abgleich abgeschlossen. $removed_count von $total_count Einträgen entfernt."
+}
+
+# Neue oder geänderte Treiber analysieren (aus universeller Quelle) (vollständig deutsch)
+analyze_drivers() {
+    print_header "Phase 4/5: Analysiere neue/geänderte Treiber..."
+    
+    local file_count=0
+    local processed_count=0
+    local current_file=0
+    
+    # Alle INF-Dateien im universellen Quellverzeichnis finden
+    log_message "INFO" "Suche nach .inf-Dateien in: $UNIVERSAL_SOURCE_PATH"
+    
+    # Stabile Schleife ohne Subshell
+    local inf_files_list
+    inf_files_list=$(mktemp)
+    find "$UNIVERSAL_SOURCE_PATH" -iname "*.inf" -type f -print0 > "$inf_files_list"
+    file_count=$(grep -c -z "" "$inf_files_list")
+
+    if [[ $file_count -eq 0 ]]; then
+        log_message "WARN" "Keine .inf-Dateien gefunden in: $UNIVERSAL_SOURCE_PATH"
+        rm -f "$inf_files_list"
+        return 1
+    fi
+    
+    log_message "OK" "$file_count .inf-Dateien zur Analyse gefunden."
+    
+    # Jede INF-Datei verarbeiten
+    while IFS= read -r -d $'\0' inf_file; do
+        ((current_file++))
+        
+        log_message "INFO" "------------------------------------------------------------------"
+        log_message "INFO" "Prüfe Datei ($current_file/$file_count): $inf_file"
+        
+        if analyze_single_inf_file "$inf_file" "$UNIVERSAL_DB_FILE"; then
+            ((processed_count++))
+        fi
+        
+        # Fortschrittsanzeige alle 100 Dateien
+        if ((current_file % 100 == 0)); then
+            log_message "INFO" "Fortschritt: $current_file von $file_count Dateien verarbeitet"
+        fi
+    done < "$inf_files_list"
+    rm -f "$inf_files_list"
+    
+    log_message "OK" "Treiber-Analyse abgeschlossen: $processed_count von $file_count Dateien neu analysiert oder aktualisiert."
+}
+
+# Einzelne INF-Datei analysieren (korrekte UTF-16LE zu UTF-8 Konvertierung)
+analyze_single_inf_file() {
+    local inf_file="$1"
+    local db_file="$2"
+    local current_checksum
+    local cached_checksum=""
+    local driver_version=""
+    local hw_ids=""
+    local driver_date=""
+    local device_category=""
+    
+    # Checksum berechnen
+    current_checksum=$(md5sum "$inf_file" 2>/dev/null | cut -d' ' -f1)
+    if [[ -z "$current_checksum" ]]; then
+        log_message "WARN" "Konnte Checksum nicht berechnen für: $inf_file"
+        return 1
+    fi
+    
+    # Prüfen ob bereits in universeller DB und unverändert
+    if [[ -f "$db_file" ]]; then
+        cached_checksum=$(grep "^$inf_file|" "$db_file" 2>/dev/null | cut -d'|' -f2)
+        if [[ "$cached_checksum" == "$current_checksum" ]]; then
+            log_message "INFO" "Treiber ist unverändert (Cache-Treffer via Checksum). Überspringe Analyse."
+            return 0
+        fi
+    fi
     
     log_message "INFO" "Neue/geänderte Datei. Führe Analyse durch..."
     
-    driver_ver_line=$(read_inf_content "$inf_file" | grep -E -i -m 1 "DriverVer")
+    # INF-Datei-Inhalt lesen und konvertieren (UTF-16LE zu UTF-8)
+    local inf_content
+    inf_content=$(read_inf_content "$inf_file")
     
-    if [ -z "$driver_ver_line" ]; then
-        log_message "WARN" "Keine 'DriverVer'-Zeile gefunden in: ${inf_file}. Überspringe."
-        continue
+    if [[ -z "$inf_content" ]]; then
+        log_message "WARN" "Konnte INF-Datei nicht lesen: $inf_file"
+        return 1
     fi
-
-    current_ver_str=$(echo "$driver_ver_line" | sed -n 's/.*DriverVer\s*=\s*//p' | tr -d '[:space:]"')
-    current_ver_norm=$(normalize_version "$current_ver_str")
-    log_message "INFO" "Version gefunden: ${current_ver_str}"
-
-    hw_id_pattern='PCI\\VEN_[0-9A-F]{4}&DEV_[0-9A-F]{4}|USB\\VID_[0-9A-F]{4}&PID_[0-9A-F]{4}'
-    ids=$(read_inf_content "$inf_file" | grep -E -o -i "$hw_id_pattern" | tr -d '\r' | sort -u)
-
-    if [ -z "$ids" ]; then
-        inf_class_line=$(read_inf_content "$inf_file" | grep -E -i -m 1 "Class=")
-        class_name=$(echo "$inf_class_line" | sed 's/.*Class=\s*//' | tr -d '"')
-        if [[ "$class_name" == "System" || "$class_name" == "SoftwareComponent" || "$class_name" == "Monitor" || "$class_name" == "Firmware" ]]; then
-            log_message "INFO" "Datei als System-Komponente identifiziert (Klasse: $class_name). Wird separat behandelt."
-            ids="SYS_COMPONENT"
+    
+    # DriverVer-Zeile extrahieren
+    local driver_ver_line
+    driver_ver_line=$(echo "$inf_content" | grep -i "^DriverVer" | head -1)
+    
+    if [[ -z "$driver_ver_line" ]]; then
+        log_message "WARN" "Keine 'DriverVer'-Zeile gefunden. Verwende Standard-Version 0.0.0.0 und fahre mit der Analyse fort."
+        driver_date="01/01/1970"
+        driver_version="0.0.0.0"
+    else
+        # Version und Datum parsen (korrekte Regex)
+        if [[ "$driver_ver_line" =~ DriverVer[[:space:]]*=[[:space:]]*([^,]+),(.+) ]]; then
+            driver_date="${BASH_REMATCH[1]}"
+            driver_version="${BASH_REMATCH[2]}"
         else
-            log_message "WARN" "Keine unterstützten HW-IDs und keine bekannte System-Klasse gefunden. Überspringe."
-            continue
+            log_message "WARN" "Konnte 'DriverVer'-Zeile nicht korrekt parsen. Verwende Standard-Version."
+            driver_version="0.0.0.0"
+            driver_date="01/01/1970"
+        fi
+        log_message "INFO" "Version gefunden: $driver_date,$driver_version"
+    fi
+    
+    # Hardware-IDs extrahieren
+    hw_ids=$(extract_hardware_ids "$inf_content")
+    
+    # Gerätekategorie bestimmen (nach Gerätemanager-Struktur)
+    device_category=$(detect_device_category "$inf_content")
+    
+    # Prüfen ob Treiber relevante Hardware-IDs hat oder System-Komponente ist
+    if [[ -z "$hw_ids" ]]; then
+        if [[ "$device_category" =~ ^(system|firmware|software)$ ]]; then
+            hw_ids="SYSTEM_COMPONENT"
+            log_message "INFO" "System-Komponente erkannt (Kategorie: $device_category)."
+        else
+            log_message "WARN" "Keine unterstützten HW-IDs und keine bekannte System-Kategorie gefunden. Datei wird ignoriert."
+            return 1
         fi
     fi
+    
+    # Normalisierte Version für Vergleiche erstellen
+    local normalized_version
+    normalized_version=$(normalize_version "$driver_version" "$driver_date")
+    
+    # Universelle DB-Eintrag aktualisieren/hinzufügen
+    if [[ "$DRY_RUN_MODE" == false ]]; then
+        # Alten Eintrag entfernen falls vorhanden
+        grep -v "^$inf_file|" "$db_file" > "$db_file.tmp" 2>/dev/null || touch "$db_file.tmp"
+        
+        # Neuen Eintrag hinzufügen: inf_pfad|checksum|normalized_version|category|hw_ids
+        echo "$inf_file|$current_checksum|$normalized_version|$device_category|$hw_ids" >> "$db_file.tmp"
+        mv "$db_file.tmp" "$db_file"
+    fi
+    
+    log_message "OK" "Analyse erfolgreich. Universelle DB-Eintrag hinzugefügt/aktualisiert."
+    return 0
+}
 
-    ids_comma_separated=$(echo "$ids" | tr '\n' ',' | sed 's/,$//')
-    echo "${inf_file}|${current_checksum}|${current_ver_norm}|${ids_comma_separated}" >> "$CACHE_DB_FILE"
-    log_message "OK" "Analyse erfolgreich. DB-Eintrag hinzugefügt/aktualisiert."
-done
+# Hardware-IDs aus INF-Inhalt extrahieren (korrekte Regex)
+extract_hardware_ids() {
+    local inf_content="$1"
+    local hw_ids=""
+    
+    # Eindeutige IDs sammeln
+    local found_ids
+    found_ids=$(echo "$inf_content" | grep -o -i -E 'PCI\\VEN_[0-9A-F]{4}&DEV_[0-9A-F]{4}|USB\\VID_[0-9A-F]{4}&PID_[0-9A-F]{4}' | sort -u)
+    
+    # Komma-separierte Liste erstellen
+    hw_ids=$(echo "$found_ids" | tr '\n' ',' | sed 's/,$//')
+    
+    echo "$hw_ids"
+}
 
-# PHASE 4: PLANUNG DER KOPIERAKTIONEN
-print_header "Phase 4/5: Ermittle neueste & benötigte Treiber..."
-while IFS='|' read -r inf_path checksum version hwids || [[ -n "$inf_path" ]]; do
-    IFS=',' read -ra hwid_array <<< "$hwids"
-    for id_line in "${hwid_array[@]}"; do
-        id_line_upper=${id_line^^} 
-        if [ "$INTEGRATE_ONLY_NEEDED_DRIVERS" = true ] && [ -z "${NEEDED_HW_IDS[$id_line_upper]}" ] && [ "$id_line_upper" != "SYS_COMPONENT" ]; then
-            continue
-        fi
-        if [ -z "${LATEST_DRIVERS[$id_line_upper]}" ]; then
-            LATEST_DRIVERS[$id_line_upper]="${version};${inf_path}"
-        else
-            existing_ver_norm=$(echo "${LATEST_DRIVERS[$id_line_upper]}" | cut -d';' -f1)
-            if (( version > existing_ver_norm )); then
-                LATEST_DRIVERS[$id_line_upper]="${version};${inf_path}"
-            fi
-        fi
+# Treiber-Version normalisieren für Vergleiche (korrigierte Implementierung)
+normalize_version() {
+    local version="$1"
+    local date="$2"
+    local normalized=""
+    
+    # Datum zu numerischem Wert konvertieren (YYYYMMDD)
+    local date_numeric="19700101"
+    if [[ "$date" =~ ([0-9]{1,2})/([0-9]{1,2})/([0-9]{4}) ]]; then
+        local month="${BASH_REMATCH[1]}"
+        local day="${BASH_REMATCH[2]}"
+        local year="${BASH_REMATCH[3]}"
+        date_numeric=$(printf "%04d%02d%02d" "$year" "$month" "$day")
+    fi
+    
+    # Version in numerisches Format bringen
+    local version_parts
+    IFS='.' read -ra version_parts <<< "$version"
+    local version_numeric=""
+    for part in "${version_parts[@]::4}"; do
+        # Nur numerische Teile verwenden, auf max 5 Stellen begrenzt
+        local numeric_part
+        numeric_part=$(echo "$part" | grep -o '^[0-9]*' | head -c 5)
+        version_numeric="${version_numeric}$(printf "%05d" "${numeric_part:-0}")"
     done
-done < "$CACHE_DB_FILE"
-log_message "OK" "Planung abgeschlossen. ${#LATEST_DRIVERS[@]} Treiber-Aktionen sind vorgemerkt."
+    
+    # Kombinierter Wert: YYYYMMDD + Versionsnummer
+    normalized="${date_numeric}${version_numeric}"
+    echo "$normalized"
+}
 
-# PHASE 5: AUSFÜHRUNG DER KOPIERAKTIONEN
-print_header "Phase 5/5: Kopiere neueste & benötigte Treiber"
-COUNT_SUCCESS=0
-declare -A COPIED_DIRS # Verhindert doppeltes Kopieren
-for id_line in "${!LATEST_DRIVERS[@]}"; do
-    inf_file=$(echo "${LATEST_DRIVERS[$id_line]}" | cut -d';' -f2-)
-    current_source_dir=$(dirname "${inf_file}")
+# ==============================================================================
+# TREIBER-SELEKTION UND KOPIER-FUNKTIONEN (mit Gerätemanager-Struktur)
+# ==============================================================================
 
-    if [ -n "${COPIED_DIRS[${current_source_dir}]}" ]; then
-        continue
+# Neueste benötigte Treiber ermitteln (vollständig deutsch)
+determine_latest_drivers() {
+    print_header "Phase 5/5: Ermittle neueste benötigte Treiber..."
+    
+    local hw_id_filter=""
+    
+    if [[ ! -f "$UNIVERSAL_DB_FILE" ]]; then
+        log_message "ERROR" "Universelle Treiber-Datenbank nicht gefunden: $UNIVERSAL_DB_FILE"
+        return 1
     fi
     
-    if [[ $id_line == "SYS_COMPONENT" ]]; then
-        TYPE="sys"
-        VENDOR="components"
-        DEVICE=$(basename "$current_source_dir" | tr -cd '[:alnum:]._-' | cut -c 1-20)
-    elif [[ $id_line =~ ^PCI\\VEN_([0-9A-F]{4})\&DEV_([0-9A-F]{4})$ ]]; then
-        TYPE="pciids"; VENDOR=${BASH_REMATCH[1]}; DEVICE=${BASH_REMATCH[2]}
-    elif [[ $id_line =~ ^USB\\VID_([0-9A-F]{4})\&PID_([0-9A-F]{4})$ ]]; then
-        TYPE="usbids"; VENDOR=${BASH_REMATCH[1]}; DEVICE=${BASH_REMATCH[2]}
-    else
-        continue
-    fi
-
-    local short_int_mode="man"
-    if [ "$INTEGRATE_ONLY_NEEDED_DRIVERS" = true ]; then
-        short_int_mode="aud"
-    fi
-
-    local short_sort_type="add"
-    if [[ "${inf_file}" == *"/preferred/"* ]]; then short_sort_type="pref"; fi
-    if [[ "${inf_file}" == *"/excluded/"* ]]; then short_sort_type="excl"; fi
-
-    local short_type="pci"
-    if [[ $TYPE == "usbids" ]]; then short_type="usb"; fi
-    if [[ $TYPE == "sys" ]]; then short_type="sys"; fi
-
-    final_target_path="${TARGET_DRIVER_DIR}/${short_sort_type}/${short_int_mode}/${short_type}/${VENDOR^^}/${DEVICE^^}"
-
-    if [ "$DRY_RUN" = true ]; then
-        log_message "INFO" "[DRY RUN] Quelle: '${current_source_dir}'"
-        log_message "INFO" "[DRY RUN] Ziel für ${id_line} wäre: '${final_target_path}'"
-        log_message "WARN" "[DRY RUN] Lösch-Aktion für Quelle würde übersprungen."
-    else
-        log_message "INFO" "Erstelle Verzeichnis (falls nötig): ${final_target_path}"
-        mkdir -p "$final_target_path"
+    # Audit-Cache laden falls audit-basierte Integration
+    if [[ "$INTEGRATION_MODE" == "audit" ]]; then
+        if [[ ! -s "$UNIVERSAL_CACHE_FILE" ]]; then
+            log_message "ERROR" "Universeller Audit-Cache ist leer. Audit-basierte Filterung nicht möglich."
+            return 1
+        fi
         
-        log_message "COPY" "[KOPIERE] '${current_source_dir}/' -> '${final_target_path}/'"
-        rsync -a --no-perms --no-owner --no-group --delete "${current_source_dir}/" "${final_target_path}/"
+        # Hardware-IDs als Filter vorbereiten
+        while read -r line; do
+            NEEDED_HW_IDS["${line^^}"]=1
+        done < "$UNIVERSAL_CACHE_FILE"
+        log_message "INFO" "Audit-basierte Filterung aktiv. ${#NEEDED_HW_IDS[@]} Hardware-IDs geladen."
+    else
+        log_message "INFO" "Standard-Integration: Alle Treiber werden berücksichtigt."
+    fi
+    
+    # Treiber nach Hardware-IDs gruppieren und neueste bestimmen
+    declare -A hw_id_versions
+    local line_count=0
+    
+    while IFS='|' read -r inf_path checksum version category hw_ids; do
+        ((line_count++))
+        [[ -z "$inf_path" ]] && continue
         
-        if [ $? -eq 0 ]; then
-            COPIED_DIRS[${current_source_dir}]=1
-            SUCCESSFULLY_COPIED_SOURCES+=("${current_source_dir}")
-            ((COUNT_SUCCESS++))
+        # Hardware-IDs splitten
+        IFS=',' read -ra hw_id_array <<< "$hw_ids"
+        
+        for hw_id in "${hw_id_array[@]}"; do
+            [[ -z "$hw_id" ]] && continue
+            local hw_id_upper=${hw_id^^}
             
-            if [ "$DELETE_SOURCE_AFTER_COPY" = "per_file" ]; then
-                log_message "INFO" "[LÖSCHE QUELLE] '${current_source_dir}/'"
-                rm -rf "${current_source_dir}"
+            # Prüfen ob Hardware-ID benötigt wird (bei Audit-Modus)
+            if [[ "$INTEGRATION_MODE" == "audit" ]] && [[ "$hw_id_upper" != "SYSTEM_COMPONENT" ]]; then
+                if [[ -z "${NEEDED_HW_IDS[$hw_id_upper]}" ]]; then
+                    continue  # Diese Hardware-ID wird nicht benötigt
+                fi
             fi
-        else
-            log_message "ERROR" "rsync-Fehler beim Kopieren von '${current_source_dir}'. Quelle wird NICHT gelöscht."
-        fi
-    fi
-done
-
-# --- FOLGEAKTIONEN NACH DEM KOPIEREN ---
-print_header "Schritt 6/9: Dateirechte werden korrigiert"
-if [ "$DRY_RUN" = true ]; then
-    log_message "WARN" "[DRY RUN] Befehl würde ausgeführt: ${OPSI_SET_RIGHTS_CMD} '${PRODUCT_DEPOT_PATH}'"
-else
-    if [ "$COUNT_SUCCESS" -gt 0 ]; then
-        log_message "INFO" "Führe '${OPSI_SET_RIGHTS_CMD}' für '${PRODUCT_ID}' aus..."
-        "$OPSI_SET_RIGHTS_CMD" "${PRODUCT_DEPOT_PATH}"
-        log_message "OK" "Dateirechte wurden erfolgreich gesetzt."
-    else
-        log_message "WARN" "Keine Treiber kopiert, Korrektur der Rechte übersprungen."
-    fi
-fi
-
-if [ "$CREATE_DRIVER_PACKAGES" = true ]; then
-    print_header "Schritt 7/9: OPSI-Treiberpakete werden erstellt"
-    if ! [ -f "$CREATE_DRIVER_LINKS_CMD" ]; then
-        log_message "ERROR" "Skript '${CREATE_DRIVER_LINKS_CMD}' nicht gefunden. Schritt übersprungen."
-    else
-        if [ "$DRY_RUN" = true ]; then
-            log_message "WARN" "[DRY RUN] Befehl würde im Verzeichnis '${PRODUCT_DEPOT_PATH}' ausgeführt: ${CREATE_DRIVER_LINKS_CMD}"
-        else
-            if [ "$COUNT_SUCCESS" -gt 0 ]; then
-                log_message "INFO" "Wechsle temporär in das Arbeitsverzeichnis: ${PRODUCT_DEPOT_PATH}"
-                pushd "${PRODUCT_DEPOT_PATH}" > /dev/null
-                log_message "INFO" "Führe '${CREATE_DRIVER_LINKS_CMD}' aus..."
-                python3 "$CREATE_DRIVER_LINKS_CMD" # Expliziter Aufruf mit python3 zur Sicherheit
-                popd > /dev/null
-                log_message "INFO" "Zurück zum ursprünglichen Arbeitsverzeichnis."
-
-                log_message "OK" "Treiber-Pakete erstellt."
-                log_message "WARN" "WICHTIG: Pakete jetzt mit folgendem Befehl installieren:"
-                log_message "WARN" "sudo ${OPSI_PKG_MGR_CMD} -i /var/lib/opsi/workbench/${PRODUCT_ID}*.opsi"
-            else
-                log_message "WARN" "Keine Treiber kopiert, Paket-Erstellung übersprungen."
-            fi
-        fi
-    fi
-fi
-
-print_header "Schritt 8/9: WinPE-Boot-Image aktualisieren"
-if [ "$DRY_RUN" = true ]; then
-    log_message "WARN" "[DRY RUN] Dieser Schritt wird im echten Lauf interaktiv sein."
-else
-    if [ "$COUNT_SUCCESS" -gt 0 ]; then
-        read -p "Sollen die Treiber für '${PRODUCT_ID}' jetzt in das WinPE-Image integriert werden? (kann dauern) [j/N]: " -n 1 -r; echo
-        if [[ $REPLY =~ ^[Jj]$ ]]; then
-            log_message "INFO" "Führe '${OPSI_SETUP_CMD} --update-winpe' aus..."
-            "$OPSI_SETUP_CMD" --update-winpe
-            log_message "OK" "WinPE-Image wurde aktualisiert."
-        else
-            log_message "WARN" "Schritt übersprungen. Manuell ausführen mit: sudo ${OPSI_SETUP_CMD} --update-winpe"
-        fi
-    else
-        log_message "WARN" "Keine Treiber kopiert, WinPE-Update nicht notwendig."
-    fi
-fi
-
-# --- QUELLE LÖSCHEN (OPTIONAL) ---
-print_header "Schritt 9/9: Bereinigung der Quell-Verzeichnisse"
-if [ "$DRY_RUN" = true ]; then
-    log_message "WARN" "[DRY RUN] Löschoperationen werden übersprungen."
-elif [ "$DELETE_SOURCE_AFTER_COPY" = "on_success" ]; then
-    log_message "INFO" "Modus 'on_success': Lösche alle erfolgreich kopierten Quellverzeichnisse..."
-    if [ ${#SUCCESSFULLY_COPIED_SOURCES[@]} -gt 0 ]; then
-        for dir_to_delete in "${SUCCESSFULLY_COPIED_SOURCES[@]}"; do
-            if [ -d "$dir_to_delete" ]; then
-                 log_message "INFO" "[LÖSCHE QUELLE] '${dir_to_delete}/'"
-                 rm -rf "${dir_to_delete}"
+            
+            # Prüfen ob dies die neueste Version für diese Hardware-ID ist
+            if [[ -z "${hw_id_versions[$hw_id_upper]}" ]] || [[ "$version" > "${hw_id_versions[$hw_id_upper]}" ]]; then
+                hw_id_versions[$hw_id_upper]="$version"
+                LATEST_DRIVERS["$hw_id_upper"]="$version;$inf_path;$category"
+                log_message "DEBUG" "Neueste Version für $hw_id_upper: $version ($inf_path, Kategorie: $category)"
             fi
         done
-        log_message "OK" "${#SUCCESSFULLY_COPIED_SOURCES[@]} Quellverzeichnisse erfolgreich gelöscht."
-    else
-        log_message "INFO" "Keine Verzeichnisse zum Löschen vorhanden."
+    done < "$UNIVERSAL_DB_FILE"
+    
+    local selected_count=${#LATEST_DRIVERS[@]}
+    log_message "OK" "Neueste Treiber ermittelt: $selected_count eindeutige Hardware-IDs/Komponenten."
+    
+    if [[ $selected_count -eq 0 ]]; then
+        log_message "WARN" "Keine Treiber ausgewählt. Überprüfen Sie die Konfiguration."
+        return 1
     fi
-elif [ "$DELETE_SOURCE_AFTER_COPY" = "per_file" ]; then
-    log_message "INFO" "Modus 'per_file': Löschen wurde bereits während des Kopiervorgangs durchgeführt."
-else # never
-    log_message "INFO" "Modus 'never': Keine Quellverzeichnisse werden gelöscht."
+    
+    return 0
+}
+
+# Ausgewählte Treiber kopieren (mit Gerätemanager-Struktur)
+copy_selected_drivers() {
+    print_header "Phase 6/9: Kopiere ausgewählte Treiber"
+    
+    local error_count=0
+    local skipped_count=0
+    
+    for hw_id in "${!LATEST_DRIVERS[@]}"; do
+        local driver_info="${LATEST_DRIVERS[$hw_id]}"
+        local version inf_path category
+        
+        # Parse: version;inf_path;category
+        IFS=';' read -r version inf_path category <<< "$driver_info"
+        local source_dir
+        source_dir=$(dirname "$inf_path")
+        
+        # Prüfen ob bereits verarbeitet (vermeidet Duplikate)
+        if [[ -n "${PROCESSED_DIRS[$source_dir]}" ]]; then
+            ((skipped_count++))
+            continue
+        fi
+        
+        # Sicheren Kategorie-Ordner-Namen generieren (8.3-konform)
+        local safe_category_name
+        safe_category_name=$(sanitize_directory_name "$category" 8)
+        
+        # Produktspezifisches Zielverzeichnis erstellen (z.B. .../man/pci/8086/1234)
+        local vendor_id device_id
+        if [[ "$hw_id" =~ VEN_([0-9A-F]{4})\&DEV_([0-9A-F]{4}) ]]; then
+            vendor_id="${BASH_REMATCH[1]}"
+            device_id="${BASH_REMATCH[2]}"
+        elif [[ "$hw_id" =~ VID_([0-9A-F]{4})\&PID_([0-9A-F]{4}) ]]; then
+            vendor_id="${BASH_REMATCH[1]}"
+            device_id="${BASH_REMATCH[2]}"
+        else # SYSTEM_COMPONENT
+            vendor_id=$(sanitize_directory_name "$(basename "$source_dir")" 8)
+            device_id="-"
+        fi
+        
+        local target_dir="$TARGET_PATH/$safe_category_name/$vendor_id/$device_id"
+        
+        log_message "INFO" "Kopiere Treiber für $hw_id (Kategorie: $category):"
+        log_message "INFO" "  Quelle: $source_dir"
+        log_message "INFO" "  Sicheres Ziel: $target_dir"
+        
+        if [[ "$DRY_RUN_MODE" == false ]]; then
+            # Zielverzeichnis erstellen
+            if ! mkdir -p "$target_dir"; then
+                log_message "ERROR" "Konnte Zielverzeichnis nicht erstellen: $target_dir"
+                ((error_count++))
+                continue
+            fi
+            
+            # Treiber-Verzeichnis kopieren mit rsync
+            if rsync -av --delete "$source_dir/" "$target_dir/" >> "$LOG_FILE" 2>&1; then
+                log_message "OK" "Treiber erfolgreich kopiert."
+                ((COPY_COUNT++))
+                PROCESSED_DIRS["$source_dir"]="1"
+            else
+                log_message "ERROR" "Fehler beim Kopieren von: $source_dir"
+                ((error_count++))
+            fi
+        else
+            log_message "INFO" "[DRY-RUN] Würde kopieren: $source_dir -> $target_dir"
+            ((COPY_COUNT++))
+        fi
+    done
+    
+    log_message "OK" "Kopierprozess abgeschlossen:"
+    log_message "INFO" "  Erfolgreich kopiert: $COPY_COUNT"
+    log_message "INFO" "  Übersprungen (Duplikate): $skipped_count"
+    log_message "INFO" "  Fehler: $error_count"
+    
+    return $error_count
+}
+
+# ==============================================================================
+# NACHBEARBEITUNGS-FUNKTIONEN
+# ==============================================================================
+
+# OPSI-Dateirechte setzen (vollständig deutsch)
+fix_file_permissions() {
+    print_header "Schritt 7/9: Dateirechte werden korrigiert"
+    
+    if [[ "$DRY_RUN_MODE" == true ]]; then
+        log_message "WARN" "[DRY RUN] Rechte-Korrektur wird übersprungen."
+        return 0
+    fi
+    
+    if [[ $COPY_COUNT -gt 0 ]]; then
+        log_message "INFO" "Führe '$OPSI_SET_RIGHTS_PATH' für '$NETBOOT_PRODUCT' aus..."
+        
+        if "$OPSI_SET_RIGHTS_PATH" "$BASE_DEPOT_PATH/$NETBOOT_PRODUCT"; then
+            log_message "OK" "Dateirechte wurden erfolgreich gesetzt."
+        else
+            log_message "ERROR" "Fehler beim Setzen der Dateirechte."
+            return 1
+        fi
+    else
+        log_message "WARN" "Keine Treiber verarbeitet. Rechte-Korrektur übersprungen."
+    fi
+    
+    return 0
+}
+
+# OPSI-Treiberpakete erstellen (vollständig deutsch, korrektes Arbeitsverzeichnis)
+create_driver_packages() {
+    print_header "Schritt 8/9: OPSI-Treiberpakete werden erstellt"
+    
+    local create_script="$BASE_DEPOT_PATH/$NETBOOT_PRODUCT/create_driver_links.py"
+    
+    if [[ ! -f "$create_script" ]]; then
+        log_message "WARN" "create_driver_links.py nicht gefunden in: $create_script"
+        log_message "WARN" "OPSI-Pakete können nicht automatisch erstellt werden."
+        return 1
+    fi
+    
+    if [[ "$DRY_RUN_MODE" == true ]]; then
+        log_message "WARN" "[DRY RUN] Paket-Erstellung wird übersprungen."
+        return 0
+    fi
+    
+    if [[ $COPY_COUNT -gt 0 ]]; then
+        log_message "INFO" "Wechsle temporär in das Arbeitsverzeichnis: $BASE_DEPOT_PATH/$NETBOOT_PRODUCT"
+        
+        if pushd "$BASE_DEPOT_PATH/$NETBOOT_PRODUCT" > /dev/null; then
+            log_message "INFO" "Führe '$create_script' aus (mit opsi-python)..."
+            
+            # Verwende opsi-python statt normales python3 - KORREKTE METHODE
+            if "$OPSI_PYTHON_PATH" "$create_script"; then
+                log_message "OK" "Treiber-Pakete erfolgreich erstellt."
+            else
+                log_message "ERROR" "Fehler bei der Paket-Erstellung."
+                popd > /dev/null
+                return 1
+            fi
+            
+            popd > /dev/null
+            log_message "INFO" "Zurück zum ursprünglichen Arbeitsverzeichnis."
+            
+            log_message "WARN" "WICHTIG: Pakete jetzt mit folgendem Befehl installieren:"
+            log_message "WARN" "sudo $OPSI_PACKAGE_MANAGER_PATH -i $WORKBENCH_PATH/$NETBOOT_PRODUCT*.opsi"
+        else
+            log_message "ERROR" "Konnte nicht in Arbeitsverzeichnis wechseln."
+            return 1
+        fi
+    else
+        log_message "WARN" "Keine Treiber verarbeitet. Paket-Erstellung übersprungen."
+    fi
+    
+    return 0
+}
+
+# WinPE-Boot-Image aktualisieren (vollständig deutsch)
+update_winpe_image() {
+    print_header "Schritt 9/9: WinPE-Boot-Image aktualisieren"
+    
+    if [[ "$DRY_RUN_MODE" == true ]]; then
+        log_message "WARN" "[DRY RUN] WinPE-Update wird übersprungen."
+        return 0
+    fi
+    
+    if [[ $COPY_COUNT -gt 0 ]]; then
+        local update_winpe
+        read -p "Sollen die Treiber für '$NETBOOT_PRODUCT' jetzt in das WinPE-Image integriert werden? (kann dauern) [j/N]: " -n 1 -r update_winpe
+        echo
+        
+        if [[ $update_winpe =~ ^[Jj]$ ]]; then
+            log_message "INFO" "Starte WinPE-Update..."
+            
+            if "$OPSI_SETUP_PATH" --update-winpe; then
+                log_message "OK" "WinPE-Image erfolgreich aktualisiert."
+            else
+                log_message "ERROR" "Fehler beim WinPE-Update."
+                return 1
+            fi
+        else
+            log_message "WARN" "Schritt übersprungen. Manuell ausführen mit: sudo $OPSI_SETUP_PATH --update-winpe"
+        fi
+    else
+        log_message "WARN" "Keine Treiber verarbeitet. WinPE-Update übersprungen."
+    fi
+    
+    return 0
+}
+
+
+# ==============================================================================
+# HAUPTPROGRAMM
+# ==============================================================================
+
+# Aufräum-Funktion für EXIT-Handler (vollständig deutsch)
+cleanup() {
+    local exit_code=$?
+    
+    if [[ $exit_code -eq 0 && $ERROR_COUNT -eq 0 ]]; then
+        log_message "OK" "Skript erfolgreich abgeschlossen."
+    else
+        log_message "ERROR" "Skript mit Fehlern beendet (Exit-Code: $exit_code)."
+    fi
+    
+    log_message "INFO" "Zusammenfassung für Netboot-Produkt '$NETBOOT_PRODUCT':"
+    log_message "INFO" "  Verarbeitete Treiber: $COPY_COUNT"
+    log_message "INFO" "  Warnungen: $WARNING_COUNT"
+    log_message "INFO" "  Fehler: $ERROR_COUNT"
+    log_message "INFO" "  Universelle Quelle: $UNIVERSAL_SOURCE_PATH"
+    log_message "INFO" "  Universelle DB: $UNIVERSAL_DB_FILE"
+    log_message "INFO" "  Universeller Cache: $UNIVERSAL_CACHE_FILE"
+    log_message "INFO" "  Log-Datei: $LOG_FILE"
+    
+    # Temporäre Dateien sicher entfernen
+    rm -f /tmp/hw_audit_$$ /tmp/driver_db_sync_$$
+    
+    exit $exit_code
+}
+
+# Main-Funktion (vollständig deutsch)
+main() {
+    # EXIT-Handler registrieren
+    trap cleanup EXIT
+    
+    # Header ausgeben
+    log_message "INFO" "Starte OPSI Treiber-Sortierungsskript V$SCRIPT_VERSION (Universelle Pfadstruktur)"
+    log_message "INFO" "Verarbeite Netboot-Produkt: $NETBOOT_PRODUCT"
+    
+    if [[ "$DRY_RUN_MODE" == true ]]; then
+        log_message "WARN" "DRY-RUN-MODUS: Keine Änderungen werden durchgeführt."
+    fi
+    
+    # Schritt-für-Schritt-Verarbeitung
+    validate_prerequisites || return 1
+    
+    # Modus-Auswahl
+    select_integration_mode || return 1
+    
+    # Hardware-Audit (nur wenn audit-basiert)
+    if [[ "$INTEGRATION_MODE" == "audit" ]]; then
+        collect_hardware_audit || return 1
+    fi
+    
+    # Treiber-Verarbeitung (universelle DB und Quelle)
+    sync_driver_database || return 1
+    analyze_drivers || return 1
+    determine_latest_drivers || return 1
+    copy_selected_drivers || return 1
+    
+    # Nachbearbeitung (produktspezifisch)
+    fix_file_permissions || return 1
+    create_driver_packages || return 1
+    update_winpe_image || return 1
+    
+    return 0
+}
+
+# ==============================================================================
+# SKRIPT-START
+# ==============================================================================
+
+# Prüfen ob als Root ausgeführt (vollständig deutsch)
+if [[ $EUID -ne 0 ]]; then
+    echo "FEHLER: Dieses Skript muss als Root ausgeführt werden."
+    echo "Verwenden Sie: sudo $0 $*"
+    exit 1
 fi
 
-# --- ABSCHLIESSENDE ZUSAMMENFASSUNG ---
-print_header "Zusammenfassung des Durchlaufs für '${PRODUCT_ID}'"
-log_message "OK" "Skriptdurchlauf beendet."
-log_message "INFO" "Insgesamt .inf-Dateien im Quellverzeichnis: ${TOTAL_INF_FILES}"
-log_message "OK" "Anzahl der eindeutigen Treiber-Verzeichnisse, die kopiert wurden: ${COUNT_SUCCESS}"
-log_message "INFO" "Alle Details finden Sie in der Log-Datei: ${LOG_FILE}"
-if [[ $DRY_RUN = true ]]; then
-    log_message "WARN" "Dies war ein Trockenlauf. Es wurden keine Änderungen am System vorgenommen."
-fi
-echo ""
+# Parameter verarbeiten und Pfade initialisieren
+process_arguments "$@"
+initialize_paths || exit 1
 
-if [[ $DEBUG = true ]]; then
-    set +x
-fi
-
-exit 0
+# Hauptprogramm starten
+main "$@"
 
