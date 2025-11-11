@@ -5,7 +5,7 @@
     und zur automatisierten Erstellung von Benutzer-Anmeldeinformationen (Passwörter, RDP-Dateien, E-Mail-Entwürfe).
 .NOTES
     Autor           : PS-Coding (via Gemini)
-    Version         : 1.0
+    Version         : 1.1 (Syntax-Review)
     Erstellt am     : 10.11.2025
     PowerShell      : 5.1
     Umgebung        : Windows On-Premise (AD)
@@ -26,22 +26,22 @@
     https://learn.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.mailitem
 
 .PARAMETERSET Set-RDPRights
-    Modus 1: Fügt Benutzer (N) zu Clients (M) hinzu.
+    Modus 1: Fügt Benutzer (N) zu Clients (M) hinzu. (Alle zu Allen)
 
 .PARAMETERSET Remove-RDPRights
-    Modus 3: Entfernt Benutzer (N) von Clients (M).
+    Modus 3: Entfernt Benutzer (N) von Clients (M). (Alle von Allen)
 
 .PARAMETERSET Reset-PasswordWorkflow
     Modus 2: 1:1-Workflow. Setzt Passwörter, erstellt RDP- und MSG-Dateien.
              (Benötigt Outlook)
 
 .EXAMPLE
-    # MODUS 1: Remotedesktop-Rechte HINZUFÜGEN
+    # MODUS 1: Remotedesktop-Rechte HINZUFÜGEN (Alle User auf alle Clients)
     # Fügt alle User aus 'userlist.csv' zu allen Clients in 'clientlist.csv' hinzu.
     .\Manage-RDPUsersAndPasswords.ps1 -Set-RDPRights -UserListPath "C:\temp\userlist.csv" -ClientListPath "C:\temp\clientlist.csv" -Verbose
 
 .EXAMPLE
-    # MODUS 3: Remotedesktop-Rechte ENTFERNEN
+    # MODUS 3: Remotedesktop-Rechte ENTFERNEN (Alle User von allen Clients)
     # Entfernt alle User aus 'userlist.csv' von allen Clients in 'clientlist.csv'.
     .\Manage-RDPUsersAndPasswords.ps1 -Remove-RDPRights -UserListPath "C:\temp\userlist.csv" -ClientListPath "C:\temp\clientlist.csv" -Verbose
 
@@ -488,7 +488,7 @@ if ($SetRDPRights -or $RemoveRDPRights) {
     $CurrentAction = if ($SetRDPRights) { 'Add' } else { 'Remove' }
     $ActionVerb = if ($SetRDPRights) { "Hinzufügen" } else { "Entfernen" }
     
-    Write-Host "Starte Modus: Remotedesktop-Berechtigungen ($ActionVerb)" -ForegroundColor Cyan
+    Write-Host "Starte Modus: Remotedesktop-Berechtigungen ($ActionVerb) (Alle User -> Alle Clients)" -ForegroundColor Cyan
     Write-Host "Betrifft $($Users.Count) Benutzer auf $($Clients.Count) Clients."
 
     # Status-Tracking
@@ -598,9 +598,10 @@ if ($ResetPasswordWorkflow) {
                     NeuesKennwort  = $newPassword
                     Client         = $clientName
                 }
-            } else {
-                 Write-Warning "Passwort-Reset für $userName übersprungen (durch -WhatIf oder Bestätigungs-Nein)."
-                 continue
+            }
+            else {
+                Write-Warning "Passwort-Reset für $userName übersprungen (durch -WhatIf oder Bestätigungs-Nein)."
+                continue
             }
         }
         catch {
@@ -633,7 +634,7 @@ if ($ResetPasswordWorkflow) {
         Write-Host "Exportiere $($PasswordReport.Count) neue Passwörter nach: $pwExportPath"
         $PasswordReport | Export-Csv -Path $pwExportPath -NoTypeInformation -Delimiter ';' -Encoding UTF8
     }
-
+    
     Write-Host "Modus (Passwort-Workflow) abgeschlossen." -ForegroundColor Cyan
     Write-Host "Alle Ausgaben finden Sie in: $OutputPath"
 }
