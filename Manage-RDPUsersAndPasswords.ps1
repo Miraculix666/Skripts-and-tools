@@ -1,93 +1,63 @@
 <#
-.FILENAME Manage-RDPUsers.ps1
+.SYNOPSIS
+    RDP User Manager & Mail Generator (v4.2)
+
 .DESCRIPTION
-    Ein PowerShell-Skript (v5.1) zur Verwaltung von lokalen Remotedesktop-Berechtigungen auf Clients
-    und zur automatisierten Erstellung und Verteilung von RDP-Dateien (inkl. E-Mail-Workflow).
-    
-    Zweck:
-    - Massenhafte Zuweisung/Entfernung von Usern zu Clients (N:M).
-    - Generierung personalisierter RDP-Dateien.
-    - Verteilung per E-Mail (Outlook oder SMTP) oder Bereitstellung als .MSG-Dateien.
+    Dieses Skript verwaltet die lokale Gruppe "Remotedesktopbenutzer" auf entfernten Windows-Clients
+    (Hinzufügen/Entfernen von Domänen-Benutzern) und generiert automatisiert RDP-Dateien sowie
+    E-Mail-Benachrichtigungen (Outlook oder SMTP).
 
-.NOTES
-    Version         : 4.1
-    Autor           : PS-Coding
-    Erstellt am     : 18.11.2025
-    PowerShell      : 5.1
-    Umgebung        : Windows On-Premise (AD)
-
-.AI-SOURCES
-    - Microsoft TechNet: ADSI/WinNT Provider für lokale Gruppenverwaltung
-    - MSDN: Outlook.Application COM Objekt Referenz
-
-.USER-SOURCES
-    - Anforderungen: 1:1 Zuweisung entfernt, N:M Logik implementiert.
-    - Anforderungen: SMTP und Outlook Unterstützung.
-    - Anforderungen: Generierung eines Helper-Skripts für Kontextwechsel.
-
-.LINK
-    https://learn.microsoft.com/en-us/powershell/module/activedirectory/
+    Kompatibilität: Windows PowerShell 5.1 (Windows 10/Server 2016/2019)
 
 .PARAMETER SetRDPRights
-    Modus 1: Fügt Benutzer (aus CSV) zur lokalen Gruppe 'Remotedesktopbenutzer' auf Clients (aus CSV) hinzu.
+    Modus 1: Fügt Benutzer zur Gruppe hinzu.
 
 .PARAMETER RemoveRDPRights
-    Modus 2: Entfernt Benutzer (aus CSV) aus der lokalen Gruppe 'Remotedesktopbenutzer' auf Clients (aus CSV).
+    Modus 2: Entfernt Benutzer aus der Gruppe.
 
 .PARAMETER GenerateRDPFiles
-    Modus 3: Erstellt RDP-Dateien für alle Clients und sendet diese per E-Mail an alle Benutzer.
-    Standard: Direkter Versand.
+    Modus 3: Erstellt RDP-Dateien und E-Mails (basierend auf CSV).
     Alias: generatemail
 
 .PARAMETER GenerateFromLog
-    Modus 4: Liest ein Log-File eines vorherigen Durchlaufs und startet den E-Mail-Workflow für erfolgreiche Einträge.
+    Modus 4: Wiederholt den E-Mail-Workflow basierend auf einem erfolgreichen Log-File.
     Alias: genfromlog
 
 .PARAMETER UserListPath
-    Pfad zur CSV-Datei mit Benutzernamen. Erwartet Header: sAMAccountName (konfigurierbar).
+    Pfad zur CSV-Datei mit Benutzernamen (Header: sAMAccountName).
 
 .PARAMETER ClientListPath
-    Pfad zur CSV-Datei mit Computernamen. Erwartet Header: ComputerName (konfigurierbar).
+    Pfad zur CSV-Datei mit Computernamen (Header: ComputerName).
 
 .PARAMETER InputLogPath
-    Pfad zur CSV-Log-Datei, die als Eingabe für Modus 4 dient.
+    Pfad zur Log-Datei für Modus 4.
 
 .PARAMETER SendEmail
-    Optionaler Schalter für Modus 1 & 2: Startet nach der Rechtevergabe automatisch den E-Mail-Workflow.
+    Optional für Modus 1/2: Startet nach der Rechtevergabe sofort den E-Mail-Workflow.
+    Standard für Modus 3/4: Aktiviert.
 
 .PARAMETER SaveAsMsgOnly
-    Schalter für Modus 3 & 4: Speichert E-Mails nur als .MSG-Entwürfe, sendet sie aber NICHT.
+    Verhindert den direkten Versand und speichert nur .msg-Entwürfe.
 
 .PARAMETER SmtpServer
-    Optional: Adresse eines SMTP-Servers. Wenn angegeben, wird SMTP statt Outlook verwendet (erfordert keine lokale Outlook-Installation).
+    Verwendet SMTP statt Outlook.
 
-.PARAMETER Credential
-    Optional: Anmeldeinformationen für den SMTP-Server.
-
-.EXAMPLE
-    # 1. Rechte setzen (Interaktive Bestätigung):
-    .\Manage-RDPUsers.ps1 -SetRDPRights -UserListPath "users.csv" -ClientListPath "clients.csv"
-
-.EXAMPLE
-    # 2. Rechte setzen UND E-Mails via SMTP senden (Automatisierung):
-    $cred = Get-Credential
-    .\Manage-RDPUsers.ps1 -SetRDPRights -UserListPath "users.csv" -ClientListPath "clients.csv" -SendEmail -SmtpServer "smtp.intern" -Credential $cred
-
-.EXAMPLE
-    # 3. Nur Dateien erstellen (Outlook Modus):
-    .\Manage-RDPUsers.ps1 -GenerateRDPFiles -UserListPath "users.csv" -ClientListPath "clients.csv" -Verbose
+.NOTES
+    Version:    4.2 (FIX: PS 5.1 Kompatibilität - Join-String entfernt, if-Syntax korrigiert)
+    Autor:      PS-Coding
+    Datum:      18.11.2025
 #>
 
 [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'Interactive')]
 param(
-    #--- MODUS-SCHALTER (ParameterSetNames nun konsistent ohne Bindestriche im Namen) ---
-    [Parameter(Mandatory = $false, ParameterSetName = 'SetRDPRights')]
+    #--- MODUS-SCHALTER ---
+    [Parameter(Mandatory = $false, ParameterSetName = 'Set-RDPRights')]
     [Switch]$SetRDPRights,
 
-    [Parameter(Mandatory = $false, ParameterSetName = 'RemoveRDPRights')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Remove-RDPRights')]
     [Switch]$RemoveRDPRights,
 
-    [Parameter(Mandatory = $false, ParameterSetName = 'GenerateRDPFiles')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Generate-RDPFiles')]
     [Alias('generatemail')]
     [Switch]$GenerateRDPFiles,
 
@@ -96,15 +66,15 @@ param(
     [Switch]$GenerateFromLog,
     
     #--- EINGABE-DATEIEN ---
-    [Parameter(Mandatory = $true, ParameterSetName = 'SetRDPRights')]
-    [Parameter(Mandatory = $true, ParameterSetName = 'RemoveRDPRights')]
-    [Parameter(Mandatory = $true, ParameterSetName = 'GenerateRDPFiles')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Set-RDPRights')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Remove-RDPRights')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Generate-RDPFiles')]
     [ValidateScript({ Test-Path $_ -PathType Leaf })]
     [string]$UserListPath,
 
-    [Parameter(Mandatory = $true, ParameterSetName = 'SetRDPRights')]
-    [Parameter(Mandatory = $true, ParameterSetName = 'RemoveRDPRights')]
-    [Parameter(Mandatory = $true, ParameterSetName = 'GenerateRDPFiles')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Set-RDPRights')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Remove-RDPRights')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Generate-RDPFiles')]
     [ValidateScript({ Test-Path $_ -PathType Leaf })]
     [string]$ClientListPath,
 
@@ -112,7 +82,7 @@ param(
     [ValidateScript({ Test-Path $_ -PathType Leaf })]
     [string]$InputLogPath,
 
-    #--- GLOBALE OPTIONEN ---
+    #--- OPTIONEN ---
     [Parameter(Mandatory = $false)]
     [Switch]$SendEmail, 
 
@@ -128,7 +98,7 @@ param(
     [Parameter(Mandatory = $false)]
     [string]$OutputPath, 
 
-    #--- CSV KONFIGURATION ---
+    #--- CSV ANPASSUNG ---
     [Parameter(Mandatory = $false)]
     [string]$UserColumn = 'sAMAccountName',
 
@@ -137,23 +107,25 @@ param(
 )
 
 #==============================================================================
-# VARIABLEN-DEFINITION
+# GLOBALE INIT
 #==============================================================================
+$Version = "4.2"
 $GlobalErrorLog = [System.Collections.ArrayList]::new()
 $GlobalTimestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
 $GlobalLogDir = Join-Path -Path $PSScriptRoot -ChildPath "Logs"
 
 #==============================================================================
-# HILFSFUNKTIONEN
+# HELPER FUNCTIONS
 #==============================================================================
 
 Function Get-DynamicADDomain {
+    <# Ermittelt NetBIOS und FQDN der Domäne #>
     try {
         $adDomain = Get-ADDomain -ErrorAction Stop
         return [PSCustomObject]@{ NetBIOS = $adDomain.NetBIOSName; FQDN = $adDomain.DNSRoot }
     }
     catch {
-        $msg = "ACHTUNG: AD-Domäne konnte nicht ermittelt werden (AD-Modul Fehler). Nutze Fallback 'WORKGROUP'."
+        $msg = "ACHTUNG: AD-Domäne konnte nicht ermittelt werden. Nutze Fallback 'WORKGROUP'."
         Write-Warning $msg
         $GlobalErrorLog.Add($msg) | Out-Null
         return [PSCustomObject]@{ NetBIOS = "WORKGROUP"; FQDN = $null }
@@ -161,26 +133,26 @@ Function Get-DynamicADDomain {
 }
 
 Function Invoke-RemoteGroupMembership {
+    <# Setzt die Gruppenmitgliedschaft via ADSI (WinNT) #>
     param($ComputerName, $UserName, $Domain, $Action, $LocalGroupName = "Remotedesktopbenutzer")
 
-    Write-Verbose "Verbinde zu $ComputerName..."
+    Write-Verbose ("Verbinde zu {0}..." -f $ComputerName)
     $status = 'Failed' 
 
     try {
-        $groupPath = "WinNT://$ComputerName/$LocalGroupName,group"
-        $group = [ADSI]$groupPath
+        $group = [ADSI]"WinNT://$ComputerName/$LocalGroupName,group"
         $userPath = "WinNT://$Domain/$UserName,user"
         
         if ($Action -eq 'Add') {
             $group.Add($userPath)
-            # Erfolg prüfen
+            # Check
             $group.RefreshCache()
             $members = $group.Members() | ForEach-Object { $_.GetType().InvokeMember("Name", "GetProperty", $null, $_, $null) }
             if ($members -contains $UserName) { $status = 'Success' } else { $status = 'VerificationFailed' }
         }
         elseif ($Action -eq 'Remove') {
             $group.Remove($userPath)
-            # Erfolg prüfen
+            # Check
             $group.RefreshCache()
             $members = $group.Members() | ForEach-Object { $_.GetType().InvokeMember("Name", "GetProperty", $null, $_, $null) }
             if (-not ($members -contains $UserName)) { $status = 'Success' } else { $status = 'VerificationFailed' }
@@ -191,7 +163,7 @@ Function Invoke-RemoteGroupMembership {
         if ($err -like "*bereits Mitglied*") { $status = 'AlreadyExists' }
         elseif ($err -like "*nicht Mitglied*") { $status = 'NotMember' }
         else {
-            $msg = "ADSI-Fehler auf $ComputerName für $UserName: $err"
+            $msg = "ADSI-Fehler auf {0} für {1}: {2}" -f $ComputerName, $UserName, $err
             Write-Warning $msg
             $GlobalErrorLog.Add($msg) | Out-Null
             $status = 'Failed'
@@ -201,9 +173,9 @@ Function Invoke-RemoteGroupMembership {
 }
 
 Function Create-RDPFile {
+    <# Erstellt die .rdp Datei per StringBuilder #>
     param($ComputerName, $FilePath)
     
-    # StringBuilder für Robustheit
     $sb = [System.Text.StringBuilder]::new()
     $sb.AppendLine("screen mode id:i:2") | Out-Null
     $sb.AppendLine("full address:s:$ComputerName") | Out-Null
@@ -215,7 +187,7 @@ Function Create-RDPFile {
         return $true
     }
     catch {
-        $msg = "Fehler beim Schreiben von $FilePath: $($_.Exception.Message)"
+        $msg = "Fehler beim Schreiben von {0}: {1}" -f $FilePath, $_.Exception.Message
         Write-Warning $msg
         $GlobalErrorLog.Add($msg) | Out-Null
         return $false
@@ -223,6 +195,7 @@ Function Create-RDPFile {
 }
 
 Function Start-EmailWorkflow {
+    <# Versendet oder speichert E-Mails (Outlook oder SMTP) #>
     param($UserName, $RDPFilePaths, $MSGSavePath, $Send, $SmtpServer, $Credential)
     
     # 1. Daten aus AD holen
@@ -230,7 +203,7 @@ Function Start-EmailWorkflow {
         if (-not (Get-Module -Name ActiveDirectory)) { Import-Module ActiveDirectory -ErrorAction Stop }
         $adUser = Get-ADUser -Identity $UserName -Properties DisplayName, EmailAddress -ErrorAction Stop
     } catch {
-        $msg = "AD-Fehler bei User $UserName: $($_.Exception.Message)"
+        $msg = "AD-Fehler bei User {0}: {1}" -f $UserName, $_.Exception.Message
         Write-Warning $msg
         if ($Global:GlobalErrorLog) { $Global:GlobalErrorLog.Add($msg) | Out-Null }
         return $false
@@ -239,9 +212,8 @@ Function Start-EmailWorkflow {
     $to = $adUser.EmailAddress
     $name = $adUser.DisplayName
     
-    # FIX Zeile 252: Einfacher Check statt [string]::IsNullOrWhiteSpace
     if (-not $to) {
-        $msg = "Keine E-Mail-Adresse für $UserName im AD gefunden."
+        $msg = "Keine E-Mail-Adresse für {0} im AD gefunden." -f $UserName
         Write-Warning $msg
         if ($Global:GlobalErrorLog) { $Global:GlobalErrorLog.Add($msg) | Out-Null }
         return $false
@@ -251,7 +223,6 @@ Function Start-EmailWorkflow {
     $sb = [System.Text.StringBuilder]::new()
     $sb.AppendLine("<html><body style='font-family:Calibri, Arial, sans-serif;'>") | Out-Null
     $sb.AppendLine("<p>Hallo $name,</p><p>anbei erhalten Sie Ihre RDP-Zugriffsdateien.</p>") | Out-Null
-    $sb.AppendLine("<p><i>Automatisch generiert</i></p>") | Out-Null
     $sb.AppendLine("</body></html>") | Out-Null
     $body = $sb.ToString()
     $subj = "RDP-Zugang"
@@ -259,16 +230,15 @@ Function Start-EmailWorkflow {
     # 3. Versand
     if ($SmtpServer) {
         if (-not $Send) { return $false }
-        
         $p = @{ To=$to; From=$to; Subject=$subj; Body=$body; BodyAsHtml=$true; SmtpServer=$SmtpServer; Attachments=$RDPFilePaths; ErrorAction='Stop' }
         if ($Credential) { $p.Add('Credential', $Credential) }
         
         try {
             Send-MailMessage @p
-            Write-Host " [SMTP] Gesendet an $to" -ForegroundColor Cyan
+            Write-Host (" [SMTP] Gesendet an {0}" -f $to) -ForegroundColor Cyan
             return $true
         } catch {
-            Write-Warning "SMTP-Fehler ($UserName): $($_.Exception.Message)"
+            Write-Warning ("SMTP-Fehler ({0}): {1}" -f $UserName, $_.Exception.Message)
             return $false
         }
     }
@@ -286,18 +256,17 @@ Function Start-EmailWorkflow {
             $mail.HTMLBody = $body
             foreach ($f in $RDPFilePaths) { if (Test-Path $f) { $mail.Attachments.Add($f) } }
             
-            # FIX Zeile 292: Einfacher Check statt [string]::IsNullOrWhiteSpace
             if ($MSGSavePath) {
                 $mail.SaveAs($MSGSavePath, 5) # olMSG
-                Write-Host " [MSG] Gespeichert: $MSGSavePath" -ForegroundColor Green
+                Write-Host (" [MSG] Gespeichert: {0}" -f $MSGSavePath) -ForegroundColor Green
             }
             if ($Send) {
                 $mail.Send()
-                Write-Host " [OUTLOOK] Gesendet an $to" -ForegroundColor Cyan
+                Write-Host (" [OUTLOOK] Gesendet an {0}" -f $to) -ForegroundColor Cyan
             }
             return $true
         } catch {
-            Write-Warning "Outlook-Fehler ($UserName): $($_.Exception.Message)"
+            Write-Warning ("Outlook-Fehler ({0}): {1}" -f $UserName, $_.Exception.Message)
             return $false
         } finally {
             [System.GC]::Collect()
@@ -306,18 +275,19 @@ Function Start-EmailWorkflow {
 }
 
 Function Generate-SendMailsScript {
-    <# Erstellt das Helper-Skript OHNE Here-Strings um Parser-Fehler zu vermeiden #>
+    <# Generiert das Helper-Skript für Kontext-Wechsel #>
     param($UserList, $RDPFilePaths, $OutputPath, $SmtpServer, $SaveAsMsgOnly)
     
     Write-Verbose "Erstelle 'sendMails.ps1'..."
     $resOut = Resolve-Path $OutputPath
     
-    $uStr = $UserList | ForEach-Object { "'$_'" } | Join-String -Separator ","
-    $rStr = $RDPFilePaths | ForEach-Object { $p=Resolve-Path $_; "'$p'" } | Join-String -Separator ","
+    # PS 5.1 COMPAT FIX: Verzicht auf Join-String, Nutzung von -join
+    $uStr = ($UserList | ForEach-Object { "'$_'" }) -join ","
+    $rStr = ($RDPFilePaths | ForEach-Object { $p=Resolve-Path $_; "'$p'" }) -join ","
     $smtpStr = if ($SmtpServer) { "'$SmtpServer'" } else { "`$null" }
     $sendBool = if ($SaveAsMsgOnly) { "`$false" } else { "`$true" }
     
-    # Funktions-Body holen
+    # Funktions-Body extrahieren für Self-Containment
     $funcDef = (Get-Command Start-EmailWorkflow).Definition
 
     $sb = [System.Text.StringBuilder]::new()
@@ -343,7 +313,7 @@ Function Generate-SendMailsScript {
     try {
         $f = Join-Path $OutputPath "sendMails_$($GlobalTimestamp).ps1"
         Set-Content $f -Value $sb.ToString() -Encoding UTF8
-        Write-Host " [INFO] Helper-Skript erstellt: $f" -ForegroundColor Gray
+        Write-Host (" [INFO] Helper-Skript erstellt: {0}" -f $f) -ForegroundColor Gray
     } catch {
         Write-Warning "Konnte Helper-Skript nicht erstellen."
     }
@@ -351,12 +321,12 @@ Function Generate-SendMailsScript {
 
 Function Load-CsvData {
     param($CsvPath)
-    if (-not (Test-Path $CsvPath)) { Write-Error "Datei fehlt: $CsvPath"; return $null }
+    if (-not (Test-Path $CsvPath)) { Write-Error ("Datei fehlt: {0}" -f $CsvPath); return $null }
     try {
         $d = Import-Csv $CsvPath -Delimiter ';' -Encoding Default -ErrorAction Stop
-        if (($d | Measure-Object).Count -eq 0) { Write-Error "Datei leer: $CsvPath"; return $null }
+        if (($d | Measure-Object).Count -eq 0) { Write-Error ("Datei leer: {0}" -f $CsvPath); return $null }
         return $d
-    } catch { Write-Error "CSV-Lesefehler: $($_.Exception.Message)"; return $null }
+    } catch { Write-Error ("CSV-Lesefehler: {0}" -f $_.Exception.Message); return $null }
 }
 
 Function Write-Log {
@@ -364,7 +334,7 @@ Function Write-Log {
     if (-not (Test-Path $GlobalLogDir)) { New-Item $GlobalLogDir -Type Directory -Force | Out-Null }
     $f = Join-Path $GlobalLogDir "Log_${Type}_$($GlobalTimestamp).csv"
     $Data | Export-Csv -Path $f -NoType -Delimiter ';' -Encoding UTF8
-    Write-Host " [LOG] Protokoll gespeichert: $f" -ForegroundColor DarkGreen
+    Write-Host (" [LOG] Protokoll gespeichert: {0}" -f $f) -ForegroundColor DarkGreen
 }
 
 #==============================================================================
@@ -384,11 +354,11 @@ Function Start-RightsWorkflow {
     $Act = if ($Set) { 'Add' } else { 'Remove' }
     $Verb = if ($Set) { "Hinzufügen" } else { "Entfernen" }
 
-    Write-Host "--- MODUS: Rechte $Verb ---" -ForegroundColor Cyan
-    Write-Host " Benutzer: $(($Users|Measure-Object).Count)"
-    Write-Host " Clients:  $(($Clients|Measure-Object).Count)"
+    Write-Host ("--- MODUS: Rechte {0} ---" -f $Verb) -ForegroundColor Cyan
+    Write-Host (" Benutzer: {0}" -f ($Users|Measure-Object).Count)
+    Write-Host (" Clients:  {0}" -f ($Clients|Measure-Object).Count)
     
-    # Planung
+    # PHASE 1: Planung
     Write-Host " [1/3] Prüfe Erreichbarkeit und plane Aktionen..." -ForegroundColor Yellow
     $Plan = @()
     
@@ -400,7 +370,7 @@ Function Start-RightsWorkflow {
                 if ($u.$UserCol) { $Plan += [PSCustomObject]@{ Client=$cN; User=$u.$UserCol; Action=$Act } }
             }
         } else {
-            Write-Warning "Client $cN offline."
+            Write-Warning ("Client {0} offline." -f $cN)
             $GlobalErrorLog.Add("Client $cN offline") | Out-Null
         }
     }
@@ -408,8 +378,8 @@ Function Start-RightsWorkflow {
     $count = ($Plan | Measure-Object).Count
     if ($count -eq 0) { Write-Warning "Keine Aktionen möglich."; return }
     
-    # Bestätigung
-    Write-Host " [2/3] $count Aktionen geplant." -ForegroundColor Yellow
+    # PHASE 2: Bestätigung
+    Write-Host (" [2/3] {0} Aktionen geplant." -f $count) -ForegroundColor Yellow
     $Plan | Format-Table -AutoSize
     
     if ($PSCmdlet.ShouldProcess("$count Aktionen", "Ausführen")) {
@@ -421,14 +391,15 @@ Function Start-RightsWorkflow {
         }
     } else { return } # WhatIf
 
-    # Ausführung
+    # PHASE 3: Ausführung
     Write-Host " [3/3] Ausführung..." -ForegroundColor Cyan
     $Rep = @()
     foreach ($p in $Plan) {
         $res = Invoke-RemoteGroupMembership -ComputerName $p.Client -UserName $p.User -Domain $AD.NetBIOS -Action $p.Action
         
+        # Output für den User (Feedback loop fix)
         $col = if ($res -eq 'Success') { "Green" } elseif ($res -match 'Already|NotMember') { "Gray" } else { "Red" }
-        Write-Host " $res : $($p.User) -> $($p.Client)" -ForegroundColor $col
+        Write-Host (" {0} : {1} -> {2}" -f $res, $p.User, $p.Client) -ForegroundColor $col
         
         $Rep += [PSCustomObject]@{ Client=$p.Client; User=$p.User; Action=$p.Action; Status=$res; Time=Get-Date }
     }
@@ -471,9 +442,10 @@ Function Start-FileWorkflow {
     if (!$OutputPath) { $OutputPath = Join-Path $PSScriptRoot "RDP_Output_$GlobalTimestamp" }
     if (-not (Test-Path $OutputPath)) { New-Item $OutputPath -ItemType Directory -Force | Out-Null }
     
-    Write-Host "--- MODUS: Dateien erstellen ---" -ForegroundColor Cyan
+    # PS 5.1 kompatibler Count
+    Write-Host ("--- MODUS: Dateien erstellen ({0} User) ---" -f ($U|Measure-Object).Count) -ForegroundColor Cyan
     
-    # RDPs
+    # RDPs erstellen
     $rdps = @()
     $cObjs = if ($IsCombined -or $FromLog) { $C } else { $C.$ClientCol }
     
@@ -484,8 +456,8 @@ Function Start-FileWorkflow {
         if (Create-RDPFile $cn $p) { $rdps += $p }
     }
     
-    if ($rdps.Count -eq 0) { Write-Error "Keine RDPs erstellt."; return }
-    Write-Host " $(($rdps|Measure-Object).Count) RDP-Dateien erstellt." -ForegroundColor Green
+    if ($rdps.Count -eq 0) { Write-Error "Keine RDP-Dateien."; return }
+    Write-Host (" {0} RDP-Dateien erstellt." -f ($rdps|Measure-Object).Count) -ForegroundColor Green
     
     # Mails
     $uObjs = if ($IsCombined -or $FromLog) { $U } else { $U.$UserCol }
@@ -493,11 +465,14 @@ Function Start-FileWorkflow {
     $mRep = @()
     
     Write-Host " Verarbeite E-Mails..."
+    
+    # PS 5.1 FIX: Subexpression für if in property
     foreach ($un in $uObjs) {
         if (!$un) { continue }
         $mp = if (!$Smtp) { Join-Path $OutputPath "$un.msg" } else { $null }
-        $ok = Start-EmailWorkflow -UserName $un -RDPFilePaths $rdps -MSGSavePath $mp -Send $doSend -SmtpServer $Smtp -Credential $Cred
-        $mRep += [PSCustomObject]@{ User=$un; Action=(if($doSend){"Send"}else{"Save"}); Status=$ok; Time=Get-Date }
+        $res = Start-EmailWorkflow -UserName $un -RDPFilePaths $rdps -MSGSavePath $mp -Send $doSend -SmtpServer $Smtp -Credential $Cred
+        $act = $(if($doSend){"Send"}else{"Save"})
+        $mRep += [PSCustomObject]@{ User=$un; Action=$act; Status=$res; Time=Get-Date }
     }
     
     Write-Log -Data $mRep -Type "Mails"
@@ -508,13 +483,14 @@ Function Start-FileWorkflow {
     if ($GlobalErrorLog.Count -gt 0) {
         $ef = Join-Path $OutputPath "ERROR.TXT"
         $GlobalErrorLog | Out-File $ef
-        Write-Warning "Fehler aufgetreten. Siehe: $ef"
+        Write-Warning ("Fehler aufgetreten. Siehe: {0}" -f $ef)
     }
 }
 
 #==============================================================================
 # MAIN
 #==============================================================================
+Write-Host ("Manage-RDPUsers v{0}" -f $Version) -ForegroundColor White
 
 if ($PSCmdlet.ParameterSetName -ne 'Interactive') {
     if ($SetRDPRights -or $RemoveRDPRights) {
@@ -524,22 +500,24 @@ if ($PSCmdlet.ParameterSetName -ne 'Interactive') {
         Start-FileWorkflow -UserListPath $UserListPath -ClientListPath $ClientListPath -OutputPath $OutputPath -UserCol $UserColumn -ClientCol $ClientColumn -SaveOnly $SaveAsMsgOnly -Smtp $SmtpServer -Cred $Credential
     }
     elseif ($GenerateFromLog) {
-        Start-FileWorkflow -FromLog $true -LogPath $InputLogPath -OutputPath $OutputPath -SaveOnly $SaveAsMsgOnly -Smtp $SmtpServer -Cred $Credential
+        Start-FileWorkflow -FromLog $true -InputLogPath $InputLogPath -OutputPath $OutputPath -SaveOnly $SaveAsMsgOnly -Smtp $SmtpServer -Cred $Credential
     }
 }
 else {
     # Einfaches Menü
-    Show-MainMenu
-    $sel = Read-Host "Wahl"
-    if ($sel -eq '1') {
-        $u = Read-Host "User-CSV Pfad"; $c = Read-Host "Client-CSV Pfad"
+    Write-Host " 1. Rechte setzen (Add)"
+    Write-Host " 2. Rechte entfernen (Remove)"
+    Write-Host " 3. Dateien erstellen (CSV)"
+    Write-Host " 4. Dateien erstellen (Log)"
+    $opt = Read-Host "Wahl"
+    if ($opt -eq '1') {
+        $u = Read-Host "User-CSV"; $c = Read-Host "Client-CSV"
         Start-RightsWorkflow -Set $true -UserListPath $u -ClientListPath $c
     }
-    if ($sel -eq '3') {
-        $u = Read-Host "User-CSV Pfad"; $c = Read-Host "Client-CSV Pfad"
+    if ($opt -eq '3') {
+        $u = Read-Host "User-CSV"; $c = Read-Host "Client-CSV"
         Start-FileWorkflow -UserListPath $u -ClientListPath $c
     }
-    # Weitere Logik für Menü hier möglich...
-    if ($sel -eq 'Q') { return }
+    # (Weitere Optionen analog...)
 }
 Write-Host "Ende."
