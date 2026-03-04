@@ -1,0 +1,472 @@
+﻿<xml xmlns:s="uuid:BDC6E3F0-6DA3-11d1-A2A3-00AA00C14882"
+ xmlns:dt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882"
+ xmlns:rs="urn:schemas-microsoft-com:rowset"
+ xmlns:z="#RowsetSchema">
+<s:Schema id="RowsetSchema">
+<s:ElementType name="row" content="eltOnly" rs:updatable="true">
+<s:AttributeType name="Cls" rs:number="0">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Sev" rs:number="1">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Maj" rs:number="2">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Min" rs:number="3">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="LN" rs:number="4">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Fil" rs:number="5">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Fun" rs:number="6">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Uid" rs:number="7">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Msg" rs:number="8">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="PID" rs:number="9">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="TID" rs:number="10">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Con" rs:number="11">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Exe" rs:number="12">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Mod" rs:number="13">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Err" rs:number="14">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="MD" rs:number="15">
+<s:datatype dt:type="hexBinary"/>
+</s:AttributeType>
+<s:AttributeType name="DT" rs:number="16">
+<s:datatype dt:type="dateTime"/>
+</s:AttributeType>
+</s:ElementType>
+</s:Schema>
+<rs:data>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="8153" Fil="" Fun="pGetAntiVirusInfo" Uid="51150848" Msg="Failed to create locator" PID="2908" TID="2912" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="87" MD="" DT="2025-11-05T10:53:22"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="15366" Fil="" Fun="CSetupPlatform::Initialize" Uid="51150848" Msg="CSetupPlatform::Initialize: Failed to initialize tracing" PID="2908" TID="2912" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="203" MD="" DT="2025-11-05T10:53:31"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="87" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="ComputerName: Validating computer name [NAMEORG-TRBVMTF]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="ComputerName: Validation returned ERROR_SUCCESS" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:34"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="8153" Fil="" Fun="pGetAntiVirusInfo" Uid="51150848" Msg="Failed to create locator" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="87" MD="" DT="2025-11-05T10:53:35"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="15366" Fil="" Fun="CSetupPlatform::Initialize" Uid="51150848" Msg="CSetupPlatform::Initialize: Failed to initialize tracing" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="203" MD="" DT="2025-11-05T10:53:37"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="14719" Fil="" Fun="CSetupPlatform::ProcessTelemetry" Uid="51150848" Msg="Input CV is different form existing CV" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="3" MD="" DT="2025-11-05T10:53:37"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:37"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:37"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:37"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:37"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:38"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:38"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:38"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:38"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:38"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:38"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:38"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:38"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="8153" Fil="" Fun="pGetAntiVirusInfo" Uid="51150848" Msg="Failed to create locator" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="87" MD="" DT="2025-11-05T10:53:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="15366" Fil="" Fun="CSetupPlatform::Initialize" Uid="51150848" Msg="CSetupPlatform::Initialize: Failed to initialize tracing" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="203" MD="" DT="2025-11-05T10:53:41"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="14719" Fil="" Fun="CSetupPlatform::ProcessTelemetry" Uid="51150848" Msg="Input CV is different form existing CV" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="3" MD="" DT="2025-11-05T10:53:45"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:46"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:46"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:46"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="2918" Fil="" Fun="ConX::Compatibility::CCompatibilityController::DeserializeData" Uid="50331648" Msg="ConX::Compatibility::CCompatibilityController::DeserializeData: Failed to load compat scan data from provider wsc:setup: from the compat scan cache." PID="2908" TID="572" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="CompatCtrl.dll" Err="1168" MD="" DT="2025-11-05T10:53:47"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="89" Fil="" Fun="IsBypassRegKeySet" Uid="50331648" Msg="IsBypassRegKeySet: Error reading bypass registry key. HRESULT = 0x80070002." PID="2908" TID="572" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="setupcompat.dll" Err="1168" MD="" DT="2025-11-05T10:53:47"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:47"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:47"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:47"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:47"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:47"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:47"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="8153" Fil="" Fun="pGetAntiVirusInfo" Uid="51150848" Msg="Failed to create locator" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="87" MD="" DT="2025-11-05T10:53:47"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="15366" Fil="" Fun="CSetupPlatform::Initialize" Uid="51150848" Msg="CSetupPlatform::Initialize: Failed to initialize tracing" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="203" MD="" DT="2025-11-05T10:53:50"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="14719" Fil="" Fun="CSetupPlatform::ProcessTelemetry" Uid="51150848" Msg="Input CV is different form existing CV" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="3" MD="" DT="2025-11-05T10:53:51"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:51"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:51"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:51"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:51"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:51"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:51"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:51"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:53:51"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="8153" Fil="" Fun="pGetAntiVirusInfo" Uid="51150848" Msg="Failed to create locator" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="87" MD="" DT="2025-11-05T10:53:51"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="15366" Fil="" Fun="CSetupPlatform::Initialize" Uid="51150848" Msg="CSetupPlatform::Initialize: Failed to initialize tracing" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="203" MD="" DT="2025-11-05T10:53:54"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="915" Fil="" Fun="VdsPlatform::ComputeHostInfo" Uid="50331648" Msg="VdsPlatform::ComputeHostInfo: Can&apos;t find host OS partition; no disk will be marked as the host" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="87" MD="" DT="2025-11-05T10:53:55"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="4944" Fil="" Fun="VdsPartition::GetVolume" Uid="50331648" Msg="VdsPartition::GetVolume: No volume is backed by this partition" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="1" MD="" DT="2025-11-05T10:53:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="4944" Fil="" Fun="VdsPartition::GetVolume" Uid="50331648" Msg="VdsPartition::GetVolume: No volume is backed by this partition" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="1" MD="" DT="2025-11-05T10:53:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="4944" Fil="" Fun="VdsPartition::GetVolume" Uid="50331648" Msg="VdsPartition::GetVolume: No volume is backed by this partition" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="1" MD="" DT="2025-11-05T10:53:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="4944" Fil="" Fun="VdsPartition::GetVolume" Uid="50331648" Msg="VdsPartition::GetVolume: No volume is backed by this partition" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="1" MD="" DT="2025-11-05T10:53:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="4944" Fil="" Fun="VdsPartition::GetVolume" Uid="50331648" Msg="VdsPartition::GetVolume: No volume is backed by this partition" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="1" MD="" DT="2025-11-05T10:53:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="4944" Fil="" Fun="VdsPartition::GetVolume" Uid="50331648" Msg="VdsPartition::GetVolume: No volume is backed by this partition" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="1" MD="" DT="2025-11-05T10:53:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="14719" Fil="" Fun="CSetupPlatform::ProcessTelemetry" Uid="51150848" Msg="Input CV is different form existing CV" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="3" MD="" DT="2025-11-05T10:54:03"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:03"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:03"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:03"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:03"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="1" MD="" DT="2025-11-05T10:54:03"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2092" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="1" MD="" DT="2025-11-05T10:54:03"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2912" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:03"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2000]" PID="2908" TID="2912" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:03"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x3000]" PID="2908" TID="2912" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:03"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:03"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="8153" Fil="" Fun="pGetAntiVirusInfo" Uid="51150848" Msg="Failed to create locator" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="87" MD="" DT="2025-11-05T10:54:03"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="15366" Fil="" Fun="CSetupPlatform::Initialize" Uid="51150848" Msg="CSetupPlatform::Initialize: Failed to initialize tracing" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="203" MD="" DT="2025-11-05T10:54:04"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="14719" Fil="" Fun="CSetupPlatform::ProcessTelemetry" Uid="51150848" Msg="Input CV is different form existing CV" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="3" MD="" DT="2025-11-05T10:54:04"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:04"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:04"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:04"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="2" MD="" DT="2025-11-05T10:54:04"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:17"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:17"/>
+<xml xmlns:s="uuid:BDC6E3F0-6DA3-11d1-A2A3-00AA00C14882"
+ xmlns:dt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882"
+ xmlns:rs="urn:schemas-microsoft-com:rowset"
+ xmlns:z="#RowsetSchema">
+<s:Schema id="RowsetSchema">
+<s:ElementType name="row" content="eltOnly" rs:updatable="true">
+<s:AttributeType name="Cls" rs:number="0">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Sev" rs:number="1">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Maj" rs:number="2">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Min" rs:number="3">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="LN" rs:number="4">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Fil" rs:number="5">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Fun" rs:number="6">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Uid" rs:number="7">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Msg" rs:number="8">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="PID" rs:number="9">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="TID" rs:number="10">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Con" rs:number="11">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Exe" rs:number="12">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Mod" rs:number="13">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Err" rs:number="14">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="MD" rs:number="15">
+<s:datatype dt:type="hexBinary"/>
+</s:AttributeType>
+<s:AttributeType name="DT" rs:number="16">
+<s:datatype dt:type="dateTime"/>
+</s:AttributeType>
+</s:ElementType>
+</s:Schema>
+<rs:data>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:18"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:18"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:18"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:18"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:18"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:18"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:18"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:18"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T10:54:18"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="8153" Fil="" Fun="pGetAntiVirusInfo" Uid="51150848" Msg="Failed to create locator" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="87" MD="" DT="2025-11-05T10:54:18"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="15366" Fil="" Fun="CSetupPlatform::Initialize" Uid="51150848" Msg="CSetupPlatform::Initialize: Failed to initialize tracing" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="203" MD="" DT="2025-11-05T10:54:18"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="[SetupHost.exe] read xml file (C:\WINDOWS\system32\Recovery\ReAgent.xml) failed: 0x3" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T10:54:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="[SetupHost.exe] ReAgentXMLParser::ParseConfigFile failed to read config xml file (0x3) in file base\diagnosis\srt\reagent2\reinfo\parser_2.0.cpp line 825" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T10:54:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="[SetupHost.exe] ReAgentXMLParser::ParseConfigFile (xml file: C:\WINDOWS\system32\Recovery\ReAgent.xml) returning 0x3" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T10:54:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="[SetupHost.exe] ReAgentConfig::ParseConfigFile  returned with 0x3 " PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T10:54:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="[SetupHost.exe] ReAgentConfig::Init failed to init reagent xml parser (0x3) in file base\diagnosis\srt\reagent2\reinfo\parser_2.0.cpp line 1962" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T10:54:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="[SetupHost.exe] WinReGetConfigInternal failed to init agent config (0x3) in file base\diagnosis\srt\reagent2\reinfo\shared.cpp line 155" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T10:54:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="[SetupHost.exe] winre get config failed with error code 0x3" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T10:54:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="6222" Fil="" Fun="SPGetRecoveryImageFolder" Uid="51150848" Msg="SPGetRecoveryImageFolder: Error calling WinReGetConfig. Error: 0x00000003
+" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="3" MD="" DT="2025-11-05T10:54:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="5297" Fil="" Fun="COperationQueue::ExecuteOperationsInternal" Uid="51150848" Msg="DISKSPACEEXCEED: Operation consumed more disk space than declared. Exceeded by 195813376 bytes" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T10:54:30"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="5297" Fil="" Fun="COperationQueue::ExecuteOperationsInternal" Uid="51150848" Msg="DISKSPACEEXCEED: Operation consumed more disk space than declared. Exceeded by 4096 bytes" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="14719" Fil="" Fun="CSetupPlatform::ProcessTelemetry" Uid="51150848" Msg="Input CV is different form existing CV" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="3" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="3" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="3" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="3" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="420" Fil="" Fun="CGlobalPath::FindGlobalPathCallback" Uid="51150848" Msg="FindGlobalPath: Cannot find volume name for \\?\GLOBALROOT\Device\HardDisk1\Partition2. Error: 0x0000007B" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="123" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="14719" Fil="" Fun="CSetupPlatform::ProcessTelemetry" Uid="51150848" Msg="Input CV is different form existing CV" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:03:59"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="420" Fil="" Fun="CGlobalPath::FindGlobalPathCallback" Uid="51150848" Msg="FindGlobalPath: Cannot find volume name for \\?\GLOBALROOT\Device\HardDisk1\Partition2. Error: 0x0000007B" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="123" MD="" DT="2025-11-05T11:04:00"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="8798" Fil="" Fun="CNewSystem::QueueDataMigration" Uid="51150848" Msg="CNewSystem::QueueDataMigration: Not replacing the running OS, any online data migration request is not supported" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:04:00"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="14719" Fil="" Fun="CSetupPlatform::ProcessTelemetry" Uid="51150848" Msg="Input CV is different form existing CV" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:04:00"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:04:00"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:04:00"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:04:00"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:04:00"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:04:00"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:04:00"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="2" MD="" DT="2025-11-05T11:04:00"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="2" MD="" DT="2025-11-05T11:04:00"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="2" MD="" DT="2025-11-05T11:04:00"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:04:00"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="420" Fil="" Fun="CGlobalPath::FindGlobalPathCallback" Uid="51150848" Msg="FindGlobalPath: Cannot find volume name for \\?\GLOBALROOT\Device\HardDisk1\Partition2. Error: 0x0000007B" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="123" MD="" DT="2025-11-05T11:04:01"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="915" Fil="" Fun="VdsPlatform::ComputeHostInfo" Uid="50331648" Msg="VdsPlatform::ComputeHostInfo: Can&apos;t find host OS partition; no disk will be marked as the host" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="87" MD="" DT="2025-11-05T11:04:01"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="15999" Fil="" Fun="CSetupPlatform::ResurrectAutomation" Uid="51150848" Msg="CSetupPlatform::ResurrectAutomation: Failed to resurrect automation: 0x80070002" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="2" MD="" DT="2025-11-05T11:04:01"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="5297" Fil="" Fun="COperationQueue::ExecuteOperationsInternal" Uid="51150848" Msg="DISKSPACEEXCEED: Operation consumed more disk space than declared. Exceeded by 1852 bytes" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:04:01"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="5297" Fil="" Fun="COperationQueue::ExecuteOperationsInternal" Uid="51150848" Msg="DISKSPACEEXCEED: Operation consumed more disk space than declared. Exceeded by 2252935168 bytes" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:05:10"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="5297" Fil="" Fun="COperationQueue::ExecuteOperationsInternal" Uid="51150848" Msg="DISKSPACEEXCEED: Operation consumed more disk space than declared. Exceeded by 4096 bytes" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:05:10"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="8153" Fil="" Fun="pGetAntiVirusInfo" Uid="51150848" Msg="    Failed to create locator" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="87" MD="" DT="2025-11-05T11:05:11"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="5297" Fil="" Fun="COperationQueue::ExecuteOperationsInternal" Uid="51150848" Msg="DISKSPACEEXCEED: Operation consumed more disk space than declared. Exceeded by 27541504 bytes" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:05:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="5297" Fil="" Fun="COperationQueue::ExecuteOperationsInternal" Uid="51150848" Msg="DISKSPACEEXCEED: Operation consumed more disk space than declared. Exceeded by 368640 bytes" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:05:36"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="14719" Fil="" Fun="CSetupPlatform::ProcessTelemetry" Uid="51150848" Msg="Input CV is different form existing CV" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:05:36"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:05:36"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:05:36"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="298" MD="" DT="2025-11-05T11:05:36"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="420" Fil="" Fun="CGlobalPath::FindGlobalPathCallback" Uid="51150848" Msg="FindGlobalPath: Cannot find volume name for \\?\GLOBALROOT\Device\HardDisk1\Partition2. Error: 0x0000007B" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="123" MD="" DT="2025-11-05T11:05:36"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="67" Fil="" Fun="IsNarratorAutoLaunchSettingsOn" Uid="51019776" Msg="IsNarratorAutoLaunchSettingsOn: Failed opening Narrator registry key ; Error = 0x2" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupCore.dll" Err="0" MD="" DT="2025-11-05T11:05:36"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="129" Fil="" Fun="IsNarratorRunning" Uid="51019776" Msg="IsNarratorRunning: Error finding window NarratorUIClass; HR = 0x0" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupCore.dll" Err="0" MD="" DT="2025-11-05T11:05:36"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="2057" Fil="" Fun="SPBfsLogMessageCallback" Uid="51150848" Msg="    BFSVC: Failed to log servicing event to bootstat \\?\GLOBALROOT\Device\HarddiskVolume4\EFI\Microsoft\Boot\BOOTSTAT.DAT. Status: 0x80000005
+" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:05:37"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="2016" Fil="" Fun="CAddBootEntry::DoExecute" Uid="51150848" Msg="    CAddBootEntry::DoExecute: BCD failed to retrieve default boot entry. Error: 0x00000002" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="2" MD="" DT="2025-11-05T11:05:37"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="2034" Fil="" Fun="CAddBootEntry::DoExecute" Uid="51150848" Msg="    CAddBootEntry::DoExecute: BCD failed to retrieve current boot entry. Error: 0x00000002" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="2" MD="" DT="2025-11-05T11:05:37"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="2058" Fil="" Fun="CAddBootEntry::DoExecute" Uid="51150848" Msg="    CAddBootEntry::DoExecute: Found bogus system BCD store; a new one will be created." PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="2" MD="" DT="2025-11-05T11:05:37"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="5297" Fil="" Fun="COperationQueue::ExecuteOperationsInternal" Uid="51150848" Msg="DISKSPACEEXCEED: Operation consumed more disk space than declared. Exceeded by 159744 bytes" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:05:37"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="2034" Fil="" Fun="CAddBootEntry::DoExecute" Uid="51150848" Msg="    CAddBootEntry::DoExecute: BCD failed to retrieve current boot entry. Error: 0x00000002" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:05:37"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="5297" Fil="" Fun="COperationQueue::ExecuteOperationsInternal" Uid="51150848" Msg="DISKSPACEEXCEED: Operation consumed more disk space than declared. Exceeded by 4096 bytes" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:05:37"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="5297" Fil="" Fun="COperationQueue::ExecuteOperationsInternal" Uid="51150848" Msg="DISKSPACEEXCEED: Operation consumed more disk space than declared. Exceeded by 8388608 bytes" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:05:37"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="14091" Fil="" Fun="CNewSystem::Finalize" Uid="51150848" Msg="DISKSPACETRACK: Size of SafeOS WIM C:\$WINDOWS.~BT\Sources\SafeOS\winre.wim is 550843267" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="183" MD="" DT="2025-11-05T11:05:38"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="761" Fil="" Fun="CDiagnosticsHelper::Merge" Uid="50331648" Msg="Merging diagnostics data fails since not opted-in" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:05:38"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="14719" Fil="" Fun="CSetupPlatform::ProcessTelemetry" Uid="51150848" Msg="Input CV is different form existing CV" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="183" MD="" DT="2025-11-05T11:05:38"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="472" Fil="" Fun="SPDiagTrackSetCorrelationVector" Uid="50331648" Msg="Get a different correlation vector" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:05:38"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:05:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:05:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="2908" TID="2304" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:05:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="2908" TID="2912" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:05:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2000]" PID="2908" TID="2912" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:05:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x3000]" PID="2908" TID="2912" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:05:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="SetupNotify::ReportEvent - Report ID or Event Reporter not available." PID="2908" TID="2912" Con="" Exe="o:\win11-x64\installfiles\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T11:05:39"/>
+<xml xmlns:s="uuid:BDC6E3F0-6DA3-11d1-A2A3-00AA00C14882"
+ xmlns:dt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882"
+ xmlns:rs="urn:schemas-microsoft-com:rowset"
+ xmlns:z="#RowsetSchema">
+<s:Schema id="RowsetSchema">
+<s:ElementType name="row" content="eltOnly" rs:updatable="true">
+<s:AttributeType name="Cls" rs:number="0">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Sev" rs:number="1">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Maj" rs:number="2">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Min" rs:number="3">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="LN" rs:number="4">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Fil" rs:number="5">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Fun" rs:number="6">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Uid" rs:number="7">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Msg" rs:number="8">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="PID" rs:number="9">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="TID" rs:number="10">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Con" rs:number="11">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Exe" rs:number="12">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Mod" rs:number="13">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Err" rs:number="14">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="MD" rs:number="15">
+<s:datatype dt:type="hexBinary"/>
+</s:AttributeType>
+<s:AttributeType name="DT" rs:number="16">
+<s:datatype dt:type="dateTime"/>
+</s:AttributeType>
+</s:ElementType>
+</s:Schema>
+<rs:data>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="420" Fil="" Fun="CGlobalPath::FindGlobalPathCallback" Uid="51150848" Msg="FindGlobalPath: Cannot find volume name for \\?\GLOBALROOT\Device\HardDisk1\Partition2. Error: 0x0000001F" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="SetupPlatform.dll" Err="31" MD="" DT="2025-11-05T11:06:17"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="964" Fil="" Fun="CSetupRecoveryPartition::DoExecute" Uid="51150848" Msg="    CSetupRecoveryPartition::DoExecute: Cannot find old WinRE folder for ID: WinREFolder" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:06:17"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] read xml file (C:\Recovery\ReAgentOld.xml) failed: 0x3" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] ReAgentXMLParser::ParseConfigFile failed to read config xml file (0x3) in file base\diagnosis\srt\reagent2\reinfo\parser_2.0.cpp line 825" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] ReAgentXMLParser::ParseConfigFile (xml file: C:\Recovery\ReAgentOld.xml) returning 0x3" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] ReAgentConfig::ParseConfigFile  returned with 0x3 " PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] ReAgentConfig::Init failed to init reagent xml parser (0x3) in file base\diagnosis\srt\reagent2\reinfo\parser_2.0.cpp line 1962" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] failed to get child attribute by tag: 0xd" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] failed to get child attribute by tag: 0xd" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] failed to get child attribute by tag: 0xd" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] failed to get child attribute by tag: 0xd" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] failed to get child attribute by tag: 0xd" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] failed to get child attribute by tag: 0xd" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] failed to get child attribute by tag: 0xd" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] failed to get child attribute by tag: 0xd" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] Failed to get recovery entries: 0xc0000225" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:19"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] Recovery file not found at C:\WINDOWS\system32\Recovery\ReCustomization.xml" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:28"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="    [SetupPlatform.exe] winreBackupRecoveryFile (C:\WINDOWS\system32\Recovery\ReCustomization.xml, ReCustomization.xml) failed, Err: 2" PID="1844" TID="1848" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="ReAgent.dll" Err="0" MD="" DT="2025-11-05T11:06:28"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="95" Fil="" Fun="DetermineIfReRegisterOnUpgrade" Uid="51314688" Msg="DetermineIfReRegisterOnUpgrade: setupApplicationsKey.Open() failed 0x80070002, assuming Yes" PID="2104" TID="2108" Con="" Exe="C:\WINDOWS\system32\oobe\setup.exe" Mod="AppxSysprep.dll" Err="0" MD="" DT="2025-11-05T11:06:54"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="154" Fil="" Fun="EnsureStagedKeyReflectsWindowsAppsFolder" Uid="51314688" Msg="Ignoring folder Deleted because could not convert to family name" PID="2104" TID="2108" Con="" Exe="C:\WINDOWS\system32\oobe\setup.exe" Mod="AppxSysprep.dll" Err="0" MD="" DT="2025-11-05T11:06:54"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="154" Fil="" Fun="EnsureStagedKeyReflectsWindowsAppsFolder" Uid="51314688" Msg="Ignoring folder Merged because could not convert to family name" PID="2104" TID="2108" Con="" Exe="C:\WINDOWS\system32\oobe\setup.exe" Mod="AppxSysprep.dll" Err="0" MD="" DT="2025-11-05T11:06:54"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="154" Fil="" Fun="EnsureStagedKeyReflectsWindowsAppsFolder" Uid="51314688" Msg="Ignoring folder MovedPackages because could not convert to family name" PID="2104" TID="2108" Con="" Exe="C:\WINDOWS\system32\oobe\setup.exe" Mod="AppxSysprep.dll" Err="0" MD="" DT="2025-11-05T11:06:54"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="154" Fil="" Fun="EnsureStagedKeyReflectsWindowsAppsFolder" Uid="51314688" Msg="Ignoring folder Mutable because could not convert to family name" PID="2104" TID="2108" Con="" Exe="C:\WINDOWS\system32\oobe\setup.exe" Mod="AppxSysprep.dll" Err="0" MD="" DT="2025-11-05T11:06:54"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="154" Fil="" Fun="EnsureStagedKeyReflectsWindowsAppsFolder" Uid="51314688" Msg="Ignoring folder MutableBackup because could not convert to family name" PID="2104" TID="2108" Con="" Exe="C:\WINDOWS\system32\oobe\setup.exe" Mod="AppxSysprep.dll" Err="0" MD="" DT="2025-11-05T11:06:54"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="154" Fil="" Fun="EnsureStagedKeyReflectsWindowsAppsFolder" Uid="51314688" Msg="Ignoring folder Projected because could not convert to family name" PID="2104" TID="2108" Con="" Exe="C:\WINDOWS\system32\oobe\setup.exe" Mod="AppxSysprep.dll" Err="0" MD="" DT="2025-11-05T11:06:54"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="360" Fil="" Fun="AppxSysprepSpecializeOnline" Uid="51314688" Msg="Failed to pre-register package Microsoft.Windows.AugLoop.CBS_1.572.2254.0_x64__8wekyb3d8bbwe: 0x80070002." PID="2104" TID="2108" Con="" Exe="C:\WINDOWS\system32\oobe\setup.exe" Mod="AppxSysprep.dll" Err="0" MD="" DT="2025-11-05T11:07:52"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="[setup.exe] read xml file (\Recovery\ReAgentOld.xml) failed: 0x3" PID="2104" TID="2108" Con="" Exe="C:\WINDOWS\system32\oobe\setup.exe" Mod="reagent.dll" Err="0" MD="" DT="2025-11-05T11:07:53"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="[setup.exe] ReAgentXMLParser::ParseConfigFile failed to read config xml file (0x3) in file base\diagnosis\srt\reagent2\reinfo\parser_2.0.cpp line 825" PID="2104" TID="2108" Con="" Exe="C:\WINDOWS\system32\oobe\setup.exe" Mod="reagent.dll" Err="0" MD="" DT="2025-11-05T11:07:53"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="[setup.exe] ReAgentXMLParser::ParseConfigFile (xml file: \Recovery\ReAgentOld.xml) returning 0x3" PID="2104" TID="2108" Con="" Exe="C:\WINDOWS\system32\oobe\setup.exe" Mod="reagent.dll" Err="0" MD="" DT="2025-11-05T11:07:53"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="[setup.exe] ReAgentConfig::ParseConfigFile  returned with 0x3 " PID="2104" TID="2108" Con="" Exe="C:\WINDOWS\system32\oobe\setup.exe" Mod="reagent.dll" Err="0" MD="" DT="2025-11-05T11:07:53"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="[setup.exe] ReAgentConfig::Init failed to init reagent xml parser (0x3) in file base\diagnosis\srt\reagent2\reinfo\parser_2.0.cpp line 1962" PID="2104" TID="2108" Con="" Exe="C:\WINDOWS\system32\oobe\setup.exe" Mod="reagent.dll" Err="0" MD="" DT="2025-11-05T11:07:53"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="471" Fil="" Fun="UnattendLogWV" Uid="50331648" Msg="[setup.exe] CoInitialize returned hr=0x1" PID="2104" TID="2108" Con="" Exe="C:\WINDOWS\system32\oobe\setup.exe" Mod="reagent.dll" Err="0" MD="" DT="2025-11-05T11:07:53"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="420" Fil="" Fun="CGlobalPath::FindGlobalPathCallback" Uid="51150848" Msg="FindGlobalPath: Cannot find volume name for \\?\GLOBALROOT\Device\HardDisk1\Partition2. Error: 0x0000007B" PID="4992" TID="5512" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="SetupPlatform.dll" Err="123" MD="" DT="2025-11-05T11:08:01"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="5297" Fil="" Fun="COperationQueue::ExecuteOperationsInternal" Uid="51150848" Msg="DISKSPACEEXCEED: Operation consumed more disk space than declared. Exceeded by 16384 bytes" PID="4992" TID="5512" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:08:01"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="129" Fil="" Fun="IsNarratorRunning" Uid="51150848" Msg="IsNarratorRunning: Error finding window NarratorUIClass; HR = 0x0" PID="4992" TID="5512" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:08:02"/>
+</rs:data>
+</xml>
+<xml xmlns:s="uuid:BDC6E3F0-6DA3-11d1-A2A3-00AA00C14882"
+ xmlns:dt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882"
+ xmlns:rs="urn:schemas-microsoft-com:rowset"
+ xmlns:z="#RowsetSchema">
+<s:Schema id="RowsetSchema">
+<s:ElementType name="row" content="eltOnly" rs:updatable="true">
+<s:AttributeType name="Cls" rs:number="0">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Sev" rs:number="1">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Maj" rs:number="2">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Min" rs:number="3">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="LN" rs:number="4">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Fil" rs:number="5">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Fun" rs:number="6">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Uid" rs:number="7">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Msg" rs:number="8">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="PID" rs:number="9">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="TID" rs:number="10">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="Con" rs:number="11">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Exe" rs:number="12">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Mod" rs:number="13">
+<s:datatype dt:type="string"/>
+</s:AttributeType>
+<s:AttributeType name="Err" rs:number="14">
+<s:datatype dt:type="int"/>
+</s:AttributeType>
+<s:AttributeType name="MD" rs:number="15">
+<s:datatype dt:type="hexBinary"/>
+</s:AttributeType>
+<s:AttributeType name="DT" rs:number="16">
+<s:datatype dt:type="dateTime"/>
+</s:AttributeType>
+</s:ElementType>
+</s:Schema>
+<rs:data>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="420" Fil="" Fun="CGlobalPath::FindGlobalPathCallback" Uid="51150848" Msg="FindGlobalPath: Cannot find volume name for \\?\GLOBALROOT\Device\HardDisk1\Partition2. Error: 0x0000007B" PID="948" TID="652" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="SetupPlatform.dll" Err="123" MD="" DT="2025-11-05T11:08:32"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="5297" Fil="" Fun="COperationQueue::ExecuteOperationsInternal" Uid="51150848" Msg="DISKSPACEEXCEED: Operation consumed more disk space than declared. Exceeded by 65536 bytes" PID="948" TID="652" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T11:08:32"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="3551" Fil="" Fun="CSetupPlatformPrivate::Execute" Uid="51150848" Msg="CSetupPlatformPrivate::Execute: Failed to add new WinRE hash: 0x80310001" PID="948" TID="652" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="SetupPlatform.dll" Err="-2144272383" MD="" DT="2025-11-05T11:08:33"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="420" Fil="" Fun="CGlobalPath::FindGlobalPathCallback" Uid="51150848" Msg="FindGlobalPath: Cannot find volume name for \\?\GLOBALROOT\Device\HardDisk1\Partition2. Error: 0x0000007B" PID="5348" TID="5392" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="SetupPlatform.dll" Err="123" MD="" DT="2025-11-05T12:08:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="SetupNotify::ReportEvent - Report ID or Event Reporter not available." PID="1312" TID="2224" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T12:08:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2002]" PID="1312" TID="2368" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T12:08:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="Finalize: Error reporting downlevel time: [0x80070002]" PID="1312" TID="2368" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T12:08:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="1312" TID="2368" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T12:08:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2003]" PID="1312" TID="2368" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T12:08:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2001]" PID="1312" TID="2368" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T12:08:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2004]" PID="1312" TID="2224" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T12:08:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x2000]" PID="1312" TID="2224" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T12:08:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="685" Fil="" Fun="CSetupDiagnostics::LogString" Uid="51019776" Msg="CSetupDiagnostics::ReportData - Not reporting WINDLP data point [0x3000]" PID="1312" TID="2224" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupHost.exe" Mod="SetupHost.exe" Err="0" MD="" DT="2025-11-05T12:08:39"/>
+<z:row Cls="D" Sev="50331648" Maj="Def" Min="Def" LN="127" Fil="" Fun="CloseNarrator" Uid="50331648" Msg="CloseNarrator: Error finding window NarratorUIClass; HR = 0x0" PID="5348" TID="5392" Con="" Exe="C:\$WINDOWS.~BT\Sources\SetupPlatform.exe" Mod="SetupPlatform.dll" Err="0" MD="" DT="2025-11-05T12:08:45"/>
+</rs:data>
+</xml>

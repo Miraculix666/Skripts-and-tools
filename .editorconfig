@@ -1,0 +1,35 @@
+# EditorConfig – scrips-and-tools-Pol
+root = true
+
+[*]
+charset = utf-8
+end_of_line = crlf
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.ps1]
+indent_size = 4
+
+[*.psm1]
+indent_size = 4
+
+# VBA-Makros: keine Auto-Formatierung
+[*.vba]
+trim_trailing_whitespace = false
+
+# OPSI Shell-Skripte: Linux EOL
+[OPSI/*.sh]
+end_of_line = lf
+
+[*.sh]
+end_of_line = lf
+indent_size = 2
+
+# WIP-Ordner: lockerer
+[WIP/*]
+trim_trailing_whitespace = false
+
+[*.md]
+trim_trailing_whitespace = false

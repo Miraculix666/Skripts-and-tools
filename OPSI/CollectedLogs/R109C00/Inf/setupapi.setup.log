@@ -1,0 +1,1800 @@
+[Device Install Log]
+     OS Version = 10.0.26100
+     Service Pack = 0.0
+     Suite = 0x0100
+     ProductType = 1
+     Architecture = amd64
+
+[BeginLog]
+
+[Boot Session: 2025/11/05 11:06:04.500]
+
+>>>  [Sysprep Specialize - {da4cf6aa-0af3-11ec-8f99-98eecbd62e46}]
+>>>  Section start 2025/11/05 11:06:28.929
+     set: System Information:
+     set:      BIOS Release Date: 02/21/2025
+     set:      BIOS Vendor: FUJITSU CLIENT COMPUTING LIMITED
+     set:      BIOS Version: V5.0.0.17 R1.66.0 for D3822-A1x
+     set:      System Family: ESPRIMO-FTS
+     set:      System Manufacturer: FUJITSU CLIENT COMPUTING LIMITED
+     set:      System Product Name: ESPRIMO D9010
+     set: Initialized PnP data. Time = 63 ms. 11:06:29.000
+     set: Removed non-present devices. Time = 15 ms. 11:06:29.004
+     set: Updated driver package signatures. Time = 47 ms. 11:06:29.060
+     set: Installed devices. Time = 25110 ms. 11:06:54.160
+     set: No device state migrated.
+     set: Cleaned up unneeded PnP data. Time = 0 ms. 11:06:54.160
+     set: Installed primitive drivers. Time = 46 ms. 11:06:54.208
+!    set: Device 'PCI\VEN_8086&DEV_06D2&SUBSYS_12591734&REV_00\3&11583659&0&B8' using driver 'oem20.inf' needs reboot (0x4010000000).
+!    set: Devices need reboot: 1 (1 internal, 0 external)
+!    set: Reboot required.
+<<<  Section end 2025/11/05 11:06:54.223
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup Update Driver Package Signatures]
+>>>  Section start 2025/11/05 11:06:29.004
+     set: oem0.inf/cometlakepch-hsystem.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem1.inf/cometlakepch-hsystemthermal.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem2.inf/cometlakesystem.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem9.inf/fbiosdrv.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem10.inf/fuj0435nl.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem11.inf/gabiacpi.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem12.inf/hdbusext.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem19.inf/heci.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem20.inf/iaahcic.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem21.inf/ialpss2_gpio2_cnl.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem22.inf/ialpss2_i2c_cnl.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem23.inf/ialpss2_spi_cnl.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem24.inf/ialpss2_uart2_cnl.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem25.inf/iastorhsa_ext.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem38.inf/mesrl.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem44.inf/oemportamd64.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem48.inf/rtsuerxd3.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem50.inf/skylakesystemgmm.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem52.inf/wiman_wlan_extension.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem3.inf/cui_dch.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem4.inf/dal.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem5.inf/e1d68x64.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem6.inf/e1r68x64.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem7.inf/e2f68.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem8.inf/exarmpioamd64.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem13.inf/hdxfts.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem14.inf/hdxfujitsu.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem16.inf/hdxfujitsuacp.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem17.inf/hdxfujitsuhap.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem18.inf/hdxfujitsusst.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem15.inf/hdxfujitsu_fts.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem26.inf/iastorhsacomponent.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem27.inf/iclsclient.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem28.inf/igcc_dch.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem29.inf/iigd_dch.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem30.inf/intcdaud.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem31.inf/intcdaud.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem32.inf/intcdaud.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem33.inf/intcdaud.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem34.inf/ixn68x64.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem35.inf/ixs68x64.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem36.inf/ixt68x64.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem37.inf/lms.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem39.inf/mshdadac.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem40.inf/netrtwlane6.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem41.inf/netwtw04.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem42.inf/netwtw06.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem43.inf/netwtw08.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem45.inf/prnms001.inf -> Signed by 'Microsoft Windows' (SignerScore = 0x0D000003).
+     set: oem46.inf/prnms009.inf -> Signed by 'Microsoft Windows' (SignerScore = 0x0D000003).
+     set: oem47.inf/rtkfilter.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem49.inf/ser15xamd64.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+     set: oem51.inf/wiman.inf -> Signed by 'Microsoft Windows Hardware Compatibility Publisher' (SignerScore = 0x0D000005).
+<<<  Section end 2025/11/05 11:06:29.060
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup Plug and Play Device Install]
+>>>  Section start 2025/11/05 11:06:29.060
+     set: UEFI\RES_{8488E981-E2FD-4F45-9821-345BA91F2EB0}\0 -> Configured [c_firmware.inf:UEFI\CC_00010002,FirmwareResource.NT] and started (ConfigFlags = 0x00000000).
+     set: USB\VID_0BF8&PID_102E&MI_00\6&35251E5A&0&0000 -> Configured [input.inf:USB\Class_03&SubClass_01,HID_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0C02\0 -> Configured [machine.inf:*PNP0C02,NO_DRV_MBRES] (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0C02\1 -> Configured [machine.inf:*PNP0C02,NO_DRV_MBRES] (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0C02\2 -> Configured [machine.inf:*PNP0C02,NO_DRV_MBRES] (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0C02\5 -> Configured [machine.inf:*PNP0C02,NO_DRV_MBRES] (ConfigFlags = 0x00000000).
+!    set: ACPI\PNP0400\0 -> Configured [msports.inf:*PNP0400,LptPort.NT] and unstarted with problem CM_PROB_FAILED_ADD (31) [0xC0000001] (ConfigFlags = 0x00000400).
+     set: ACPI\PNP0C0B\0 -> Configured [machine.inf:*PNP0C0B,NO_DRV] and started (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0C0B\1 -> Configured [machine.inf:*PNP0C0B,NO_DRV] and started (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0C0B\2 -> Configured [machine.inf:*PNP0C0B,NO_DRV] and started (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0C0B\3 -> Configured [machine.inf:*PNP0C0B,NO_DRV] and started (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0C0B\4 -> Configured [machine.inf:*PNP0C0B,NO_DRV] and started (ConfigFlags = 0x00000000).
+     set: ACPI\ACPI000C\2&DABA3FF&0 -> Configured [acpipagr.inf:*ACPI000C,PagrInstall] and started (ConfigFlags = 0x00000000).
+     set: ROOT\VOLMGR\0000 -> Configured [volmgr.inf:ROOT\VOLMGR,Volmgr] and started (ConfigFlags = 0x00040000).
+     set: USB\ROOT_HUB30\4&18846590&0&0 -> Configured [usbhub3.inf:USB\ROOT_HUB30,Generic.Install.NT] and started (ConfigFlags = 0x00000000).
+     set: HDAUDIO\FUNC_01&VEN_8086&DEV_280B&SUBSYS_80860101&REV_1000\4&3097FCE&0&0201 -> Awaiting install for incomplete driver configuration (ConfigFlags = 0x00000020).
+     set: STORAGE\VOLUME\{0A2D220A-BA2F-11F0-B031-806E6F6E6963}#0000000006500000 -> Configured [volume.inf:STORAGE\Volume,volume_install.NT] and started (ConfigFlags = 0x00000000).
+     set: ROOT\BASICDISPLAY\0000 -> Configured [basicdisplay.inf:ROOT\BasicDisplay,MSBDD_Fallback] and started (ConfigFlags = 0x00000000).
+     set: ACPI\THERMALZONE\TZ00 -> Configured [machine.inf:ACPI\ThermalZone,NO_DRV] and started (ConfigFlags = 0x00000000).
+     set: PCI\VEN_144D&DEV_A80A&SUBSYS_A801144D&REV_00\4&7368FA&0&00DC -> Configured [stornvme.inf:PCI\CC_010802,Stornvme_Inst] and started (ConfigFlags = 0x00000000).
+     set: USB\VID_0BF8&PID_102E&MI_01\6&35251E5A&0&0001 -> Configured [input.inf:USB\Class_03,HID_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0100\4&1206B899&0 -> Configured [machine.inf:*PNP0100,NO_DRV_X] (ConfigFlags = 0x00000000).
+     set: USB\VID_093A&PID_2510\5&35CD27EE&0&5 -> Configured [input.inf:USB\Class_03&SubClass_01,HID_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ROOT\VID\0000 -> Configured [wvid.inf:ROOT\VID,Vid_Device_Client.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0103\0 -> Configured [machine.inf:*PNP0103,NO_DRV_HPET] (ConfigFlags = 0x00000000).
+     set: ROOT\COMPOSITEBUS\0000 -> Configured [compositebus.inf:ROOT\CompositeBus,CompositeBus_Device.NT] and started (ConfigFlags = 0x00000000).
+     set: ROOT\VDRVROOT\0000 -> Configured [vdrvroot.inf:ROOT\vdrvroot,VDRVROOT] and started (ConfigFlags = 0x00000000).
+     set: UEFI\RES_{99CD96D0-5BCD-4E76-8CA1-1DD6F88F1BDF}\0 -> Configured [c_firmware.inf:UEFI\CC_00010002,FirmwareResource.NT] and started (ConfigFlags = 0x00000000).
+     set: ROOT\SPACEPORT\0000 -> Configured [spaceport.inf:Root\Spaceport,Spaceport_Install] and started (ConfigFlags = 0x00040000).
+     set: ACPI\PNP0501\0 -> Configured [msports.inf:*PNP0501,ComPort.NT] and started (ConfigFlags = 0x00000400).
+     set: SWD\DRIVERENUM\OEM_DAL_COMPONENT&4&2C0296AE&0 -> Configured [null] and started (ConfigFlags = 0x00000420).
+     set: ROOT\KDNIC\0000 -> Awaiting install for incomplete driver configuration (ConfigFlags = 0x00000020).
+     set: UEFI\RES_{DEF41966-5B56-4205-AF27-333832324131}\0 -> Configured [c_firmware.inf:UEFI\CC_00010001,FirmwareResource.NT] and started (ConfigFlags = 0x00000000).
+     set: PCI\VEN_144D&DEV_A808&SUBSYS_A801144D&REV_00\4&C40D1A4&0&00D8 -> Configured [stornvme.inf:PCI\CC_010802,Stornvme_Inst] and started (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_06ED&SUBSYS_12591734&REV_00\3&11583659&0&A0 -> Configured [usbxhci.inf:PCI\CC_0C0330,Generic.Install.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0C02\PCHRESV -> Configured [machine.inf:*PNP0C02,NO_DRV_MBRES] (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_06E9&SUBSYS_12591734&REV_00\3&11583659&0&A9 -> Configured [oem22.inf:PCI\VEN_8086&DEV_06E9,iaLPSS2_I2C_CNL_Device.NT] and started (ConfigFlags = 0x00000000).
+     set: HID\VID_0BF8&PID_102E&MI_01&COL01\7&2CD1CBF6&0&0000 -> Configured [input.inf:HID_DEVICE_UP:0001_U:0080,HID_Raw_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ROOT\UMBUS\0000 -> Configured [umbus.inf:root\umbus,UmBusRoot_Device.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0C14\SAMPLEDEV -> Configured [wmiacpi.inf:*PNP0C14,WMIMAP_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_06C0&SUBSYS_12591734&REV_F0\3&11583659&0&D8 -> Configured [oem0.inf:PCI\VEN_8086&DEV_06C0,Needs_PCI_DRV] and started (ConfigFlags = 0x00000000).
+     set: ROOT\ACPI_HAL\0000 -> Configured [hal.inf:acpiapic,ACPI_AMD64_HAL] and started (ConfigFlags = 0x00040000).
+     set: ACPI\PNP0C14\TESTDEV -> Configured [wmiacpi.inf:*PNP0C14,WMIMAP_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0A08\0 -> Configured [pci.inf:*PNP0A08,PCI_ROOT] and started (ConfigFlags = 0x00000000).
+     set: STORAGE\VOLUME\{0A2D220B-BA2F-11F0-B031-806E6F6E6963}#0000000000100000 -> Configured [volume.inf:STORAGE\Volume,volume_install.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0C0C\2&DABA3FF&0 -> Configured [machine.inf:*PNP0C0C,NO_DRV] and started (ConfigFlags = 0x00000000).
+     set: ACPI_HAL\PNP0C08\0 -> Configured [acpi.inf:*PNP0C08,ACPI_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ROOT\BASICRENDER\0000 -> Configured [basicrender.inf:ROOT\BasicRender,BasicRender] and started (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_0D4C&SUBSYS_125B1734&REV_00\3&11583659&0&FE -> Awaiting install for incomplete driver configuration (ConfigFlags = 0x00000020).
+     set: ACPI_HAL\UEFI\0 -> Configured [uefi.inf:ACPI_HAL\UEFI,UEFI_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_06D2&SUBSYS_12591734&REV_00\3&11583659&0&B8 -> Configured [oem20.inf:PCI\VEN_8086&DEV_06D2&CC_0106,AHCI_inst.NTamd64] and started (ConfigFlags = 0x00000400).
+     set: PCI\VEN_8086&DEV_06EF&SUBSYS_12591734&REV_00\3&11583659&0&A2 -> Configured [oem0.inf:PCI\VEN_8086&DEV_06EF,Needs_NO_DRV] (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_06A4&SUBSYS_12591734&REV_00\3&11583659&0&FD -> Configured [oem0.inf:PCI\VEN_8086&DEV_06A4,Needs_NO_DRV] (ConfigFlags = 0x00000000).
+     set: HID\VID_093A&PID_2510\6&1D97F01A&0&0000 -> Configured [msmouse.inf:HID_DEVICE_SYSTEM_MOUSE,HID_Mouse_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\MSFT0101\1 -> Configured [tpm.inf:ACPI\MSFT0101,Tpm2BaseInstall] and started (ConfigFlags = 0x00000000).
+     set: SCSI\DISK&VEN_NVME&PROD_SAMSUNG_MZVLB256\5&52392BC&0&000000 -> Configured [disk.inf:GenDisk,disk_install.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\FIXEDBUTTON\2&DABA3FF&0 -> Configured [machine.inf:ACPI\FixedButton,NO_DRV] and started (ConfigFlags = 0x00000000).
+     set: HID\VID_0BF8&PID_102E&MI_01&COL02\7&2CD1CBF6&0&0001 -> Configured [hidserv.inf:HID_DEVICE_UP:000C_U:0001,HIDSystemConsumerDevice] and started (ConfigFlags = 0x00000000).
+     set: STORAGE\VOLUME\{0A2D220B-BA2F-11F0-B031-806E6F6E6963}#0000000021100000 -> Configured [volume.inf:STORAGE\Volume,volume_install.NT] and started (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_06E3&SUBSYS_12591734&REV_00\3&11583659&0&B3 -> Configured [oem38.inf:PCI\VEN_8086&DEV_06E3&CC_0700,ComPort.NT] and started (ConfigFlags = 0x00000400).
+     set: ACPI\PNP0B00\4&1206B899&0 -> Configured [machine.inf:*PNP0B00,NO_DRV_X] and started (ConfigFlags = 0x00000000).
+     set: STORAGE\VOLUME\{0A2D220A-BA2F-11F0-B031-806E6F6E6963}#000000000E500000 -> Configured [volume.inf:STORAGE\Volume,volume_install.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0000\4&1206B899&0 -> Configured [machine.inf:*PNP0000,NO_DRV_PIC] (ConfigFlags = 0x00000000).
+     set: STORAGE\VOLUME\{0A2D220B-BA2F-11F0-B031-806E6F6E6963}#0000000019100000 -> Configured [volume.inf:STORAGE\Volume,volume_install.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\INT33A1\1 -> Configured [intelpep.inf:ACPI\INT33A1,HSWULT] and started (ConfigFlags = 0x00000000).
+     set: DISPLAY\FUS08BD\1&8713BCA&0&UID0 -> Configured [monitor.inf:*PNP09FF,PnPMonitor.Install] and started (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0C02\IOTRAPS -> Configured [machine.inf:*PNP0C02,NO_DRV_MBRES] (ConfigFlags = 0x00000000).
+     set: STORAGE\VOLUME\{0A2D220A-BA2F-11F0-B031-806E6F6E6963}#0000000000100000 -> Configured [volume.inf:STORAGE\Volume,volume_install.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\INT3F0D\4&1206B899&0 -> Configured [machine.inf:*PNP0C02,NO_DRV_MBRES] (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_06E0&SUBSYS_12591734&REV_00\3&11583659&0&B0 -> Configured [oem19.inf:PCI\VEN_8086&DEV_06E0,TEE_DDI_x64] and started (ConfigFlags = 0x00000400).
+     set: HDAUDIO\FUNC_01&VEN_10EC&DEV_0623&SUBSYS_1734125A&REV_1000\4&3097FCE&0&0001 -> Awaiting install for incomplete driver configuration (ConfigFlags = 0x00000020).
+     set: SWD\DRIVERENUM\OEM_ICLS_COMPONENT&4&2C0296AE&0 -> Configured [null] and started (ConfigFlags = 0x00000420).
+!    set: ACPI\FUJ02E3\2&DABA3FF&0 -> Configured [null] and unstarted with problem CM_PROB_FAILED_INSTALL (28) [0xC0000490] (ConfigFlags = 0x00000040).
+     set: ACPI\GENUINEINTEL_-_INTEL64_FAMILY_6_MODEL_165_-_INTEL(R)_CORE(TM)_I5-10500_CPU_@_3.10GHZ\_1 -> Configured [cpu.inf:ACPI\GenuineIntel_-_Intel64,IntelPPM_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\GENUINEINTEL_-_INTEL64_FAMILY_6_MODEL_165_-_INTEL(R)_CORE(TM)_I5-10500_CPU_@_3.10GHZ\_2 -> Configured [cpu.inf:ACPI\GenuineIntel_-_Intel64,IntelPPM_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\GENUINEINTEL_-_INTEL64_FAMILY_6_MODEL_165_-_INTEL(R)_CORE(TM)_I5-10500_CPU_@_3.10GHZ\_3 -> Configured [cpu.inf:ACPI\GenuineIntel_-_Intel64,IntelPPM_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\GENUINEINTEL_-_INTEL64_FAMILY_6_MODEL_165_-_INTEL(R)_CORE(TM)_I5-10500_CPU_@_3.10GHZ\_4 -> Configured [cpu.inf:ACPI\GenuineIntel_-_Intel64,IntelPPM_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\GENUINEINTEL_-_INTEL64_FAMILY_6_MODEL_165_-_INTEL(R)_CORE(TM)_I5-10500_CPU_@_3.10GHZ\_5 -> Configured [cpu.inf:ACPI\GenuineIntel_-_Intel64,IntelPPM_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\GENUINEINTEL_-_INTEL64_FAMILY_6_MODEL_165_-_INTEL(R)_CORE(TM)_I5-10500_CPU_@_3.10GHZ\_6 -> Configured [cpu.inf:ACPI\GenuineIntel_-_Intel64,IntelPPM_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\GENUINEINTEL_-_INTEL64_FAMILY_6_MODEL_165_-_INTEL(R)_CORE(TM)_I5-10500_CPU_@_3.10GHZ\_7 -> Configured [cpu.inf:ACPI\GenuineIntel_-_Intel64,IntelPPM_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\GENUINEINTEL_-_INTEL64_FAMILY_6_MODEL_165_-_INTEL(R)_CORE(TM)_I5-10500_CPU_@_3.10GHZ\_8 -> Configured [cpu.inf:ACPI\GenuineIntel_-_Intel64,IntelPPM_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\GENUINEINTEL_-_INTEL64_FAMILY_6_MODEL_165_-_INTEL(R)_CORE(TM)_I5-10500_CPU_@_3.10GHZ\_9 -> Configured [cpu.inf:ACPI\GenuineIntel_-_Intel64,IntelPPM_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\GENUINEINTEL_-_INTEL64_FAMILY_6_MODEL_165_-_INTEL(R)_CORE(TM)_I5-10500_CPU_@_3.10GHZ\_A -> Configured [cpu.inf:ACPI\GenuineIntel_-_Intel64,IntelPPM_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\GENUINEINTEL_-_INTEL64_FAMILY_6_MODEL_165_-_INTEL(R)_CORE(TM)_I5-10500_CPU_@_3.10GHZ\_B -> Configured [cpu.inf:ACPI\GenuineIntel_-_Intel64,IntelPPM_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\GENUINEINTEL_-_INTEL64_FAMILY_6_MODEL_165_-_INTEL(R)_CORE(TM)_I5-10500_CPU_@_3.10GHZ\_C -> Configured [cpu.inf:ACPI\GenuineIntel_-_Intel64,IntelPPM_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_06E8&SUBSYS_12591734&REV_00\3&11583659&0&A8 -> Configured [oem22.inf:PCI\VEN_8086&DEV_06E8,iaLPSS2_I2C_CNL_Device.NT] and started (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_0687&SUBSYS_12591734&REV_00\3&11583659&0&F8 -> Configured [oem0.inf:PCI\VEN_8086&DEV_0687,Needs_MSISADRV] and started (ConfigFlags = 0x00000000).
+     set: ROOT\NDISVIRTUALBUS\0000 -> Configured [ndisvirtualbus.inf:ROOT\NdisVirtualBus,NdisVirtualBus_Device.NT] and started (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_9BC8&SUBSYS_12591734&REV_03\3&11583659&0&10 -> Awaiting install for incomplete driver configuration (ConfigFlags = 0x00000020).
+     set: PCI\VEN_8086&DEV_06F9&SUBSYS_12591734&REV_00\3&11583659&0&90 -> Configured [oem1.inf:PCI\VEN_8086&DEV_06F9,Needs_NO_DRV] (ConfigFlags = 0x00000000).
+     set: ACPI\INT3450\3&11583659&0 -> Configured [oem21.inf:ACPI\INT3450,iaLPSS2_GPIO2_CNL_Device.NT] and started (ConfigFlags = 0x00000000).
+     set: STORAGE\VOLUME\{0A2D220B-BA2F-11F0-B031-806E6F6E6963}#000000E7A0300000 -> Configured [volume.inf:STORAGE\Volume,volume_install.NT] and started (ConfigFlags = 0x00000000).
+     set: USB\VID_0BF8&PID_102E\5&35CD27EE&0&12 -> Configured [usb.inf:USB\COMPOSITE,Composite.Dev.NT] and started (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_06AC&SUBSYS_72708086&REV_F0\3&11583659&0&DC -> Configured [oem0.inf:PCI\VEN_8086&DEV_06AC,Needs_PCI_DRV] and started (ConfigFlags = 0x00000000).
+     set: SWD\DRIVERENUM\OEM_LMS_COMPONENT&4&2C0296AE&0 -> Configured [null] and started (ConfigFlags = 0x00000420).
+     set: PCI\VEN_8086&DEV_9B53&SUBSYS_12591734&REV_03\3&11583659&0&00 -> Configured [oem2.inf:PCI\VEN_8086&DEV_9B53,Needs_NO_DRV] and started (ConfigFlags = 0x00000000).
+     set: ACPI\FXY0815\2&DABA3FF&0 -> Configured [machine.inf:*PNP0C02,NO_DRV_MBRES] (ConfigFlags = 0x00000000).
+     set: ROOT\MSSMBIOS\0000 -> Configured [mssmbios.inf:ROOT\mssmbios,MSSMBIOS_DRV] and started (ConfigFlags = 0x00000000).
+     set: ACPI\INT340E\2&DABA3FF&0 -> Configured [machine.inf:*PNP0C02,NO_DRV_MBRES] (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_06BF&SUBSYS_12591734&REV_F0\3&11583659&0&E0 -> Configured [oem0.inf:PCI\VEN_8086&DEV_06BF,Needs_PCI_DRV] and started (ConfigFlags = 0x00000000).
+     set: STORAGE\VOLUME\{0A2D220B-BA2F-11F0-B031-806E6F6E6963}#000000E7C9600000 -> Configured [volume.inf:STORAGE\Volume,volume_install.NT] and started (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0C14\TBFP -> Configured [wmiacpi.inf:*PNP0C14,WMIMAP_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: HID\VID_0BF8&PID_102E&MI_00\7&150E3FB1&0&0000 -> Configured [keyboard.inf:HID_DEVICE_SYSTEM_KEYBOARD,HID_Keyboard_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: ROOT\SYSTEM\0000 -> Configured [swenum.inf:ROOT\SWENUM,SWENUM] and started (ConfigFlags = 0x00000000).
+     set: SCSI\DISK&VEN_NVME&PROD_SAMSUNG_SSD_980\5&17F3C9A6&0&000000 -> Configured [disk.inf:GenDisk,disk_install.NT] and started (ConfigFlags = 0x00000000).
+     set: SWD\COMPUTER\MFG_FUJITSU_CLIENT_COMPUTING_LIMITED&FAM_ESPRIMO-FTS&PROD_ESPRIMO_D9010 -> Configured [compdev.inf:COMPUTER\Generic,CompDev_Install] and started (ConfigFlags = 0x00000000).
+     set: ACPI\FUJ0435\2&DABA3FF&0 -> Configured [oem10.inf:ACPI\FUJ0435,FUJ0435NL.Install.NTamd64] (ConfigFlags = 0x00000000).
+     set: ROOT\RDPBUS\0000 -> Configured [rdpbus.inf:ROOT\RDPBUS,RDPBUS] and started (ConfigFlags = 0x00000000).
+     set: ACPI\FUJ0430\2&DABA3FF&0 -> Configured [oem11.inf:ACPI\VEN_FUJ&DEV_0430&REV_0001,GabiAcpi_Device.NT] and started (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_06C8&SUBSYS_125A1734&REV_00\3&11583659&0&FB -> Configured [hdaudbus.inf:PCI\CC_0403,HDAudio_Device.NT] and started (ConfigFlags = 0x00000400).
+     set: PCI\VEN_8086&DEV_1911&SUBSYS_12591734&REV_00\3&11583659&0&40 -> Configured [oem50.inf:PCI\VEN_8086&DEV_1911,Needs_NO_DRV] (ConfigFlags = 0x00000000).
+     set: ACPI\PNP0C04\4&1206B899&0 -> Configured [machine.inf:*PNP0C04,NO_DRV_X] (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_06A3&SUBSYS_12591734&REV_00\3&11583659&0&FC -> Configured [oem0.inf:PCI\VEN_8086&DEV_06A3,Needs_NO_DRV] (ConfigFlags = 0x00000000).
+     set: Waiting for system services to start... 11:06:29.090
+     set: Completed waiting for system services to start. 11:06:40.886
+     set: DeviceInstall service already running. 11:06:40.894
+     set: Waiting for pending device installs... 11:06:40.894
+     set: Completed pending device installs. 11:06:54.145
+     set: HDAUDIO\FUNC_01&VEN_8086&DEV_280B&SUBSYS_80860101&REV_1000\4&3097FCE&0&0201 -> Configured [oem32.inf:HDAUDIO\FUNC_01&VEN_8086&DEV_280B&SUBSYS_80860101,IntcAudModel] and started (ConfigFlags = 0x00000000).
+     set: ROOT\HVSERVICE\0000 -> Configured [hvservice.inf:ROOT\hvservice,hvservice_Inst.NT] and started (ConfigFlags = 0x00000000).
+     set: LPTENUM\MICROSOFTRAWPORT\5&301BB3D2&0&LPT1 -> Configured [machine.inf:LPTENUM\MicrosoftRawPort958A,NO_DRV] and started (ConfigFlags = 0x00000000).
+     set: ROOT\KDNIC\0000 -> Configured [kdnic.inf:root\kdnic,KdNic.ndi] and started (ConfigFlags = 0x00000000).
+     set: SWD\DRIVERENUM\{BABE2782-EB1B-46A7-871A-F043D3200542}#WIMAN_COMPONENT&4&2C0296AE&0 -> Configured [oem51.inf:SWC\B74B5286-A7A5-444D-973B-71A66AF711BE,WiMan_HECI_Device.NT] and started (ConfigFlags = 0x00000000).
+     set: DISPLAY\FUS08BD\4&14D96F43&0&UID214595 -> Configured [monitor.inf:*PNP09FF,PnPMonitor.Install] and started (ConfigFlags = 0x00000000).
+     set: DISPLAY\FUS08BD\4&14D96F43&0&UID206395 -> Configured [monitor.inf:*PNP09FF,PnPMonitor.Install] and started (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_0D4C&SUBSYS_125B1734&REV_00\3&11583659&0&FE -> Configured [oem5.inf:PCI\VEN_8086&DEV_0D4C,E0D4C.10.0.1.19H1] and started (ConfigFlags = 0x00000000).
+     set: SWD\DRIVERENUM\IGCC&4&14D96F43&0 -> Configured [oem28.inf:SWC\100.9955_VEN8086_IGCC,IGCC_Component_Install] and started (ConfigFlags = 0x00000000).
+     set: SWD\MMDEVAPI\MICROSOFTGSWAVETABLESYNTH -> Configured [c_swdevice.inf:SWD\GenericRaw,SoftwareDevice] and started (ConfigFlags = 0x00000000).
+     set: HDAUDIO\FUNC_01&VEN_10EC&DEV_0623&SUBSYS_1734125A&REV_1000\4&3097FCE&0&0001 -> Configured [oem13.inf:HDAUDIO\FUNC_01&VEN_10EC&DEV_0623&SUBSYS_1734125A,IntcAzAudModel.NTamd64] and started (ConfigFlags = 0x00000000).
+     set: PCI\VEN_8086&DEV_9BC8&SUBSYS_12591734&REV_03\3&11583659&0&10 -> Configured [oem29.inf:PCI\VEN_8086&DEV_9BC8,iCML_w10_DS] and started (ConfigFlags = 0x00000000).
+     set: SWD\DRIVERENUM\CUI&4&14D96F43&0 -> Configured [oem3.inf:SWC\100.9955_VEN8086_GFXUI,Igdlh_CUI_Component_Install] and started (ConfigFlags = 0x00000000).
+     set: Devices pre-configured: 108 (99 internal, 9 external)
+     set: Devices pre-installed: 0
+     set: Devices need install: 14 (14 internal, 0 external)
+     set: Devices configured: 13 (11 internal, 2 external)
+     set: Devices installed: 0
+     set: Devices non-present: 0
+<<<  Section end 2025/11/05 11:06:54.160
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - ACPI\PNP0400\0]
+>>>  Section start 2025/11/05 11:06:40.894
+     ump: Install needed due to device needing additional installation
+     utl: {Select Drivers - ACPI\PNP0400\0} 11:06:40.909
+     utl:      Driver Node:
+     utl:           Status         - Selected | Installed
+     utl:           Driver INF     - msports.inf (C:\WINDOWS\System32\DriverStore\FileRepository\msports.inf_amd64_bebdc4f4e2cf2459\msports.inf)
+     utl:           Class GUID     - {4d36e978-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1150
+     utl:           Configuration  - *PNP0400 [LptPort.NT]
+     utl:           Driver Rank    - 00FF0002
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:06:40.919
+!    dvi: Device class {4d36e978-e325-11ce-bfc1-08002be10318} is not configurable.
+     dvi: Install flags: 0x00010020
+     dvi: Searching for hardware ID(s):
+     dvi:      acpi\ven_pnp&dev_0400
+     dvi:      acpi\pnp0400
+     dvi:      *pnp0400
+     dvi: Class GUID of device changed to: {4d36e978-e325-11ce-bfc1-08002be10318}.
+     dvi: Waiting for previous device install to complete. 11:06:41.119
+     ndv: {Core Device Install} 11:06:43.784
+     dvi:      {Install Device - ACPI\PNP0400\0} 11:06:43.784
+     dvi:           Device Status: 0x01802400 [0x1f - 0xc0000001]
+     dvi:           Config Flags: 0x00000400
+     dvi:           Parent Device: PCI\VEN_8086&DEV_0687&SUBSYS_12591734&REV_00\3&11583659&0&F8
+     dvi:           {DIF_ALLOW_INSTALL} 11:06:43.800
+     dvi:                Using exported function 'PortsClassInstaller' in module 'C:\WINDOWS\system32\MsPorts.Dll'.
+     dvi:                Class installer == MsPorts.Dll,PortsClassInstaller
+     dvi:                Class installer: Enter 11:06:43.816
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:43.816
+     dvi:                Default installer: Exit
+     dvi:           {DIF_ALLOW_INSTALL - exit(0xe000020e)} 11:06:43.816
+     dvi:           {DIF_INSTALLDEVICEFILES} 11:06:43.816
+     dvi:                Class installer: Enter 11:06:43.816
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:43.816
+     dvi:                Default installer: Exit
+     dvi:           {DIF_INSTALLDEVICEFILES - exit(0x00000000)} 11:06:43.816
+     dvi:           {_SCAN_FILE_QUEUE} 11:06:43.816
+     flq:                File 'C:\WINDOWS\system32\DRIVERS\parport.sys' pruned from copy.
+     dvi:           {_SCAN_FILE_QUEUE - exit(0x00000000)} 11:06:43.816
+     flq:           {FILE_QUEUE_COMMIT} 11:06:43.832
+     flq:           {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:43.832
+     dvi:           {DIF_REGISTER_COINSTALLERS} 11:06:43.832
+     dvi:                Reset Device: Resetting device configuration. 11:06:43.832
+     dvi:                Reset Device: Resetting device configuration completed. 11:06:43.832
+     dvi:                Class installer: Enter 11:06:43.832
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:43.832
+     inf:                     {Install from INF Section - LptPort.NT.CoInstallers} 11:06:43.832
+     inf:                          Flags         - 0x001001ee
+     inf:                     {Install from INF Section - exit(0x00000000)} 11:06:43.832
+     dvi:                Default installer: Exit
+     dvi:           {DIF_REGISTER_COINSTALLERS - exit(0x00000000)} 11:06:43.832
+     dvi:           {DIF_INSTALLINTERFACES} 11:06:43.832
+     dvi:                Class installer: Enter 11:06:43.832
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:43.832
+     dvi:                Default installer: Exit
+     dvi:           {DIF_INSTALLINTERFACES - exit(0x00000000)} 11:06:43.832
+     dvi:           {DIF_INSTALLDEVICE} 11:06:43.832
+     dvi:                Class installer: Enter 11:06:43.832
+     inf:                     {Install from INF Section - LptPort.NT} 11:06:43.848
+     inf:                          Flags         - 0x00000004
+     inf:                     {Install from INF Section - exit(0x00000000)} 11:06:43.848
+     dvi:                     {Install DEVICE}
+     inf:                          {Install from INF Section - LptPort.NT} 11:06:43.848
+     inf:                               Flags         - 0x001005ee
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:06:43.848
+     dvi:                          {Writing Device Properties}
+     dvi:                               Strong Name=msports.inf:10809047c11708a1:LptPort:10.0.26100.1150:*pnp0400
+     dvi:                          {Writing Device Properties - Complete}
+     inf:                          AddService=Parport,0x00000002,Parport_Service_Inst,Parport_EventLog_Inst  (msports.inf line 148)
+     dvi:                          Add Service: Modified existing service 'Parport'.
+     inf:                          {Install from INF Section - Parport_Service_Inst} 11:06:43.848
+     inf:                               Flags         - 0x00100004
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:06:43.848
+     inf:                          {Install from INF Section - Parport_EventLog_Inst} 11:06:43.848
+     inf:                               Flags         - 0x00100004
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:06:43.848
+     dvi:                     {Install DEVICE exit (0x00000000)}
+     dvi:                     Install Device: Configuring device class. 11:06:43.863
+     dvi:                     Install Device: Configuring device class completed. 11:06:43.863
+     dvi:                     Device Status: 0x01802400 [0x1f - 0xc0000001]
+     dvi:                     Install Device: Starting device 'ACPI\PNP0400\0'. 11:06:43.863
+     dvi:                     Install Device: Starting device completed. 11:06:44.067
+     dvi:                Class installer: Exit
+     dvi:           {DIF_INSTALLDEVICE - exit(0x00000000)} 11:06:44.069
+     dvi:           {DIF_NEWDEVICEWIZARD_FINISHINSTALL} 11:06:44.069
+     dvi:                Class installer: Enter 11:06:44.071
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:44.071
+     dvi:                Default installer: Exit
+     dvi:           {DIF_NEWDEVICEWIZARD_FINISHINSTALL - exit(0xe000020e)} 11:06:44.072
+     dvi:      {Install Device - exit(0x00000000)} 11:06:44.072
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:44.074
+<<<  Section end 2025/11/05 11:06:44.074
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - HDAUDIO\FUNC_01&VEN_8086&DEV_280B&SUBSYS_80860101&REV_1000\4&3097fce&0&0201]
+>>>  Section start 2025/11/05 11:06:40.894
+     ump: Install needed due to device having problem code CM_PROB_REINSTALL
+     utl: {Select Drivers - HDAUDIO\FUNC_01&VEN_8086&DEV_280B&SUBSYS_80860101&REV_1000\4&3097fce&0&0201} 11:06:41.151
+     utl:      Driver Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - oem32.inf (C:\WINDOWS\System32\DriverStore\FileRepository\intcdaud.inf_amd64_658abcf72ee536fa\intcdaud.inf)
+     utl:           Class GUID     - {4d36e96c-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 07/29/2021,10.27.0.11
+     utl:           Configuration  - HDAUDIO\FUNC_01&VEN_8086&DEV_280B&SUBSYS_80860101
+     utl:           Driver Rank    - 00FF0001
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_13613786180661125_1152921505694012439
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - oem32.inf (C:\WINDOWS\System32\DriverStore\FileRepository\intcdaud.inf_amd64_658abcf72ee536fa\intcdaud.inf)
+     utl:           Class GUID     - {4d36e96c-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 07/29/2021,10.27.0.11
+     utl:           Configuration  - HDAUDIO\FUNC_01&VEN_8086&DEV_280B
+     utl:           Driver Rank    - 00FF3005
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_13613786180661125_1152921505694012439
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - hdaudio.inf (C:\WINDOWS\System32\DriverStore\FileRepository\hdaudio.inf_amd64_22f2127ec785fb8d\hdaudio.inf)
+     utl:           Class GUID     - {4d36e96c-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 07/03/2024,10.0.26100.1150
+     utl:           Configuration  - HDAUDIO\FUNC_01 [HdAudModel]
+     utl:           Driver Rank    - 00FF300C
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:06:41.216
+     dvi: Install flags: 0x00010020
+     dvi: Waiting for previous device install to complete. 11:06:41.216
+     dvi: {Core Device Install} 11:06:44.276
+     dvi:      {Configure Device - HDAUDIO\FUNC_01&VEN_8086&DEV_280B&SUBSYS_80860101&REV_1000\4&3097fce&0&0201} 11:06:44.276
+     dvi:           Device Status: 0x01802400 [0x12 - 0xc0000493]
+     dvi:           Config Flags: 0x00000020
+     dvi:           Parent Device: PCI\VEN_8086&DEV_06C8&SUBSYS_125A1734&REV_00\3&11583659&0&FB
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\intcdaud.inf_amd64_658abcf72ee536fa\intcdaud.inf} 11:06:44.276
+     sto:                Source Filter  = HDAUDIO\FUNC_01&VEN_8086&DEV_280B&SUBSYS_80860101
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {4d36e96c-e325-11ce-bfc1-08002be10318}
+     inf:                Class Options  = Configurable
+     inf:                {Configure Driver: Intel(R) Display-Audio}
+     inf:                     Section Name = IntcAudModel
+     inf:                     {Add Service: IntcDAud}
+     inf:                          Flags         = 0x2
+     inf:                          Start Type    = 3
+     inf:                          Service Type  = 1
+     inf:                          Error Control = 1
+     inf:                          Image Path    = \SystemRoot\System32\DriverStore\FileRepository\intcdaud.inf_amd64_658abcf72ee536fa\IntcDAud.sys
+     inf:                          Display Name  = Intel(R) Display-Audio
+     inf:                          Created new service 'IntcDAud'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     Hardware Id  = HDAUDIO\FUNC_01&VEN_8086&DEV_280B&SUBSYS_80860101
+     inf:                     Compatible Id = HDAUDIO\FUNC_01&VEN_8086&DEV_280B
+     inf:                     {Configure Driver Configuration: IntcAudModel}
+     inf:                          Service Name  = IntcDAud
+     inf:                          Included INFs = ks.inf
+     inf:                                          wdmaudio.inf
+     inf:                          Include Scope = Services
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:45.541
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\wdmaudio.inf_amd64_2f11a8496cd2974f\drmk.sys' to 'C:\WINDOWS\System32\drivers\drmk.sys'.
+     cpy:                     Existing file 'C:\WINDOWS\System32\drivers\drmk.sys' remains unchanged.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\wdmaudio.inf_amd64_2f11a8496cd2974f\portcls.sys' to 'C:\WINDOWS\System32\drivers\portcls.sys'.
+     cpy:                     Existing file 'C:\WINDOWS\System32\drivers\portcls.sys' remains unchanged.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\wdmaudio.inf_amd64_2f11a8496cd2974f\WMALFXGFXDSP.dll' to 'C:\WINDOWS\System32\WMALFXGFXDSP.dll'.
+     cpy:                     Existing file 'C:\WINDOWS\System32\WMALFXGFXDSP.dll' remains unchanged.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\wdmaudio.inf_amd64_2f11a8496cd2974f\SysFxUI.dll' to 'C:\WINDOWS\System32\SysFxUI.dll'.
+     cpy:                     Existing file 'C:\WINDOWS\System32\SysFxUI.dll' remains unchanged.
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:45.565
+     sto:           {Configure Driver Package: exit(0x00000000)} 11:06:45.565
+     dvi:           Install Device: Configuring device. 11:06:45.565
+     dvi:                Configuration: oem32.inf:HDAUDIO\FUNC_01&VEN_8086&DEV_280B&SUBSYS_80860101,*
+     dvi:           Install Device: Configuring device completed. 11:06:46.531
+     dvi:           Device Status: 0x01802000
+     dvi:           Install Device: Starting device 'HDAUDIO\FUNC_01&VEN_8086&DEV_280B&SUBSYS_80860101&REV_1000\4&3097FCE&0&0201'. 11:06:46.531
+     dvi:           Install Device: Starting device completed. 11:06:46.547
+     dvi:      {Configure Device - exit(0x00000000)} 11:06:46.547
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:46.547
+<<<  Section end 2025/11/05 11:06:46.562
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - ACPI\PNP0501\0]
+>>>  Section start 2025/11/05 11:06:40.894
+     ump: Install needed due to device needing additional installation
+     utl: {Select Drivers - ACPI\PNP0501\0} 11:06:41.098
+     utl:      Driver Node:
+     utl:           Status         - Selected | Installed
+     utl:           Driver INF     - msports.inf (C:\WINDOWS\System32\DriverStore\FileRepository\msports.inf_amd64_bebdc4f4e2cf2459\msports.inf)
+     utl:           Class GUID     - {4d36e978-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1150
+     utl:           Configuration  - *PNP0501 [ComPort.NT]
+     utl:           Driver Rank    - 00FF0002
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:06:41.162
+!    dvi: Device class {4d36e978-e325-11ce-bfc1-08002be10318} is not configurable.
+     dvi: Install flags: 0x00010020
+     dvi: Searching for hardware ID(s):
+     dvi:      acpi\ven_pnp&dev_0501
+     dvi:      acpi\pnp0501
+     dvi:      *pnp0501
+     dvi: Class GUID of device changed to: {4d36e978-e325-11ce-bfc1-08002be10318}.
+     dvi: Waiting for previous device install to complete. 11:06:41.168
+     ndv: {Core Device Install} 11:06:44.074
+     dvi:      {Install Device - ACPI\PNP0501\0} 11:06:44.074
+     dvi:           Device Status: 0x0180200a
+     dvi:           Config Flags: 0x00000400
+     dvi:           Parent Device: PCI\VEN_8086&DEV_0687&SUBSYS_12591734&REV_00\3&11583659&0&F8
+     dvi:           {DIF_ALLOW_INSTALL} 11:06:44.074
+     dvi:                Using exported function 'PortsClassInstaller' in module 'C:\WINDOWS\system32\MsPorts.Dll'.
+     dvi:                Class installer == MsPorts.Dll,PortsClassInstaller
+     dvi:                Class installer: Enter 11:06:44.083
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:44.083
+     dvi:                Default installer: Exit
+     dvi:           {DIF_ALLOW_INSTALL - exit(0xe000020e)} 11:06:44.083
+     dvi:           {DIF_INSTALLDEVICEFILES} 11:06:44.083
+     dvi:                Class installer: Enter 11:06:44.083
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:44.083
+     dvi:                Default installer: Exit
+     dvi:           {DIF_INSTALLDEVICEFILES - exit(0x00000000)} 11:06:44.091
+     dvi:           {_SCAN_FILE_QUEUE} 11:06:44.091
+     flq:                File 'C:\WINDOWS\system32\DRIVERS\serial.sys' pruned from copy.
+     flq:                File 'C:\WINDOWS\system32\DRIVERS\serenum.sys' pruned from copy.
+     dvi:           {_SCAN_FILE_QUEUE - exit(0x00000000)} 11:06:44.091
+     flq:           {FILE_QUEUE_COMMIT} 11:06:44.091
+     flq:           {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:44.097
+     dvi:           {DIF_REGISTER_COINSTALLERS} 11:06:44.097
+     dvi:                Reset Device: Resetting device configuration. 11:06:44.097
+     dvi:                Reset Device: Resetting device configuration completed. 11:06:44.098
+     dvi:                Class installer: Enter 11:06:44.098
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:44.098
+     inf:                     {Install from INF Section - ComPort.NT.CoInstallers} 11:06:44.100
+     inf:                          Flags         - 0x001001ee
+     inf:                     {Install from INF Section - exit(0x00000000)} 11:06:44.100
+     dvi:                Default installer: Exit
+     dvi:           {DIF_REGISTER_COINSTALLERS - exit(0x00000000)} 11:06:44.102
+     dvi:           {DIF_INSTALLINTERFACES} 11:06:44.102
+     dvi:                Class installer: Enter 11:06:44.102
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:44.102
+     dvi:                Default installer: Exit
+     dvi:           {DIF_INSTALLINTERFACES - exit(0x00000000)} 11:06:44.105
+     dvi:           {DIF_INSTALLDEVICE} 11:06:44.105
+     dvi:                Class installer: Enter 11:06:44.107
+     inf:                     {Install from INF Section - ComPort.NT} 11:06:44.107
+     inf:                          Flags         - 0x00000004
+     inf:                     {Install from INF Section - exit(0x00000000)} 11:06:44.107
+     dvi:                     {Install DEVICE}
+     inf:                          {Install from INF Section - ComPort.NT} 11:06:44.107
+     inf:                               Flags         - 0x001005ee
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:06:44.107
+     inf:                          {Install from INF Section - ComPort.NT.Hw} 11:06:44.107
+     inf:                               Flags         - 0x00100004
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:06:44.107
+     dvi:                          {Writing Device Properties}
+     dvi:                               Strong Name=msports.inf:1080904711deb522:ComPort:10.0.26100.1150:*pnp0501
+     dvi:                          {Writing Device Properties - Complete}
+     inf:                          AddService=Serial,0x00000002,Serial_Service_Inst,Serial_EventLog_Inst  (msports.inf line 275)
+     dvi:                          Add Service: Modified existing service 'Serial'.
+     inf:                          {Install from INF Section - Serial_Service_Inst} 11:06:44.114
+     inf:                               Flags         - 0x00100004
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:06:44.114
+     inf:                          {Install from INF Section - Serial_EventLog_Inst} 11:06:44.114
+     inf:                               Flags         - 0x00100004
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:06:44.114
+     inf:                          AddService=Serenum,,Serenum_Service_Inst  (msports.inf line 276)
+     dvi:                          Add Service: Modified existing service 'Serenum'.
+     inf:                          {Install from INF Section - Serenum_Service_Inst} 11:06:44.114
+     inf:                               Flags         - 0x00100004
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:06:44.114
+     dvi:                     {Install DEVICE exit (0x00000000)}
+     dvi:                     Install Device: Configuring device class. 11:06:44.114
+     dvi:                     Install Device: Configuring device class completed. 11:06:44.130
+     dvi:                     Device Status: 0x0180200a
+     dvi:                     Install Device: Removing device 'ACPI\PNP0501\0' and sub-tree. 11:06:44.130
+     dvi:                     Install Device: Removing device sub-tree completed. 11:06:44.133
+     dvi:                     Install Device: Restarting device. 11:06:44.133
+     dvi:                     Install Device: Restarting device completed. 11:06:44.133
+     dvi:                Class installer: Exit
+     dvi:           {DIF_INSTALLDEVICE - exit(0x00000000)} 11:06:44.144
+     dvi:           {DIF_NEWDEVICEWIZARD_FINISHINSTALL} 11:06:44.146
+     dvi:                Class installer: Enter 11:06:44.146
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:44.146
+     dvi:                Default installer: Exit
+     dvi:           {DIF_NEWDEVICEWIZARD_FINISHINSTALL - exit(0xe000020e)} 11:06:44.146
+     dvi:      {Install Device - exit(0x00000000)} 11:06:44.146
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:44.146
+<<<  Section end 2025/11/05 11:06:44.146
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - PCI\VEN_8086&DEV_0D4C&SUBSYS_125B1734&REV_00\3&11583659&0&FE]
+>>>  Section start 2025/11/05 11:06:40.894
+     ump: Install needed due to device having problem code CM_PROB_REINSTALL
+     utl: {Select Drivers - PCI\VEN_8086&DEV_0D4C&SUBSYS_125B1734&REV_00\3&11583659&0&FE} 11:06:41.082
+     utl:      Driver Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - oem5.inf (C:\WINDOWS\System32\DriverStore\FileRepository\e1d68x64.inf_amd64_ae1f744955c174dc\e1d68x64.inf)
+     utl:           Class GUID     - {4d36e972-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 02/10/2021,12.19.1.37
+     utl:           Configuration  - PCI\VEN_8086&DEV_0D4C
+     utl:           Driver Rank    - 00FF2001
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_13960100467377829_1152921505693191284
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - net1ic64.inf (C:\WINDOWS\System32\DriverStore\FileRepository\net1ic64.inf_amd64_93678a2d694d4579\net1ic64.inf)
+     utl:           Class GUID     - {4d36e972-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 08/03/2015,12.19.1.32
+     utl:           Configuration  - PCI\VEN_8086&DEV_0D4C
+     utl:           Driver Rank    - 00FF3001
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:06:41.272
+     dvi: Install flags: 0x00010020
+     dvi: Waiting for previous device install to complete. 11:06:41.272
+     dvi: {Core Device Install} 11:06:46.547
+     dvi:      {Configure Device - PCI\VEN_8086&DEV_0D4C&SUBSYS_125B1734&REV_00\3&11583659&0&FE} 11:06:46.547
+     dvi:           Device Status: 0x01802400 [0x12 - 0xc0000493]
+     dvi:           Config Flags: 0x00000020
+     dvi:           Parent Device: ACPI\PNP0A08\0
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\e1d68x64.inf_amd64_ae1f744955c174dc\e1d68x64.inf} 11:06:46.628
+     sto:                Source Filter  = PCI\VEN_8086&DEV_0D4C
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {4d36e972-e325-11ce-bfc1-08002be10318}
+     inf:                Class Options  = Configurable
+     inf:                {Configure Driver: Intel(R) Ethernet Connection (11) I219-LM}
+     inf:                     Section Name = E0D4C.10.0.1.19H1
+     inf:                     {Add Service: e1dexpress}
+     inf:                          Flags         = 0x2
+     inf:                          Start Type    = 3
+     inf:                          Service Type  = 1
+     inf:                          Error Control = 1
+     inf:                          Image Path    = \SystemRoot\System32\DriverStore\FileRepository\e1d68x64.inf_amd64_ae1f744955c174dc\e1d68x64.sys
+     inf:                          Display Name  = Intel(R) PRO/1000 PCI Express Network Connection Driver D
+     inf:                          Group         = NDIS
+     inf:                          Created new service 'e1dexpress'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     Hardware Id  = PCI\VEN_8086&DEV_0D4C
+     inf:                     {Configure Driver Configuration: E0D4C.10.0.1.19H1}
+     inf:                          Service Name  = e1dexpress
+     inf:                          Included INFs = pci.inf
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:46.753
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:46.753
+     sto:           {Configure Driver Package: exit(0x00000000)} 11:06:46.753
+     dvi:           Install Device: Configuring device. 11:06:46.753
+     dvi:                Configuration: oem5.inf:PCI\VEN_8086&DEV_0D4C,*
+     dvi:           Install Device: Configuring device completed. 11:06:46.775
+     dvi:           Device Status: 0x01802000
+     dvi:           Install Device: Starting device 'PCI\VEN_8086&DEV_0D4C&SUBSYS_125B1734&REV_00\3&11583659&0&FE'. 11:06:46.775
+     dvi:           Install Device: Starting device completed. 11:06:46.817
+!    dvi:           Device pending start: Device has problem: 0x38 (CM_PROB_NEED_CLASS_CONFIG), problem status: 0x00000000.
+     dvi:      {Configure Device - exit(0x00000000)} 11:06:46.817
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:46.817
+     dvi: Waiting for device post-install to complete. 11:06:46.817
+     dvi: Device post-install completed. 11:06:47.088
+     dvi: Device Status: 0x0180200a
+<<<  Section end 2025/11/05 11:06:47.104
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - PCI\VEN_8086&DEV_06D2&SUBSYS_12591734&REV_00\3&11583659&0&B8]
+>>>  Section start 2025/11/05 11:06:40.894
+     ump: Install needed due to device needing additional installation
+     utl: {Select Drivers - PCI\VEN_8086&DEV_06D2&SUBSYS_12591734&REV_00\3&11583659&0&B8} 11:06:41.351
+     utl:      Driver Node:
+     utl:           Status         - Selected | Installed
+     utl:           Driver INF     - oem20.inf (C:\WINDOWS\System32\DriverStore\FileRepository\iaahcic.inf_amd64_c52b34f1b30918c5\iaahcic.inf)
+     utl:           Class GUID     - {4d36e96a-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 06/02/2020,17.9.1.1009
+     utl:           Configuration  - PCI\VEN_8086&DEV_06D2&CC_0106 [AHCI_inst.NTamd64]
+     utl:           Driver Rank    - 00800003
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_13582744434994046_1152921505690659644
+     utl:      Driver Extension Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - oem25.inf (C:\WINDOWS\System32\DriverStore\FileRepository\iastorhsa_ext.inf_amd64_c77e782ca2299101\iastorhsa_ext.inf)
+     utl:           Class GUID     - {e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+     utl:           Extension ID   - {8541b81c-193b-4f91-a86b-53df20c1974b}
+     utl:           Driver Version - 06/02/2020,17.9.1.1009
+     utl:           Configuration  - PCI\VEN_8086&DEV_06D2&CC_0106
+     utl:           Driver Rank    - 00FF0003
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_13544705523858564_1152921505690659646
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - mshdc.inf (C:\WINDOWS\System32\DriverStore\FileRepository\mshdc.inf_amd64_f46cfa9aaf1c025c\mshdc.inf)
+     utl:           Class GUID     - {4d36e96a-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1150
+     utl:           Configuration  - PCI\CC_010601 [msahci_Inst]
+     utl:           Driver Rank    - 00FF2005
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:06:41.351
+     dvi: Install flags: 0x00010020
+     dvi: Waiting for previous device install to complete. 11:06:41.367
+     dvi: {Core Device Install} 11:06:47.184
+     dvi:      {Configure Device - PCI\VEN_8086&DEV_06D2&SUBSYS_12591734&REV_00\3&11583659&0&B8} 11:06:47.184
+     dvi:           Device Status: 0x0180200a
+     dvi:           Config Flags: 0x00000400
+     dvi:           Parent Device: ACPI\PNP0A08\0
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\iaahcic.inf_amd64_c52b34f1b30918c5\iaahcic.inf} 11:06:47.184
+     sto:                Source Filter  = PCI\VEN_8086&DEV_06D2&CC_0106
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {4d36e96a-e325-11ce-bfc1-08002be10318}
+     inf:                Class Options  = Configurable BootCritical
+     inf:                {Configure Driver: Intel(R) 400 Series Chipset Family SATA AHCI Controller}
+     inf:                     Section Name = AHCI_inst.NTamd64
+     inf:                     {Add Service: iaStorAC}
+     inf:                          Flags         = 0x2
+     inf:                          Start Type    = 0
+     inf:                          Service Type  = 1
+     inf:                          Error Control = 1
+     inf:                          Image Path    = System32\drivers\iaStorAC.sys
+     inf:                          Display Name  = Intel(R) Chipset SATA/PCIe RST Premium Controller
+     inf:                          Group         = SCSI miniport
+     inf:                          Updated service 'iaStorAC'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     {Add Service: RstMwService}
+     inf:                          Start Type    = 2
+     inf:                          Service Type  = 16
+     inf:                          Error Control = 1
+     inf:                          Image Path    = %SystemRoot%\System32\DriverStore\FileRepository\iaahcic.inf_amd64_c52b34f1b30918c5\RstMwService.exe
+     inf:                          Display Name  = Intel(R) Storage Middleware Service
+     inf:                          Description   = RPC endpoint service which allows communication between driver and Windows Store Application
+     inf:                          Updated service 'RstMwService'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     Hardware Id  = PCI\VEN_8086&DEV_06D2&CC_0106
+     inf:                     {Configure Driver Configuration: AHCI_inst.NTamd64}
+     inf:                          Service Name  = iaStorAC
+     inf:                          Win32 Services = RstMwService
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:47.201
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iaahcic.inf_amd64_c52b34f1b30918c5\iaStorAC.sys' to 'C:\WINDOWS\System32\drivers\iaStorAC.sys'.
+     cpy:                     Existing file 'C:\WINDOWS\System32\drivers\iaStorAC.sys' remains unchanged.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iaahcic.inf_amd64_c52b34f1b30918c5\RstMwEventLogMsg.dll' to 'C:\WINDOWS\System32\RstMwEventLogMsg.dll'.
+     cpy:                     Existing file 'C:\WINDOWS\System32\RstMwEventLogMsg.dll' remains unchanged.
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:47.217
+     sto:           {Configure Driver Package: exit(0x00000000)} 11:06:47.217
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\iastorhsa_ext.inf_amd64_c77e782ca2299101\iastorhsa_ext.inf} 11:06:47.217
+     sto:                Source Filter  = PCI\VEN_8086&DEV_06D2&CC_0106
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+     inf:                Class Options  = Configurable
+     inf:                {Configure Driver: Intel(R) Optane(TM) Memory and Storage Management Extension}
+     inf:                     Section Name = RstHsaExtension_install.NTamd64
+     inf:                     Hardware Id  = PCI\VEN_8086&DEV_06D2&CC_0106
+     inf:                     {Configure Driver Configuration: RstHsaExtension_install.NTamd64}
+     inf:                          No associated service.
+     inf:                          {Add Component: RstHsa}
+     inf:                               Component Ids = SWC\VID8086&SW_RstHSA
+     inf:                          {Add Component: exit(0x00000000)}
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:47.231
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:47.231
+     sto:           {Configure Driver Package: exit(0x00000000)} 11:06:47.231
+     dvi:           Install Device: Configuring device. 11:06:47.231
+     dvi:                Configuration: oem20.inf:PCI\VEN_8086&DEV_06D2&CC_0106,AHCI_inst.NTamd64
+     dvi:                Configuration: oem25.inf:PCI\VEN_8086&DEV_06D2&CC_0106,*
+     dvi:           Install Device: Configuring device completed. 11:06:47.231
+     dvi:           Device Status: 0x0180200a
+     dvi:           Install Device: Removing device 'PCI\VEN_8086&DEV_06D2&SUBSYS_12591734&REV_00\3&11583659&0&B8' and sub-tree. 11:06:47.231
+     dvi:           Install Device: Removing device sub-tree completed. 11:06:52.756
+!    dvi:           Query-removal during install of 'PCI\VEN_8086&DEV_06D2&SUBSYS_12591734&REV_00\3&11583659&0&B8' was vetoed by 'PCI\VEN_8086&DEV_06D2&SUBSYS_12591734&REV_00\3&11583659&0&B8' (veto type 5: PNP_VetoOutstandingOpen).
+!    dvi:           Device required reboot: Query remove failed (install) 0x17: CR_REMOVE_VETOED.
+     dvi:      {Configure Device - exit(0x00000000)} 11:06:52.757
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:52.757
+<<<  Section end 2025/11/05 11:06:52.816
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - PCI\VEN_8086&DEV_06E3&SUBSYS_12591734&REV_00\3&11583659&0&B3]
+>>>  Section start 2025/11/05 11:06:40.894
+     ump: Install needed due to device needing additional installation
+     utl: {Select Drivers - PCI\VEN_8086&DEV_06E3&SUBSYS_12591734&REV_00\3&11583659&0&B3} 11:06:40.921
+     utl:      Driver Node:
+     utl:           Status         - Selected | Installed
+     utl:           Driver INF     - oem38.inf (C:\WINDOWS\System32\DriverStore\FileRepository\mesrl.inf_amd64_bcb412c0214e6ec1\mesrl.inf)
+     utl:           Class GUID     - {4d36e978-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 10/14/2020,2042.0.13.0
+     utl:           Configuration  - PCI\VEN_8086&DEV_06E3&CC_0700 [ComPort.NT]
+     utl:           Driver Rank    - 00FF0003
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_14389008323345825_1152921505692240762
+     utl: {Select Drivers - exit(0x00000000} 11:06:41.178
+!    dvi: Device class {4d36e978-e325-11ce-bfc1-08002be10318} is not configurable.
+     dvi: Install flags: 0x00010020
+     dvi: Searching for hardware ID(s):
+     dvi:      pci\ven_8086&dev_06e3&subsys_12591734&rev_00
+     dvi:      pci\ven_8086&dev_06e3&subsys_12591734
+     dvi:      pci\ven_8086&dev_06e3&cc_070002
+     dvi:      pci\ven_8086&dev_06e3&cc_0700
+     dvi: Searching for compatible ID(s):
+     dvi:      pci\ven_8086&dev_06e3&rev_00
+     dvi:      pci\ven_8086&dev_06e3
+     dvi:      pci\ven_8086&cc_070002
+     dvi:      pci\ven_8086&cc_0700
+     dvi:      pci\ven_8086
+     dvi:      pci\cc_070002
+     dvi:      pci\cc_0700
+     dvi: Class GUID of device changed to: {4d36e978-e325-11ce-bfc1-08002be10318}.
+     dvi: Waiting for previous device install to complete. 11:06:41.178
+     ndv: {Core Device Install} 11:06:44.146
+     dvi:      {Install Device - PCI\VEN_8086&DEV_06E3&SUBSYS_12591734&REV_00\3&11583659&0&B3} 11:06:44.146
+     dvi:           Device Status: 0x0180200a
+     dvi:           Config Flags: 0x00000400
+     dvi:           Parent Device: ACPI\PNP0A08\0
+     dvi:           {DIF_ALLOW_INSTALL} 11:06:44.146
+     dvi:                Using exported function 'PortsClassInstaller' in module 'C:\WINDOWS\system32\MsPorts.Dll'.
+     dvi:                Class installer == MsPorts.Dll,PortsClassInstaller
+     dvi:                Class installer: Enter 11:06:44.146
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:44.146
+     dvi:                Default installer: Exit
+     dvi:           {DIF_ALLOW_INSTALL - exit(0xe000020e)} 11:06:44.146
+     dvi:           {DIF_INSTALLDEVICEFILES} 11:06:44.146
+     dvi:                Class installer: Enter 11:06:44.146
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:44.146
+     dvi:                Default installer: Exit
+     dvi:           {DIF_INSTALLDEVICEFILES - exit(0x00000000)} 11:06:44.162
+     dvi:           {_SCAN_FILE_QUEUE} 11:06:44.162
+     dvi:           {_SCAN_FILE_QUEUE - exit(0x00000000)} 11:06:44.162
+     flq:           {FILE_QUEUE_COMMIT} 11:06:44.162
+     flq:           {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:44.162
+     dvi:           {DIF_REGISTER_COINSTALLERS} 11:06:44.162
+     dvi:                Reset Device: Resetting device configuration. 11:06:44.162
+     dvi:                Reset Device: Resetting device configuration completed. 11:06:44.162
+     dvi:                Class installer: Enter 11:06:44.162
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:44.162
+     inf:                     {Install from INF Section - ComPort.NT.CoInstallers} 11:06:44.162
+     inf:                          Flags         - 0x001001ee
+     inf:                     {Install from INF Section - exit(0x00000000)} 11:06:44.162
+     dvi:                Default installer: Exit
+     dvi:           {DIF_REGISTER_COINSTALLERS - exit(0x00000000)} 11:06:44.162
+     dvi:           {DIF_INSTALLINTERFACES} 11:06:44.162
+     dvi:                Class installer: Enter 11:06:44.162
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:44.162
+     dvi:                Default installer: Exit
+     dvi:           {DIF_INSTALLINTERFACES - exit(0x00000000)} 11:06:44.162
+     dvi:           {DIF_INSTALLDEVICE} 11:06:44.162
+     dvi:                Class installer: Enter 11:06:44.162
+     inf:                     {Install from INF Section - ComPort.NT} 11:06:44.162
+     inf:                          Flags         - 0x00000004
+     inf:                     {Install from INF Section - exit(0x00000000)} 11:06:44.162
+     dvi:                     {Install DEVICE}
+     inf:                          {Install from INF Section - ComPort.NT} 11:06:44.177
+     inf:                               Flags         - 0x001005ee
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:06:44.177
+     inf:                          {Install from INF Section - ComPort.NT.Hw} 11:06:44.177
+     inf:                               Flags         - 0x00100004
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:06:44.177
+     dvi:                          {Writing Device Properties}
+     dvi:                               Strong Name=oem38.inf:5f63e534294fb1c7:ComPort:2042.0.13.0:pci\ven_8086&dev_06e3&cc_0700
+     dvi:                          {Writing Device Properties - Complete}
+     inf:                          AddService=Serial,0x00000002,Serial_Service_Inst,Serial_EventLog_Inst  (mesrl.inf line 110)
+     dvi:                          Add Service: Modified existing service 'Serial'.
+     inf:                          {Install from INF Section - Serial_Service_Inst} 11:06:44.177
+     inf:                               Flags         - 0x00100004
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:06:44.177
+     inf:                          {Install from INF Section - Serial_EventLog_Inst} 11:06:44.177
+     inf:                               Flags         - 0x00100004
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:06:44.177
+     inf:                          AddService=Serenum,,Serenum_Service_Inst  (mesrl.inf line 111)
+     dvi:                          Add Service: Modified existing service 'Serenum'.
+     inf:                          {Install from INF Section - Serenum_Service_Inst} 11:06:44.193
+     inf:                               Flags         - 0x00100004
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:06:44.193
+     dvi:                     {Install DEVICE exit (0x00000000)}
+     dvi:                     Install Device: Configuring device class. 11:06:44.193
+     dvi:                     Install Device: Configuring device class completed. 11:06:44.193
+     dvi:                     Device Status: 0x0180200a
+     dvi:                     Install Device: Removing device 'PCI\VEN_8086&DEV_06E3&SUBSYS_12591734&REV_00\3&11583659&0&B3' and sub-tree. 11:06:44.193
+     dvi:                     Install Device: Removing device sub-tree completed. 11:06:44.193
+     dvi:                     Install Device: Restarting device. 11:06:44.193
+     dvi:                     Install Device: Restarting device completed. 11:06:44.273
+     dvi:                Class installer: Exit
+     dvi:           {DIF_INSTALLDEVICE - exit(0x00000000)} 11:06:44.275
+     dvi:           {DIF_NEWDEVICEWIZARD_FINISHINSTALL} 11:06:44.276
+     dvi:                Class installer: Enter 11:06:44.276
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:06:44.276
+     dvi:                Default installer: Exit
+     dvi:           {DIF_NEWDEVICEWIZARD_FINISHINSTALL - exit(0xe000020e)} 11:06:44.276
+     dvi:      {Install Device - exit(0x00000000)} 11:06:44.276
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:44.276
+<<<  Section end 2025/11/05 11:06:44.336
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - PCI\VEN_8086&DEV_06E0&SUBSYS_12591734&REV_00\3&11583659&0&B0]
+>>>  Section start 2025/11/05 11:06:40.906
+     ump: Install needed due to device needing additional installation
+     utl: {Select Drivers - PCI\VEN_8086&DEV_06E0&SUBSYS_12591734&REV_00\3&11583659&0&B0} 11:06:40.972
+     utl:      Driver Node:
+     utl:           Status         - Selected | Installed
+     utl:           Driver INF     - oem19.inf (C:\WINDOWS\System32\DriverStore\FileRepository\heci.inf_amd64_605dda426937489f\heci.inf)
+     utl:           Class GUID     - {4d36e97d-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 02/16/2021,2108.100.0.1053
+     utl:           Configuration  - PCI\VEN_8086&DEV_06E0 [TEE_DDI_x64]
+     utl:           Driver Rank    - 00FF2001
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_13591978353947687_1152921505693227861
+     utl:      Driver Extension Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - oem52.inf (C:\WINDOWS\System32\DriverStore\FileRepository\wiman_wlan_extension.inf_amd64_da5802c56524bce0\wiman_wlan_extension.inf)
+     utl:           Class GUID     - {e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+     utl:           Extension ID   - {babe2782-eb1b-46a7-871a-f043d3200542}
+     utl:           Driver Version - 04/29/2021,2117.61.56.0
+     utl:           Configuration  - PCI\VEN_8086&DEV_06E0
+     utl:           Driver Rank    - 00FF2001
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_14496758702136689_1152921505693447299
+     utl: {Select Drivers - exit(0x00000000} 11:06:40.972
+     dvi: Install flags: 0x00010020
+     dvi: Waiting for previous device install to complete. 11:06:40.972
+     dvi: {Core Device Install} 11:06:42.019
+     dvi:      {Configure Device - PCI\VEN_8086&DEV_06E0&SUBSYS_12591734&REV_00\3&11583659&0&B0} 11:06:42.019
+     dvi:           Device Status: 0x0180200a
+     dvi:           Config Flags: 0x00000400
+     dvi:           Parent Device: ACPI\PNP0A08\0
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\heci.inf_amd64_605dda426937489f\heci.inf} 11:06:42.097
+     sto:                Source Filter  = PCI\VEN_8086&DEV_06E0
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {4d36e97d-e325-11ce-bfc1-08002be10318}
+     inf:                Class Options  = Configurable BootCritical
+     inf:                {Configure Driver: Intel(R) Management Engine Interface #1}
+     inf:                     Section Name = TEE_DDI_x64
+     inf:                     {Add Service: MEIx64}
+     inf:                          Flags         = 0x2
+     inf:                          Start Type    = 3
+     inf:                          Service Type  = 1
+     inf:                          Error Control = 1
+     inf:                          Image Path    = \SystemRoot\System32\DriverStore\FileRepository\heci.inf_amd64_605dda426937489f\x64\TeeDriverW10x64.sys
+     inf:                          Display Name  = Intel(R) Management Engine Interface 
+     inf:                          Group         = Extended Base
+     inf:                          Updated service 'MEIx64'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     {Add Event Provider: Teedriver}
+     inf:                          Provider ID    = {e1da8995-85bc-452b-b62b-0913306a430e}
+     inf:                          Resource File  = %SystemRoot%\System32\DriverStore\FileRepository\heci.inf_amd64_605dda426937489f\x64\TeeDriverW10x64.sys
+     inf:                          Message File   = %SystemRoot%\System32\DriverStore\FileRepository\heci.inf_amd64_605dda426937489f\x64\TeeDriverW10x64.sys
+     inf:                     {Add Event Provider: exit(0x00000000)}
+     inf:                     Hardware Id  = PCI\VEN_8086&DEV_06E0
+     inf:                     {Configure Driver Configuration: TEE_DDI_x64}
+     inf:                          Service Name  = MEIx64
+     inf:                          {Add Component: OEM_DAL_component}
+     inf:                               Component Ids = SWC\3C4852D6-D47B-4F46-B05E-B5EDC1AA440E
+     inf:                          {Add Component: exit(0x00000000)}
+     inf:                          {Add Component: OEM_ICLS_component}
+     inf:                               Component Ids = SWC\PROVIDER_INTEL_COMPONENT_ICLSCLIENT
+     inf:                          {Add Component: exit(0x00000000)}
+     inf:                          {Add Component: OEM_LMS_component}
+     inf:                               Component Ids = SWC\5DCEB103-DD64-403C-A17C-94FC5F917A9C
+     inf:                          {Add Component: exit(0x00000000)}
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:42.213
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:42.213
+     sto:           {Configure Driver Package: exit(0x00000000)} 11:06:42.223
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\wiman_wlan_extension.inf_amd64_da5802c56524bce0\wiman_wlan_extension.inf} 11:06:42.223
+     sto:                Source Filter  = PCI\VEN_8086&DEV_06E0
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+     inf:                Class Options  = Configurable
+     inf:                {Configure Driver: Intel® Wireless Manageability Driver extension}
+     inf:                     Section Name = WiManWlanExtInstallSection_HECI.NT
+     inf:                     Hardware Id  = PCI\VEN_8086&DEV_06E0
+     inf:                     {Configure Driver Configuration: WiManWlanExtInstallSection_HECI.NT}
+     inf:                          No associated service.
+     inf:                          {Add Component: WiMan_Component}
+     inf:                               Component Ids = SWC\B74B5286-A7A5-444D-973B-71A66AF711BE
+     inf:                          {Add Component: exit(0x00000000)}
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:42.223
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:42.223
+     sto:           {Configure Driver Package: exit(0x00000000)} 11:06:42.223
+     dvi:           Install Device: Configuring device. 11:06:42.223
+     dvi:                Configuration: oem19.inf:PCI\VEN_8086&DEV_06E0,TEE_DDI_x64
+     dvi:                Configuration: oem52.inf:PCI\VEN_8086&DEV_06E0,*
+     dvi:           Install Device: Configuring device completed. 11:06:42.239
+     dvi:           Device Status: 0x0180200a
+     dvi:           Install Device: Removing device 'PCI\VEN_8086&DEV_06E0&SUBSYS_12591734&REV_00\3&11583659&0&B0' and sub-tree. 11:06:42.239
+     dvi:           Install Device: Removing device sub-tree completed. 11:06:42.286
+     dvi:           Install Device: Restarting device. 11:06:42.286
+     dvi:           Install Device: Restarting device completed. 11:06:42.338
+     dvi:      {Configure Device - exit(0x00000000)} 11:06:42.338
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:42.338
+<<<  Section end 2025/11/05 11:06:42.338
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - HDAUDIO\FUNC_01&VEN_10EC&DEV_0623&SUBSYS_1734125A&REV_1000\4&3097fce&0&0001]
+>>>  Section start 2025/11/05 11:06:40.906
+     ump: Install needed due to device having problem code CM_PROB_REINSTALL
+     utl: {Select Drivers - HDAUDIO\FUNC_01&VEN_10EC&DEV_0623&SUBSYS_1734125A&REV_1000\4&3097fce&0&0001} 11:06:40.988
+     utl:      Driver Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - oem13.inf (C:\WINDOWS\System32\DriverStore\FileRepository\hdxfts.inf_amd64_4bf47d96ac54e4e2\hdxfts.inf)
+     utl:           Class GUID     - {4d36e96c-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 03/23/2021,6.0.9136.1
+     utl:           Configuration  - HDAUDIO\FUNC_01&VEN_10EC&DEV_0623&SUBSYS_1734125A
+     utl:           Driver Rank    - 00FF0001
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989850_14044911572686516_1152921505693319350
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - hdaudio.inf (C:\WINDOWS\System32\DriverStore\FileRepository\hdaudio.inf_amd64_22f2127ec785fb8d\hdaudio.inf)
+     utl:           Class GUID     - {4d36e96c-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 07/03/2024,10.0.26100.1150
+     utl:           Configuration  - HDAUDIO\FUNC_01 [HdAudModel]
+     utl:           Driver Rank    - 00FF300C
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:06:40.988
+     dvi: Install flags: 0x00010020
+     dvi: Waiting for previous device install to complete. 11:06:40.988
+     dvi: {Core Device Install} 11:06:42.338
+     dvi:      {Configure Device - HDAUDIO\FUNC_01&VEN_10EC&DEV_0623&SUBSYS_1734125A&REV_1000\4&3097fce&0&0001} 11:06:42.413
+     dvi:           Device Status: 0x01802400 [0x12 - 0xc0000493]
+     dvi:           Config Flags: 0x00000020
+     dvi:           Parent Device: PCI\VEN_8086&DEV_06C8&SUBSYS_125A1734&REV_00\3&11583659&0&FB
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\hdxfts.inf_amd64_4bf47d96ac54e4e2\hdxfts.inf} 11:06:42.414
+     sto:                Source Filter  = HDAUDIO\FUNC_01&VEN_10EC&DEV_0623&SUBSYS_1734125A
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {4d36e96c-e325-11ce-bfc1-08002be10318}
+     inf:                Class Options  = Configurable
+     inf:                {Configure Driver: Realtek High Definition Audio}
+     inf:                     Section Name = IntcAzAudModel.NTamd64
+     inf:                     {Add Service: IntcAzAudAddService}
+     inf:                          Flags         = 0x2
+     inf:                          Start Type    = 3
+     inf:                          Service Type  = 1
+     inf:                          Error Control = 1
+     inf:                          Image Path    = \SystemRoot\system32\drivers\RTKVHD64.sys
+     inf:                          Display Name  = Service for Realtek HD Audio (WDM)
+     inf:                          Created new service 'IntcAzAudAddService'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     Hardware Id  = HDAUDIO\FUNC_01&VEN_10EC&DEV_0623&SUBSYS_1734125A
+     inf:                     {Configure Driver Configuration: IntcAzAudModel.NTamd64}
+     inf:                          Service Name  = IntcAzAudAddService
+     inf:                          Included INFs = ks.inf
+     inf:                                          wdmaudio.inf
+     inf:                          Include Scope = Services
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:42.561
+     flq:                     Copying 'C:\WINDOWS\System32\DriverStore\FileRepository\hdxfts.inf_amd64_4bf47d96ac54e4e2\RTKVHD64.sys' to 'C:\WINDOWS\system32\drivers\RTKVHD64.sys'.
+     flq:                     Copying 'C:\WINDOWS\System32\DriverStore\FileRepository\hdxfts.inf_amd64_4bf47d96ac54e4e2\RTAIODAT.DAT' to 'C:\WINDOWS\system32\drivers\RTAIODAT.DAT'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\wdmaudio.inf_amd64_2f11a8496cd2974f\drmk.sys' to 'C:\WINDOWS\System32\drivers\drmk.sys'.
+     cpy:                     Existing file 'C:\WINDOWS\System32\drivers\drmk.sys' remains unchanged.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\wdmaudio.inf_amd64_2f11a8496cd2974f\portcls.sys' to 'C:\WINDOWS\System32\drivers\portcls.sys'.
+     cpy:                     Existing file 'C:\WINDOWS\System32\drivers\portcls.sys' remains unchanged.
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:42.607
+     dvi:                Existing files modified, may need to restart related services.
+     sto:           {Configure Driver Package: exit(0x00000bc3)} 11:06:42.607
+     dvi:           Restart required for any devices using this driver.
+     dvi:           Install Device: Configuring device. 11:06:42.607
+     dvi:                Configuration: oem13.inf:HDAUDIO\FUNC_01&VEN_10EC&DEV_0623&SUBSYS_1734125A,*
+     dvi:           Install Device: Configuring device completed. 11:06:42.630
+     dvi:           Device Status: 0x01802000
+     dvi:           {Restarting Devices} 11:06:42.630
+     dvi:                Start: HDAUDIO\FUNC_01&VEN_10EC&DEV_0623&SUBSYS_1734125A&REV_1000\4&3097FCE&0&0001
+     dvi:           {Restarting Devices exit} 11:06:43.194
+     dvi:      {Configure Device - exit(0x00000000)} 11:06:43.194
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:43.194
+<<<  Section end 2025/11/05 11:06:43.265
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - PCI\VEN_8086&DEV_9BC8&SUBSYS_12591734&REV_03\3&11583659&0&10]
+>>>  Section start 2025/11/05 11:06:40.909
+     ump: Install needed due to device having problem code CM_PROB_REINSTALL
+     utl: {Select Drivers - PCI\VEN_8086&DEV_9BC8&SUBSYS_12591734&REV_03\3&11583659&0&10} 11:06:40.925
+     utl:      Driver Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - oem29.inf (C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\iigd_dch.inf)
+     utl:           Class GUID     - {4d36e968-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 10/07/2021,30.0.100.9955
+     utl:           Configuration  - PCI\VEN_8086&DEV_9BC8
+     utl:           Driver Rank    - 00CF2001
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_13613786180661125_1152921505694012439
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - display.inf (C:\WINDOWS\System32\DriverStore\FileRepository\display.inf_amd64_34a28de3c87d810f\display.inf)
+     utl:           Class GUID     - {4d36e968-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - PCI\CC_0300 [MSBDA]
+     utl:           Driver Rank    - 00FB2008
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:06:40.925
+     dvi: Install flags: 0x00010020
+     dvi: {Core Device Install} 11:06:40.941
+     dvi:      {Configure Device - PCI\VEN_8086&DEV_9BC8&SUBSYS_12591734&REV_03\3&11583659&0&10} 11:06:40.972
+     dvi:           Device Status: 0x01802400 [0x12 - 0xc0000493]
+     dvi:           Config Flags: 0x00000020
+     dvi:           Parent Device: ACPI\PNP0A08\0
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\iigd_dch.inf} 11:06:40.972
+     sto:                Source Filter  = PCI\VEN_8086&DEV_9BC8
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {4d36e968-e325-11ce-bfc1-08002be10318}
+     inf:                Class Options  = Configurable
+     inf:                {Configure Driver: Intel(R) UHD Graphics 630}
+     inf:                     Section Name = iCML_w10_DS
+     inf:                     {Add Service: igfx}
+     inf:                          Flags         = 0x2
+     inf:                          Start Type    = 3
+     inf:                          Service Type  = 1
+     inf:                          Error Control = 0
+     inf:                          Image Path    = \SystemRoot\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\igdkmd64.sys
+     inf:                          Group         = Video
+     inf:                          Created new service 'igfx'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     {Add Service: cphs}
+     inf:                          Start Type    = 2
+     inf:                          Service Type  = 16
+     inf:                          Error Control = 1
+     inf:                          Image Path    = %SystemRoot%\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\IntelCpHeciSvc.exe
+     inf:                          Display Name  = Intel(R) Content Protection HECI Service
+     inf:                          Description   = Intel(R) Content Protection HECI Service - enables communication with the Content Protection FW
+     inf:                          Created new service 'cphs'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     {Add Service: cplspcon}
+     inf:                          Start Type    = 2
+     inf:                          Service Type  = 16
+     inf:                          Error Control = 1
+     inf:                          Image Path    = %SystemRoot%\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\IntelCpHDCPSvc.exe
+     inf:                          Display Name  = Intel(R) Content Protection HDCP Service
+     inf:                          Description   = Intel(R) Content Protection HDCP Service - enables communication with Content Protection HDCP HW
+     inf:                          Created new service 'cplspcon'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     Hardware Id  = PCI\VEN_8086&DEV_9BC8
+     inf:                     {Configure Driver Configuration: iCML_w10_DS}
+     inf:                          Service Name  = igfx
+     inf:                          Win32 Services = cphs
+     inf:                                           cplspcon
+     inf:                          {Add Component: CUI}
+     inf:                               Component Ids = SWC\100.9955_VEN8086_GFXUI
+     inf:                          {Add Component: exit(0x00000000)}
+     inf:                          {Add Component: IGCC}
+     inf:                               Component Ids = SWC\100.9955_VEN8086_IGCC
+     inf:                          {Add Component: exit(0x00000000)}
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:41.123
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\vulkan-1-32.dll' to 'C:\WINDOWS\SysWow64\vulkan-1.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\vulkaninfo-32.exe' to 'C:\WINDOWS\SysWow64\vulkaninfo.exe'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\vulkan-1-32.dll' to 'C:\WINDOWS\SysWow64\vulkan-1-999-0-0-0.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\vulkaninfo-32.exe' to 'C:\WINDOWS\SysWow64\vulkaninfo-1-999-0-0-0.exe'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\vulkan-1-64.dll' to 'C:\WINDOWS\System32\vulkan-1.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\vulkaninfo-64.exe' to 'C:\WINDOWS\System32\vulkaninfo.exe'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\vulkan-1-64.dll' to 'C:\WINDOWS\System32\vulkan-1-999-0-0-0.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\vulkaninfo-64.exe' to 'C:\WINDOWS\System32\vulkaninfo-1-999-0-0-0.exe'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\Intel_OpenCL_ICD32.dll' to 'C:\WINDOWS\SysWow64\OpenCL.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\Intel_OpenCL_ICD64.dll' to 'C:\WINDOWS\System32\OpenCL.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\ze_loader.dll' to 'C:\WINDOWS\System32\ze_loader.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\ze_validation_layer.dll' to 'C:\WINDOWS\System32\ze_validation_layer.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\ze_tracing_layer.dll' to 'C:\WINDOWS\System32\ze_tracing_layer.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\ControlLib.dll' to 'C:\WINDOWS\System32\ControlLib.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\mfx_loader_dll_hw32.dll' to 'C:\WINDOWS\SysWow64\libmfxhw32.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\mfxplugin32_hw.dll' to 'C:\WINDOWS\SysWow64\mfxplugin32_hw.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\mfx_loader_dll_hw64.dll' to 'C:\WINDOWS\System32\libmfxhw64.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\mfxplugin64_hw.dll' to 'C:\WINDOWS\System32\mfxplugin64_hw.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\intel_gfx_api-x64.dll' to 'C:\WINDOWS\System32\intel_gfx_api-x64.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\vpl_dispatcher_64.dll' to 'C:\WINDOWS\System32\libvpl.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\intel_gfx_api-x86.dll' to 'C:\WINDOWS\SysWow64\intel_gfx_api-x86.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\iigd_dch.inf_amd64_bb614eb89871cffc\vpl_dispatcher_32.dll' to 'C:\WINDOWS\SysWow64\libvpl.dll'.
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:41.227
+     dvi:                Existing files modified, may need to restart related services.
+     sto:           {Configure Driver Package: exit(0x00000bc3)} 11:06:41.227
+     dvi:           Restart required for any devices using this driver.
+     dvi:           Install Device: Configuring device. 11:06:41.227
+     dvi:                Configuration: oem29.inf:PCI\VEN_8086&DEV_9BC8,*
+     dvi:           Install Device: Configuring device completed. 11:06:41.240
+     dvi:           Device Status: 0x01802000
+     dvi:           {Restarting Devices} 11:06:41.240
+     dvi:                Start: PCI\VEN_8086&DEV_9BC8&SUBSYS_12591734&REV_03\3&11583659&0&10
+     dvi:           {Restarting Devices exit} 11:06:41.976
+     dvi:      {Configure Device - exit(0x00000000)} 11:06:41.976
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:41.976
+<<<  Section end 2025/11/05 11:06:42.034
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - PCI\VEN_8086&DEV_06C8&SUBSYS_125A1734&REV_00\3&11583659&0&FB]
+>>>  Section start 2025/11/05 11:06:40.909
+     ump: Install needed due to device needing additional installation
+     utl: {Select Drivers - PCI\VEN_8086&DEV_06C8&SUBSYS_125A1734&REV_00\3&11583659&0&FB} 11:06:40.925
+     utl:      Driver Node:
+     utl:           Status         - Selected | Installed
+     utl:           Driver INF     - hdaudbus.inf (C:\WINDOWS\System32\DriverStore\FileRepository\hdaudbus.inf_amd64_7c5144127b6ada21\hdaudbus.inf)
+     utl:           Class GUID     - {4d36e97d-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 07/03/2024,10.0.26100.1150
+     utl:           Configuration  - PCI\CC_0403 [HDAudio_Device.NT]
+     utl:           Driver Rank    - 00FF2006
+     utl:           Signer Score   - Inbox (0D000003)
+     utl:      Driver Extension Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - oem12.inf (C:\WINDOWS\System32\DriverStore\FileRepository\hdbusext.inf_amd64_0059fff642647f16\hdbusext.inf)
+     utl:           Class GUID     - {e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+     utl:           Extension ID   - {69cb4edd-bafe-4f9a-9135-c1f284d6860d}
+     utl:           Driver Version - 10/07/2021,30.0.100.9955
+     utl:           Configuration  - PCI\VEN_8086&DEV_06C8
+     utl:           Driver Rank    - 00FF2001
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_13613786180661125_1152921505694012439
+     utl: {Select Drivers - exit(0x00000000} 11:06:41.051
+     dvi: Install flags: 0x00010020
+     dvi: Waiting for previous device install to complete. 11:06:41.051
+     dvi: {Core Device Install} 11:06:43.194
+     dvi:      {Configure Device - PCI\VEN_8086&DEV_06C8&SUBSYS_125A1734&REV_00\3&11583659&0&FB} 11:06:43.200
+     dvi:           Device Status: 0x0180200a
+     dvi:           Config Flags: 0x00000400
+     dvi:           Parent Device: ACPI\PNP0A08\0
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\hdaudbus.inf_amd64_7c5144127b6ada21\hdaudbus.inf} 11:06:43.202
+     sto:                Source Filter  = PCI\CC_0403
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {4d36e97d-e325-11ce-bfc1-08002be10318}
+     inf:                Class Options  = Configurable BootCritical
+     inf:                {Configure Driver: High Definition Audio Controller}
+     inf:                     Section Name = HDAudio_Device.NT
+     inf:                     {Add Service: HDAudBus}
+     inf:                          Flags         = 0x2
+     inf:                          Start Type    = 3
+     inf:                          Service Type  = 1
+     inf:                          Error Control = 1
+     inf:                          Image Path    = \SystemRoot\System32\drivers\HDAudBus.sys
+     inf:                          Display Name  = Microsoft UAA Bus Driver for High Definition Audio
+     inf:                          Group         = Extended Base
+     inf:                          Updated service 'HDAudBus'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     Hardware Id  = PCI\CC_0403
+     inf:                     {Configure Driver Configuration: HDAudio_Device.NT}
+     inf:                          Service Name  = HDAudBus
+     inf:                          Included INFs = wdmaudio.inf
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:43.218
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\hdaudbus.inf_amd64_7c5144127b6ada21\hdaudbus.sys' to 'C:\WINDOWS\System32\drivers\hdaudbus.sys'.
+     cpy:                     Existing file 'C:\WINDOWS\System32\drivers\hdaudbus.sys' remains unchanged.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\wdmaudio.inf_amd64_2f11a8496cd2974f\drmk.sys' to 'C:\WINDOWS\System32\drivers\drmk.sys'.
+     cpy:                     Existing file 'C:\WINDOWS\System32\drivers\drmk.sys' remains unchanged.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\wdmaudio.inf_amd64_2f11a8496cd2974f\portcls.sys' to 'C:\WINDOWS\System32\drivers\portcls.sys'.
+     cpy:                     Existing file 'C:\WINDOWS\System32\drivers\portcls.sys' remains unchanged.
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:43.236
+     sto:           {Configure Driver Package: exit(0x00000000)} 11:06:43.236
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\hdbusext.inf_amd64_0059fff642647f16\hdbusext.inf} 11:06:43.236
+     sto:                Source Filter  = PCI\VEN_8086&DEV_06C8
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+     inf:                Class Options  = Configurable
+     inf:                {Configure Driver: Intel(R) HD Graphics SGPC}
+     inf:                     Section Name = iAUDIO_w10_SGPC_GEN9_DS
+     inf:                     Hardware Id  = PCI\VEN_8086&DEV_06C8
+     inf:                     {Configure Driver Configuration: iAUDIO_w10_SGPC_GEN9_DS}
+     inf:                          No associated service.
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:43.236
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:43.236
+     sto:           {Configure Driver Package: exit(0x00000000)} 11:06:43.236
+     dvi:           Install Device: Configuring device. 11:06:43.236
+     dvi:                Configuration: hdaudbus.inf:PCI\CC_0403,HDAudio_Device.NT
+     dvi:                Configuration: oem12.inf:PCI\VEN_8086&DEV_06C8,*
+     dvi:           Install Device: Configuring device completed. 11:06:43.248
+     dvi:           Device Status: 0x0180200a
+     dvi:           Install Device: Removing device 'PCI\VEN_8086&DEV_06C8&SUBSYS_125A1734&REV_00\3&11583659&0&FB' and sub-tree. 11:06:43.248
+     dvi:           Install Device: Removing device sub-tree completed. 11:06:43.297
+     dvi:           Install Device: Restarting device. 11:06:43.297
+     dvi:           Install Device: Restarting device completed. 11:06:43.784
+     dvi:      {Configure Device - exit(0x00000000)} 11:06:43.784
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:43.784
+<<<  Section end 2025/11/05 11:06:43.863
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - ROOT\KDNIC\0000]
+>>>  Section start 2025/11/05 11:06:40.956
+     ump: Install needed due to device having problem code CM_PROB_REINSTALL
+     utl: {Select Drivers - ROOT\KDNIC\0000} 11:06:40.964
+     utl:      Driver Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - kdnic.inf (C:\WINDOWS\System32\DriverStore\FileRepository\kdnic.inf_amd64_a9d04a55194853d2\kdnic.inf)
+     utl:           Class GUID     - {4d36e972-e325-11ce-bfc1-08002be10318}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1150
+     utl:           Configuration  - root\kdnic
+     utl:           Driver Rank    - 00FF0000
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:06:40.968
+     dvi: Install flags: 0x00010020
+     dvi: Waiting for previous device install to complete. 11:06:40.968
+     dvi: {Core Device Install} 11:06:41.976
+     dvi:      {Configure Device - ROOT\KDNIC\0000} 11:06:41.976
+     dvi:           Device Status: 0x01802401 [0x12 - 0xc0000493]
+     dvi:           Config Flags: 0x00000020
+     dvi:           Parent Device: HTREE\ROOT\0
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\kdnic.inf_amd64_a9d04a55194853d2\kdnic.inf} 11:06:41.976
+     sto:                Source Filter  = root\kdnic
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {4d36e972-e325-11ce-bfc1-08002be10318}
+     inf:                Class Options  = Configurable
+     dvi:                {Configure Device: ROOT\KDNIC\0000}
+     dvi:                     Device Instance Id = ROOT\KDNIC\0000
+     dvi:                     Updating existing device instance.
+     dvi:                {Configure Device: exit(0x00000000)}
+     inf:                {Configure Driver: Microsoft Kernel Debug Network Adapter}
+     inf:                     Section Name = KdNic.ndi
+     inf:                     {Add Service: kdnic}
+     inf:                          Flags         = 0x2
+     inf:                          Start Type    = 3
+     inf:                          Service Type  = 1
+     inf:                          Error Control = 1
+     inf:                          Image Path    = \SystemRoot\System32\drivers\kdnic.sys
+     inf:                          Display Name  = Microsoft Kernel Debug Network Miniport
+     inf:                          Group         = NDIS
+     inf:                          Created new service 'kdnic'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     Hardware Id  = root\kdnic
+     inf:                     {Configure Driver Configuration: KdNic.ndi}
+     inf:                          Service Name  = kdnic
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:41.987
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\kdnic.inf_amd64_a9d04a55194853d2\kdnic.sys' to 'C:\WINDOWS\System32\drivers\kdnic.sys'.
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:42.005
+     dvi:                Existing files modified, may need to restart related services.
+     sto:           {Configure Driver Package: exit(0x00000bc3)} 11:06:42.005
+     dvi:           Restart required for any devices using this driver.
+     dvi:           Install Device: Configuring device. 11:06:42.005
+     dvi:                Configuration: kdnic.inf:root\kdnic,*
+     dvi:           Install Device: Configuring device completed. 11:06:42.005
+     dvi:           Device Status: 0x01802001
+     dvi:           {Restarting Devices} 11:06:42.005
+     dvi:                Start: ROOT\KDNIC\0000
+!    dvi:                Device 'ROOT\KDNIC\0000' pending start: Device has problem: 0x38 (CM_PROB_NEED_CLASS_CONFIG), problem status: 0x00000000.
+     dvi:           {Restarting Devices exit} 11:06:42.019
+     dvi:      {Configure Device - exit(0x00000000)} 11:06:42.019
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:42.019
+     dvi: Waiting for device post-install to complete. 11:06:42.019
+     dvi: Device post-install completed. 11:06:42.097
+     dvi: Device Status: 0x4180200b
+<<<  Section end 2025/11/05 11:06:42.097
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - SWD\DRIVERENUM\OEM_DAL_component&4&2c0296ae&0]
+>>>  Section start 2025/11/05 11:06:41.019
+     ump: Install needed due to device being marked for re-install
+     utl: {Select Drivers - SWD\DRIVERENUM\OEM_DAL_component&4&2c0296ae&0} 11:06:41.019
+     utl:      Driver Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - oem4.inf (C:\WINDOWS\System32\DriverStore\FileRepository\dal.inf_amd64_b5484efd38adbe8d\dal.inf)
+     utl:           Class GUID     - {5c4c3332-344d-483c-8739-259e934c9cc8}
+     utl:           Driver Version - 01/21/2021,1.41.2021.121
+     utl:           Configuration  - SWC\3C4852D6-D47B-4F46-B05E-B5EDC1AA440E
+     utl:           Driver Rank    - 00FF0000
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_14565973164124959_1152921505692967792
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - c_swcomponent.inf (C:\WINDOWS\System32\DriverStore\FileRepository\c_swcomponent.inf_amd64_1536c854ab7bdc83\c_swcomponent.inf)
+     utl:           Class GUID     - {5c4c3332-344d-483c-8739-259e934c9cc8}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - SWC\Generic [SoftwareComponent]
+     utl:           Driver Rank    - 00FF3000
+     utl:           Signer Score   - Inbox (0D000003)
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - c_swdevice.inf (C:\WINDOWS\System32\DriverStore\FileRepository\c_swdevice.inf_amd64_845d51425d14f98b\c_swdevice.inf)
+     utl:           Class GUID     - {62f9c741-b25a-46ce-b54c-9bccce08b6f2}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - SWD\GenericRaw [SoftwareDevice]
+     utl:           Driver Rank    - 00FF3001
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:06:41.288
+     dvi: Install flags: 0x00010020
+     dvi: Waiting for previous device install to complete. 11:06:41.288
+     dvi: {Core Device Install} 11:06:46.817
+     dvi:      {Configure Device - SWD\DRIVERENUM\OEM_DAL_component&4&2c0296ae&0} 11:06:46.817
+     dvi:           Device Status: 0x0180200a
+     dvi:           Config Flags: 0x00000420
+     dvi:           Parent Device: PCI\VEN_8086&DEV_06E0&SUBSYS_12591734&REV_00\3&11583659&0&B0
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\dal.inf_amd64_b5484efd38adbe8d\dal.inf} 11:06:46.824
+     sto:                Source Filter  = SWC\3C4852D6-D47B-4F46-B05E-B5EDC1AA440E
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {5c4c3332-344d-483c-8739-259e934c9cc8}
+     inf:                Class Options  = Configurable
+     inf:                {Configure Driver: Intel(R) Dynamic Application Loader Host Interface}
+     inf:                     Section Name = DALInstallSection.ntamd64
+     inf:                     {Add Service: jhi_service}
+     inf:                          Flags         = 0x800
+     inf:                          Start Type    = 2
+     inf:                          Service Type  = 16
+     inf:                          Error Control = 1
+     inf:                          Image Path    = %SystemRoot%\System32\DriverStore\FileRepository\dal.inf_amd64_b5484efd38adbe8d\jhi_service.exe
+     inf:                          Display Name  = Intel(R) Dynamic Application Loader Host Interface Service
+     inf:                          Description   = Intel(R) Dynamic Application Loader Host Interface Service - Allows applications to access the local Intel (R) DAL
+     inf:                          Dependencies  = TCPIP
+     inf:                                          iphlpsvc
+     inf:                          Security      = D:(A;;LCRP;;;WD)(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)
+     inf:                          Created new service 'jhi_service'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     Hardware Id  = SWC\3C4852D6-D47B-4F46-B05E-B5EDC1AA440E
+     inf:                     {Configure Driver Configuration: DALInstallSection.ntamd64}
+     inf:                          Service Name  = <none>
+     inf:                          Win32 Services = jhi_service
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:46.832
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\dal.inf_amd64_b5484efd38adbe8d\JHI.dll' to 'C:\WINDOWS\SysWOW64\JHI.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\dal.inf_amd64_b5484efd38adbe8d\TEEManagement.dll' to 'C:\WINDOWS\SysWOW64\TEEManagement.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\dal.inf_amd64_b5484efd38adbe8d\JHI64.dll' to 'C:\WINDOWS\System32\JHI64.dll'.
+     flq:                     Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\dal.inf_amd64_b5484efd38adbe8d\TEEManagement64.dll' to 'C:\WINDOWS\System32\TEEManagement64.dll'.
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:46.848
+     inf:                Started service 'jhi_service'. 11:06:46.967
+     dvi:                Existing files modified, may need to restart related services.
+     sto:           {Configure Driver Package: exit(0x00000bc3)} 11:06:46.967
+     dvi:           Restart required for any devices using this driver.
+     dvi:           Install Device: Configuring device. 11:06:46.967
+     dvi:                Configuration: oem4.inf:SWC\3C4852D6-D47B-4F46-B05E-B5EDC1AA440E,*
+     dvi:           Install Device: Configuring device completed. 11:06:47.169
+     dvi:           Device Status: 0x0180200a
+     dvi:           {Restarting Devices} 11:06:47.170
+     dvi:                Query-remove: SWD\DRIVERENUM\OEM_DAL_COMPONENT&4&2C0296AE&0
+     dvi:                Start: SWD\DRIVERENUM\OEM_DAL_COMPONENT&4&2C0296AE&0
+     dvi:                Restart verified: SWD\DRIVERENUM\OEM_DAL_COMPONENT&4&2C0296AE&0
+     dvi:           {Restarting Devices exit} 11:06:47.184
+     dvi:      {Configure Device - exit(0x00000000)} 11:06:47.184
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:47.184
+<<<  Section end 2025/11/05 11:06:47.247
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - SWD\DRIVERENUM\CUI&4&14d96f43&0]
+>>>  Section start 2025/11/05 11:06:42.036
+     ump: Install needed due to device needing additional installation
+     utl: {Select Drivers - SWD\DRIVERENUM\CUI&4&14d96f43&0} 11:06:42.045
+     utl:      Driver Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - oem3.inf (C:\WINDOWS\System32\DriverStore\FileRepository\cui_dch.inf_amd64_ca344d3091c489b2\cui_dch.inf)
+     utl:           Class GUID     - {5c4c3332-344d-483c-8739-259e934c9cc8}
+     utl:           Driver Version - 10/07/2021,30.0.100.9955
+     utl:           Configuration  - SWC\100.9955_VEN8086_GFXUI
+     utl:           Driver Rank    - 00FF0000
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_13613786180661125_1152921505694012439
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - c_swcomponent.inf (C:\WINDOWS\System32\DriverStore\FileRepository\c_swcomponent.inf_amd64_1536c854ab7bdc83\c_swcomponent.inf)
+     utl:           Class GUID     - {5c4c3332-344d-483c-8739-259e934c9cc8}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - SWC\Generic [SoftwareComponent]
+     utl:           Driver Rank    - 00FF3000
+     utl:           Signer Score   - Inbox (0D000003)
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - c_swdevice.inf (C:\WINDOWS\System32\DriverStore\FileRepository\c_swdevice.inf_amd64_845d51425d14f98b\c_swdevice.inf)
+     utl:           Class GUID     - {62f9c741-b25a-46ce-b54c-9bccce08b6f2}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - SWD\GenericRaw [SoftwareDevice]
+     utl:           Driver Rank    - 00FF3001
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:06:42.050
+     dvi: Install flags: 0x00010020
+     dvi: Waiting for previous device install to complete. 11:06:42.050
+     dvi: {Core Device Install} 11:06:52.757
+     dvi:      {Configure Device - SWD\DRIVERENUM\CUI&4&14d96f43&0} 11:06:52.757
+     dvi:           Device Status: 0x0180200a
+     dvi:           Config Flags: 0x00000400
+     dvi:           Parent Device: PCI\VEN_8086&DEV_9BC8&SUBSYS_12591734&REV_03\3&11583659&0&10
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\cui_dch.inf_amd64_ca344d3091c489b2\cui_dch.inf} 11:06:52.757
+     sto:                Source Filter  = SWC\100.9955_VEN8086_GFXUI
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {5c4c3332-344d-483c-8739-259e934c9cc8}
+     inf:                Class Options  = Configurable
+     inf:                {Configure Driver: Intel(R) Graphics Control Panel}
+     inf:                     Section Name = Igdlh_CUI_Component_Install
+     inf:                     {Add Service: igfxCUIService2.0.0.0}
+     inf:                          Flags         = 0x800
+     inf:                          Start Type    = 2
+     inf:                          Service Type  = 16
+     inf:                          Error Control = 1
+     inf:                          Image Path    = %SystemRoot%\System32\DriverStore\FileRepository\cui_dch.inf_amd64_ca344d3091c489b2\igfxCUIService.exe
+     inf:                          Display Name  = Intel(R) HD Graphics Control Panel Service
+     inf:                          Description   = Service for Intel(R) HD Graphics Control Panel
+     inf:                          Group         = ProfSvc_Group
+     inf:                          Dependencies  = SENS
+     inf:                          Created new service 'igfxCUIService2.0.0.0'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     Hardware Id  = SWC\100.9955_VEN8086_GFXUI
+     inf:                     {Configure Driver Configuration: Igdlh_CUI_Component_Install}
+     inf:                          Service Name  = <none>
+     inf:                          Win32 Services = igfxCUIService2.0.0.0
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:52.784
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:52.784
+     inf:                Started service 'igfxCUIService2.0.0.0'. 11:06:52.866
+     sto:           {Configure Driver Package: exit(0x00000000)} 11:06:52.866
+     dvi:           Install Device: Configuring device. 11:06:52.866
+     dvi:                Configuration: oem3.inf:SWC\100.9955_VEN8086_GFXUI,*
+     dvi:           Install Device: Configuring device completed. 11:06:52.866
+     dvi:           Device Status: 0x0180200a
+     dvi:           Install Device: Removing device 'SWD\DRIVERENUM\CUI&4&14D96F43&0' and sub-tree. 11:06:52.866
+     dvi:           Install Device: Removing device sub-tree completed. 11:06:52.879
+     dvi:           Install Device: Restarting device. 11:06:52.879
+     dvi:           Install Device: Restarting device completed. 11:06:52.879
+     dvi:      {Configure Device - exit(0x00000000)} 11:06:52.879
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:52.879
+<<<  Section end 2025/11/05 11:06:52.943
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - SWD\DRIVERENUM\IGCC&4&14d96f43&0]
+>>>  Section start 2025/11/05 11:06:42.097
+     ump: Install needed due to device needing additional installation
+     utl: {Select Drivers - SWD\DRIVERENUM\IGCC&4&14d96f43&0} 11:06:42.097
+     utl:      Driver Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - oem28.inf (C:\WINDOWS\System32\DriverStore\FileRepository\igcc_dch.inf_amd64_f83b924791f3a52a\igcc_dch.inf)
+     utl:           Class GUID     - {5c4c3332-344d-483c-8739-259e934c9cc8}
+     utl:           Driver Version - 10/07/2021,30.0.100.9955
+     utl:           Configuration  - SWC\100.9955_VEN8086_IGCC
+     utl:           Driver Rank    - 00FF0000
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_13613786180661125_1152921505694012439
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - c_swcomponent.inf (C:\WINDOWS\System32\DriverStore\FileRepository\c_swcomponent.inf_amd64_1536c854ab7bdc83\c_swcomponent.inf)
+     utl:           Class GUID     - {5c4c3332-344d-483c-8739-259e934c9cc8}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - SWC\Generic [SoftwareComponent]
+     utl:           Driver Rank    - 00FF3000
+     utl:           Signer Score   - Inbox (0D000003)
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - c_swdevice.inf (C:\WINDOWS\System32\DriverStore\FileRepository\c_swdevice.inf_amd64_845d51425d14f98b\c_swdevice.inf)
+     utl:           Class GUID     - {62f9c741-b25a-46ce-b54c-9bccce08b6f2}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - SWD\GenericRaw [SoftwareDevice]
+     utl:           Driver Rank    - 00FF3001
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:06:42.117
+     dvi: Install flags: 0x00010020
+     dvi: Waiting for previous device install to complete. 11:06:42.117
+     dvi: {Core Device Install} 11:06:52.879
+     dvi:      {Configure Device - SWD\DRIVERENUM\IGCC&4&14d96f43&0} 11:06:52.879
+     dvi:           Device Status: 0x0180200a
+     dvi:           Config Flags: 0x00000400
+     dvi:           Parent Device: PCI\VEN_8086&DEV_9BC8&SUBSYS_12591734&REV_03\3&11583659&0&10
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\igcc_dch.inf_amd64_f83b924791f3a52a\igcc_dch.inf} 11:06:52.879
+     sto:                Source Filter  = SWC\100.9955_VEN8086_IGCC
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {5c4c3332-344d-483c-8739-259e934c9cc8}
+     inf:                Class Options  = Configurable
+     inf:                {Configure Driver: Intel(R) Graphics Command Center}
+     inf:                     Section Name = IGCC_Component_Install
+     inf:                     {Add Service: igccservice}
+     inf:                          Flags         = 0x800
+     inf:                          Start Type    = 2
+     inf:                          Service Type  = 16
+     inf:                          Error Control = 1
+     inf:                          Image Path    = %SystemRoot%\System32\DriverStore\FileRepository\igcc_dch.inf_amd64_f83b924791f3a52a\OneApp.IGCC.WinService.exe
+     inf:                          Display Name  = Intel(R) Graphics Command Center Service
+     inf:                          Description   = Service for Intel(R) Graphics Command Center
+     inf:                          Created new service 'igccservice'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     Hardware Id  = SWC\100.9955_VEN8086_IGCC
+     inf:                     {Configure Driver Configuration: IGCC_Component_Install}
+     inf:                          Service Name  = <none>
+     inf:                          Win32 Services = igccservice
+     inf:                          Driver has software pending install.
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:52.894
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:52.894
+     inf:                Started service 'igccservice'. 11:06:53.670
+     sto:           {Configure Driver Package: exit(0x00000000)} 11:06:53.670
+     dvi:           Install Device: Configuring device. 11:06:53.670
+     dvi:                Configuration: oem28.inf:SWC\100.9955_VEN8086_IGCC,*
+     dvi:           Install Device: Configuring device completed. 11:06:53.670
+     dvi:           Device Status: 0x0180200a
+     dvi:           Install Device: Removing device 'SWD\DRIVERENUM\IGCC&4&14D96F43&0' and sub-tree. 11:06:53.670
+     dvi:           Install Device: Removing device sub-tree completed. 11:06:53.686
+     dvi:           Install Device: Restarting device. 11:06:53.686
+     dvi:           Install Device: Restarting device completed. 11:06:53.686
+     dvi:      {Configure Device - exit(0x00000000)} 11:06:53.686
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:53.686
+<<<  Section end 2025/11/05 11:06:53.749
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - SWD\DRIVERENUM\OEM_ICLS_component&4&2c0296ae&0]
+>>>  Section start 2025/11/05 11:06:42.338
+     ump: Install needed due to device being marked for re-install
+     utl: {Select Drivers - SWD\DRIVERENUM\OEM_ICLS_component&4&2c0296ae&0} 11:06:42.350
+     utl:      Driver Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - oem27.inf (C:\WINDOWS\System32\DriverStore\FileRepository\iclsclient.inf_amd64_a93205b6238060e4\iclsclient.inf)
+     utl:           Class GUID     - {5c4c3332-344d-483c-8739-259e934c9cc8}
+     utl:           Driver Version - 09/17/2020,1.62.321.1
+     utl:           Configuration  - SWC\PROVIDER_INTEL_COMPONENT_ICLSCLIENT
+     utl:           Driver Rank    - 00FF0000
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_14583469463136065_1152921505691635099
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - c_swcomponent.inf (C:\WINDOWS\System32\DriverStore\FileRepository\c_swcomponent.inf_amd64_1536c854ab7bdc83\c_swcomponent.inf)
+     utl:           Class GUID     - {5c4c3332-344d-483c-8739-259e934c9cc8}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - SWC\Generic [SoftwareComponent]
+     utl:           Driver Rank    - 00FF3000
+     utl:           Signer Score   - Inbox (0D000003)
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - c_swdevice.inf (C:\WINDOWS\System32\DriverStore\FileRepository\c_swdevice.inf_amd64_845d51425d14f98b\c_swdevice.inf)
+     utl:           Class GUID     - {62f9c741-b25a-46ce-b54c-9bccce08b6f2}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - SWD\GenericRaw [SoftwareDevice]
+     utl:           Driver Rank    - 00FF3001
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:06:42.366
+     dvi: Install flags: 0x00010020
+     dvi: Waiting for previous device install to complete. 11:06:42.367
+     dvi: {Core Device Install} 11:06:53.686
+     dvi:      {Configure Device - SWD\DRIVERENUM\OEM_ICLS_component&4&2c0296ae&0} 11:06:53.686
+     dvi:           Device Status: 0x0180200a
+     dvi:           Config Flags: 0x00000420
+     dvi:           Parent Device: PCI\VEN_8086&DEV_06E0&SUBSYS_12591734&REV_00\3&11583659&0&B0
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\iclsclient.inf_amd64_a93205b6238060e4\iclsclient.inf} 11:06:53.686
+     sto:                Source Filter  = SWC\PROVIDER_INTEL_COMPONENT_ICLSCLIENT
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {5c4c3332-344d-483c-8739-259e934c9cc8}
+     inf:                Class Options  = Configurable
+     inf:                {Configure Driver: Intel(R) iCLS Client}
+     inf:                     Section Name = IclsClientInstallSection.NTamd64
+     inf:                     {Add Service: Intel(R) Capability Licensing Service TCP IP Interface}
+     inf:                          Start Type    = 2
+     inf:                          Service Type  = 16
+     inf:                          Error Control = 0
+     inf:                          Image Path    = %SystemRoot%\System32\DriverStore\FileRepository\iclsclient.inf_amd64_a93205b6238060e4\lib\SocketHeciServer.exe
+     inf:                          Display Name  = Intel(R) Capability Licensing Service TCP IP Interface
+     inf:                          Description   = Version: 1.62.321.1
+     inf:                          Security      = D:(A;;CCLCSWRPLO;;;WD)(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)S:(AU;FA;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;WD)
+     inf:                          Created new service 'Intel(R) Capability Licensing Service TCP IP Interface'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     {Add Service: Intel(R) TPM Provisioning Service}
+     inf:                          Start Type    = 2
+     inf:                          Service Type  = 16
+     inf:                          Error Control = 0
+     inf:                          Image Path    = %SystemRoot%\System32\DriverStore\FileRepository\iclsclient.inf_amd64_a93205b6238060e4\lib\TPMProvisioningService.exe
+     inf:                          Display Name  = Intel(R) TPM Provisioning Service
+     inf:                          Description   = Version: 1.62.321.1
+     inf:                          Security      = D:(A;;CCLCSWRPLO;;;WD)(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)S:(AU;FA;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;WD)
+     inf:                          Created new service 'Intel(R) TPM Provisioning Service'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     Hardware Id  = SWC\PROVIDER_INTEL_COMPONENT_ICLSCLIENT
+     inf:                     {Configure Driver Configuration: IclsClientInstallSection.NTamd64}
+     inf:                          Service Name  = <none>
+     inf:                          Win32 Services = Intel(R) Capability Licensing Service TCP IP Interface
+     inf:                                           Intel(R) TPM Provisioning Service
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:53.726
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:53.726
+     sto:           {Configure Driver Package: exit(0x00000000)} 11:06:53.726
+     dvi:           Install Device: Configuring device. 11:06:53.726
+     dvi:                Configuration: oem27.inf:SWC\PROVIDER_INTEL_COMPONENT_ICLSCLIENT,*
+     dvi:           Install Device: Configuring device completed. 11:06:53.726
+     dvi:           Device Status: 0x0180200a
+     dvi:           Install Device: Removing device 'SWD\DRIVERENUM\OEM_ICLS_COMPONENT&4&2C0296AE&0' and sub-tree. 11:06:53.726
+     dvi:           Install Device: Removing device sub-tree completed. 11:06:53.734
+     dvi:           Install Device: Restarting device. 11:06:53.734
+     dvi:           Install Device: Restarting device completed. 11:06:53.734
+     dvi:      {Configure Device - exit(0x00000000)} 11:06:53.734
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:53.741
+<<<  Section end 2025/11/05 11:06:53.741
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - SWD\DRIVERENUM\OEM_LMS_component&4&2c0296ae&0]
+>>>  Section start 2025/11/05 11:06:43.265
+     ump: Install needed due to device being marked for re-install
+     utl: {Select Drivers - SWD\DRIVERENUM\OEM_LMS_component&4&2c0296ae&0} 11:06:43.273
+     utl:      Driver Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - oem37.inf (C:\WINDOWS\System32\DriverStore\FileRepository\lms.inf_amd64_616d4ebfda4c2142\lms.inf)
+     utl:           Class GUID     - {5c4c3332-344d-483c-8739-259e934c9cc8}
+     utl:           Driver Version - 04/25/2021,2117.0.1.0
+     utl:           Configuration  - SWC\5DCEB103-DD64-403C-A17C-94FC5F917A9C
+     utl:           Driver Rank    - 00FF0000
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_13946550105646374_1152921505693425591
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - c_swcomponent.inf (C:\WINDOWS\System32\DriverStore\FileRepository\c_swcomponent.inf_amd64_1536c854ab7bdc83\c_swcomponent.inf)
+     utl:           Class GUID     - {5c4c3332-344d-483c-8739-259e934c9cc8}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - SWC\Generic [SoftwareComponent]
+     utl:           Driver Rank    - 00FF3000
+     utl:           Signer Score   - Inbox (0D000003)
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - c_swdevice.inf (C:\WINDOWS\System32\DriverStore\FileRepository\c_swdevice.inf_amd64_845d51425d14f98b\c_swdevice.inf)
+     utl:           Class GUID     - {62f9c741-b25a-46ce-b54c-9bccce08b6f2}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - SWD\GenericRaw [SoftwareDevice]
+     utl:           Driver Rank    - 00FF3001
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:06:43.285
+     dvi: Install flags: 0x00010020
+     dvi: Waiting for previous device install to complete. 11:06:43.286
+     dvi: {Core Device Install} 11:06:53.741
+     dvi:      {Configure Device - SWD\DRIVERENUM\OEM_LMS_component&4&2c0296ae&0} 11:06:53.741
+     dvi:           Device Status: 0x0180200a
+     dvi:           Config Flags: 0x00000420
+     dvi:           Parent Device: PCI\VEN_8086&DEV_06E0&SUBSYS_12591734&REV_00\3&11583659&0&B0
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\lms.inf_amd64_616d4ebfda4c2142\lms.inf} 11:06:53.797
+     sto:                Source Filter  = SWC\5DCEB103-DD64-403C-A17C-94FC5F917A9C
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {5c4c3332-344d-483c-8739-259e934c9cc8}
+     inf:                Class Options  = Configurable
+     inf:                {Configure Driver: Intel(R) Management and Security Application Local Management}
+     inf:                     Section Name = LMSInstallSection.NTamd64
+     inf:                     {Add Service: LMS}
+     inf:                          Flags         = 0x800
+     inf:                          Start Type    = 2
+     inf:                          Service Type  = 16
+     inf:                          Error Control = 1
+     inf:                          Image Path    = %SystemRoot%\System32\DriverStore\FileRepository\lms.inf_amd64_616d4ebfda4c2142\LMS.exe
+     inf:                          Display Name  = Intel(R) Management and Security Application Local Management Service
+     inf:                          Description   = Intel(R) Management and Security Application Local Management Service - Provides OS-related Intel(R) ME functionality.
+     inf:                          Created new service 'LMS'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     Hardware Id  = SWC\5DCEB103-DD64-403C-A17C-94FC5F917A9C
+     inf:                     {Configure Driver Configuration: LMSInstallSection.NTamd64}
+     inf:                          Service Name  = <none>
+     inf:                          Win32 Services = LMS
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:53.828
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:53.828
+     inf:                Started service 'LMS'. 11:06:54.018
+     sto:           {Configure Driver Package: exit(0x00000000)} 11:06:54.018
+     dvi:           Install Device: Configuring device. 11:06:54.018
+     dvi:                Configuration: oem37.inf:SWC\5DCEB103-DD64-403C-A17C-94FC5F917A9C,*
+     dvi:           Install Device: Configuring device completed. 11:06:54.018
+     dvi:           Device Status: 0x0180200a
+     dvi:           Install Device: Removing device 'SWD\DRIVERENUM\OEM_LMS_COMPONENT&4&2C0296AE&0' and sub-tree. 11:06:54.018
+     dvi:           Install Device: Removing device sub-tree completed. 11:06:54.018
+     dvi:           Install Device: Restarting device. 11:06:54.018
+     dvi:           Install Device: Restarting device completed. 11:06:54.034
+     dvi:      {Configure Device - exit(0x00000000)} 11:06:54.034
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:54.034
+<<<  Section end 2025/11/05 11:06:54.034
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup online Device Install (Hardware initiated) - SWD\DRIVERENUM\{babe2782-eb1b-46a7-871a-f043d3200542}#WiMan_Component&4&2c0296ae&0]
+>>>  Section start 2025/11/05 11:06:43.926
+     ump: Install needed due to device needing additional installation
+     utl: {Select Drivers - SWD\DRIVERENUM\{babe2782-eb1b-46a7-871a-f043d3200542}#WiMan_Component&4&2c0296ae&0} 11:06:43.933
+     utl:      Driver Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - oem51.inf (C:\WINDOWS\System32\DriverStore\FileRepository\wiman.inf_amd64_b8cf8ab9caadf744\wiman.inf)
+     utl:           Class GUID     - {5c4c3332-344d-483c-8739-259e934c9cc8}
+     utl:           Driver Version - 04/29/2021,2117.61.56.0
+     utl:           Configuration  - SWC\B74B5286-A7A5-444D-973B-71A66AF711BE
+     utl:           Driver Rank    - 00FF0000
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_13812815389032364_1152921505693447242
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - c_swcomponent.inf (C:\WINDOWS\System32\DriverStore\FileRepository\c_swcomponent.inf_amd64_1536c854ab7bdc83\c_swcomponent.inf)
+     utl:           Class GUID     - {5c4c3332-344d-483c-8739-259e934c9cc8}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - SWC\Generic [SoftwareComponent]
+     utl:           Driver Rank    - 00FF3000
+     utl:           Signer Score   - Inbox (0D000003)
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - c_swdevice.inf (C:\WINDOWS\System32\DriverStore\FileRepository\c_swdevice.inf_amd64_845d51425d14f98b\c_swdevice.inf)
+     utl:           Class GUID     - {62f9c741-b25a-46ce-b54c-9bccce08b6f2}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - SWD\GenericRaw [SoftwareDevice]
+     utl:           Driver Rank    - 00FF3001
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:06:43.945
+     dvi: Install flags: 0x00010020
+     dvi: Waiting for previous device install to complete. 11:06:43.946
+     dvi: {Core Device Install} 11:06:54.034
+     dvi:      {Configure Device - SWD\DRIVERENUM\{babe2782-eb1b-46a7-871a-f043d3200542}#WiMan_Component&4&2c0296ae&0} 11:06:54.097
+     dvi:           Device Status: 0x0180200a
+     dvi:           Config Flags: 0x00000400
+     dvi:           Parent Device: PCI\VEN_8086&DEV_06E0&SUBSYS_12591734&REV_00\3&11583659&0&B0
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\wiman.inf_amd64_b8cf8ab9caadf744\wiman.inf} 11:06:54.097
+     sto:                Source Filter  = SWC\B74B5286-A7A5-444D-973B-71A66AF711BE
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {5c4c3332-344d-483c-8739-259e934c9cc8}
+     inf:                Class Options  = Configurable
+     inf:                {Configure Driver: Intel(R) Wireless Manageability}
+     inf:                     Section Name = WiMan_HECI_Device.NT
+     inf:                     {Add Service: WiManH}
+     inf:                          Flags         = 0x2
+     inf:                          Start Type    = 3
+     inf:                          Service Type  = 1
+     inf:                          Error Control = 1
+     inf:                          Image Path    = \SystemRoot\System32\DriverStore\FileRepository\wiman.inf_amd64_b8cf8ab9caadf744\WiManH\WiManH.sys
+     inf:                          Display Name  = WiMan Service
+     inf:                          Created new service 'WiManH'.
+     inf:                     {Add Service: exit(0x00000000)}
+     inf:                     Hardware Id  = SWC\B74B5286-A7A5-444D-973B-71A66AF711BE
+     inf:                     {Configure Driver Configuration: WiMan_HECI_Device.NT}
+     inf:                          Service Name  = WiManH
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:06:54.117
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:06:54.117
+     sto:           {Configure Driver Package: exit(0x00000000)} 11:06:54.118
+     dvi:           Install Device: Configuring device. 11:06:54.118
+     dvi:                Configuration: oem51.inf:SWC\B74B5286-A7A5-444D-973B-71A66AF711BE,*
+     dvi:           Install Device: Configuring device completed. 11:06:54.120
+     dvi:           Device Status: 0x0180200a
+     dvi:           Install Device: Removing device 'SWD\DRIVERENUM\{BABE2782-EB1B-46A7-871A-F043D3200542}#WIMAN_COMPONENT&4&2C0296AE&0' and sub-tree. 11:06:54.120
+     dvi:           Install Device: Removing device sub-tree completed. 11:06:54.120
+     dvi:           Install Device: Restarting device. 11:06:54.120
+     dvi:           Install Device: Restarting device completed. 11:06:54.129
+     dvi:      {Configure Device - exit(0x00000000)} 11:06:54.129
+     dvi: {Core Device Install - exit(0x00000000)} 11:06:54.142
+<<<  Section end 2025/11/05 11:06:54.142
+<<<  [Exit status: SUCCESS]
+

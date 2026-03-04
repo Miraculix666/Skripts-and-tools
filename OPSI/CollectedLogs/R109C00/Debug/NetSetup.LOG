@@ -1,0 +1,16 @@
+﻿11/05/2025 11:06:40:894 -----------------------------------------------------------------
+11/05/2025 11:06:40:894 NetpDoDomainJoin
+11/05/2025 11:06:40:894 NetpDoDomainJoin: using new computer names
+11/05/2025 11:06:40:894 NetpDoDomainJoin: NetpGetNewMachineName returned 0x0
+11/05/2025 11:06:40:894 NetpMachineValidToJoin: 'NAMEORG-TRBVMTF'
+11/05/2025 11:06:40:894 	OS Version: 10.0
+11/05/2025 11:06:40:894 	Build number: 26100 (26100.ge_release.240331-1435)
+11/05/2025 11:06:40:894 	SKU: Windows 11 Enterprise Evaluation
+11/05/2025 11:06:40:894 	Architecture: 64-bit (AMD64)
+11/05/2025 11:06:40:894 NetpMachineValidToJoin: status: 0x0
+11/05/2025 11:06:40:894 NetpJoinWorkgroup: joining computer 'NAMEORG-TRBVMTF' to workgroup 'WORKGROUP'
+11/05/2025 11:06:40:894 NetpValidateName: checking to see if 'WORKGROUP' is valid as type 2 name
+11/05/2025 11:06:40:906 NetpCheckNetBiosNameNotInUse for 'WORKGROUP' [ Workgroup as MACHINE]  returned 0x0
+11/05/2025 11:06:40:906 NetpValidateName: name 'WORKGROUP' is valid for type 2
+11/05/2025 11:06:40:909 NetpJoinWorkgroup: status:  0x0
+11/05/2025 11:06:40:909 NetpDoDomainJoin: status: 0x0

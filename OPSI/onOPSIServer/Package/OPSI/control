@@ -1,0 +1,78 @@
+[Package]
+version: 1.0
+depends:
+
+[Product]
+type: localboot
+id: win11-hardening-modular
+name: Windows 11 Hardening Modular Suite
+description: Modular hardening script with GUI properties and profiles.
+advice:
+version: 9.0
+priority: 0
+licenseRequired: False
+productClasses:
+setupScript: setup.opsi
+uninstallScript:
+updateScript:
+alwaysScript:
+onceScript:
+customScript:
+userLoginScript:
+
+[ProductProperty]
+type: unicode
+name: profile
+multivalue: False
+editable: False
+description: Select a configuration profile
+values: ["BSI-Safe", "Custom", "Gaming", "Standard"]
+default: ["Standard"]
+
+[ProductProperty]
+type: bool
+name: module_privacy
+description: Enable/Disable Privacy & Telemetry Hardening
+default: True
+
+[ProductProperty]
+type: bool
+name: module_security
+description: Enable/Disable Security Hardening (LSA, ASR, etc.)
+default: True
+
+[ProductProperty]
+type: bool
+name: module_debloat
+description: Enable/Disable Permanent Debloating
+default: True
+
+[ProductProperty]
+type: bool
+name: module_ui
+description: Enable/Disable UI & System Optimizations
+default: True
+
+[ProductProperty]
+type: bool
+name: enable_defender
+description: Enable Defender Real-Time Protection (instead of Audit only)
+default: False
+
+[ProductProperty]
+type: unicode
+name: drivers_path
+multivalue: False
+editable: True
+description: Paths to drivers for injection
+values: [""]
+default: ["C:\Drivers_Temp"]
+
+[ProductProperty]
+type: unicode
+name: additional_scripts
+multivalue: True
+editable: True
+description: Comma-separated list of additional .ps1 scripts in the package folder to execute
+values: [""]
+default: [""]

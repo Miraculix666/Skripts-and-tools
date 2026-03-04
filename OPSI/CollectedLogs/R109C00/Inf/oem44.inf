@@ -1,0 +1,111 @@
+; oemportamd64.inf
+; Copyright (c) 2017 Exar Corporation
+;
+; INF file to specify another PNP ID for serial ports
+;
+
+[version]
+signature="$Windows NT$"
+Class=Ports
+ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
+Provider=%OEM%
+DriverVer=02/27/2018,5.4.1.0
+CatalogFile=xrpcieoemx64.cat
+
+[DestinationDirs]
+ComPort.OEM.Copy = 12
+ComPort.OEM.NT.PropPageCopy = 11
+ComPort.OEM.CoInstallerCopy = 11
+
+[ControlFlags]
+ExcludeFromSelect=*
+
+; Drivers
+;----------------------------------------------------------
+[Manufacturer]
+%OEM%=OEM, ntamd64
+
+[OEM.ntamd64]
+%OEMPNP0501.DeviceDesc% = ComPort.OEM, PCI\VEN_13A8&DEV_0152&SUBSYS_00010001 ; Communications Port
+%OEMPNP0501.DeviceDesc% = ComPort.OEM, PCI\VEN_13A8&DEV_0252&SUBSYS_00010001 ; Communications Port
+%OEMPNP0501.DeviceDesc% = ComPort.OEM, PCI\VEN_13A8&DEV_0352&SUBSYS_00010001 ; Communications Port
+
+%OEMPNP0501.DeviceDesc% = ComPort.OEM, PCI\VEN_13A8&DEV_0154&SUBSYS_00010001 ; Communications Port
+%OEMPNP0501.DeviceDesc% = ComPort.OEM, PCI\VEN_13A8&DEV_0254&SUBSYS_00010001 ; Communications Port
+%OEMPNP0501.DeviceDesc% = ComPort.OEM, PCI\VEN_13A8&DEV_0354&SUBSYS_00010001 ; Communications Port
+
+%OEMPNP0501.DeviceDesc% = ComPort.OEM, PCI\VEN_13A8&DEV_0158&SUBSYS_00010001 ; Communications Port
+%OEMPNP0501.DeviceDesc% = ComPort.OEM, PCI\VEN_13A8&DEV_0258&SUBSYS_00010001 ; Communications Port
+%OEMPNP0501.DeviceDesc% = ComPort.OEM, PCI\VEN_13A8&DEV_0358&SUBSYS_00010001 ; Communications Port
+
+%OEMPNP0501.DeviceDesc% = ComPort.OEM, PCI\VEN_13A8&DEV_4354&SUBSYS_00010001 ; Communications Port
+%OEMPNP0501.DeviceDesc% = ComPort.OEM, PCI\VEN_13A8&DEV_4358&SUBSYS_00010001 ; Communications Port
+%OEMPNP0501.DeviceDesc% = ComPort.OEM, PCI\VEN_13A8&DEV_8354&SUBSYS_00010001 ; Communications Port
+%OEMPNP0501.DeviceDesc% = ComPort.OEM, PCI\VEN_13A8&DEV_8358&SUBSYS_00010001 ; Communications Port
+
+[ComPort.OEM]
+; NT install section, redirect
+; we also need to add this for benefit of Ports class
+AddReg=ComPort.OEM.AddReg, ComPort.OEM.NT.AddReg
+CopyFiles=ComPort.OEM.Copy, ComPort.OEM.NT.PropPageCopy
+
+; addreg and copy files for PnP serenum.sys
+Include=msports.inf
+Needs=SerialEnumerator
+
+[ComPort.OEM.AddReg]
+; Let Ports class know this is a serial port
+HKR,,PortSubClass,1,01
+
+[ComPort.OEM.NT.AddReg]
+HKR,,EnumPropPages32,,"xrpciports.dll,SerialPortPropPageProvider"
+
+[ComPort.OEM.Copy]
+ser15x.sys
+
+[ComPort.OEM.NT.PropPageCopy]
+xrpciports.dll
+
+[ComPort.OEM.HW.AddReg]
+HKR,,UpperFilters,0x00010000,serenum
+
+[ComPort.OEM.HW]
+AddReg=ComPort.OEM.HW.AddReg
+
+[ComPort.OEM.Services]
+AddService = Ser15x, 0x00000002, Ser15x_Service_Inst, Ser15x_EventLog_Inst
+
+; install the serenum service itself
+Include=msports.inf
+Needs=SerialEnumerator.Services
+
+; -------------- Serial Port Driver install sections
+[Ser15x_Service_Inst]
+DisplayName    = %Ser15x.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 0               ; SERVICE_ERROR_IGNORE
+ServiceBinary  = %12%\ser15x.sys
+LoadOrderGroup = Extended base
+
+[Ser15x_EventLog_Inst]
+AddReg = Ser15x_EventLog_AddReg
+
+[Ser15x_EventLog_AddReg]
+HKR,,EventMessageFile,0x00020000,"%%SystemRoot%%\System32\IoLogMsg.dll;%%SystemRoot%%\System32\drivers\ser15x.sys"
+HKR,,TypesSupported,0x00010001,7
+
+[SourceDisksNames]
+1 = %DiskId1%,,,""
+
+[SourceDisksFiles]
+ser15x.sys = 1,,
+xrpciports.dll = 1,,
+
+; User readable strings
+;----------------------------------------------------------
+[Strings]
+OEM= "Exar Corporation"
+OEMPNP0501.DeviceDesc 	= "Exar's Communications Port"
+Ser15x.SVCDESC   	= "Exar's Serial Port Driver"
+DiskId1 = "Exar's Serial Port Driver Installation Disk #1"

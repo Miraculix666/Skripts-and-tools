@@ -1,0 +1,1094 @@
+; ser15xamd64.inf
+; Copyright (c) 2017 Exar Corporation
+;
+; Instead of specifying a hardware id of *PNP0501, a vendor-specific
+; hardware id is used to trigger the install of a filter driver that
+; filters the resources of the children so that they are acceptable to
+; serial/serenum
+;
+
+[Version]
+Signature="$Windows NT$"
+Class=MultiPortSerial
+ClassGuid={50906CB8-BA12-11D1-BF5D-0000F805F530}
+Provider=%OEM%
+DriverVer=02/27/2018,5.4.1.0
+CatalogFile=xrpcieserialx64.cat
+
+[ControlFlags]
+ExcludeFromSelect=*
+
+[Manufacturer]
+%OEM%=OEM, NTamd64, NTamd64.6.0
+
+;
+; VID/PID section
+;
+
+; pre-vista amd64
+[OEM.NTamd64]
+%OEM_152PORT%=OEM152PORT_inst_Xp, PCI\VEN_13A8&DEV_0152
+%OEM_252PORT%=OEM252PORT_inst_Xp, PCI\VEN_13A8&DEV_0252
+%OEM_154PORT%=OEM154PORT_inst_Xp, PCI\VEN_13A8&DEV_0154
+%OEM_254PORT%=OEM254PORT_inst_Xp, PCI\VEN_13A8&DEV_0254
+%OEM_158PORT%=OEM158PORT_inst_Xp, PCI\VEN_13A8&DEV_0158
+%OEM_258PORT%=OEM258PORT_inst_Xp, PCI\VEN_13A8&DEV_0258
+
+%OEM_152PORT_SUB%=OEM152PORT_inst_Xp, PCI\VEN_13A8&DEV_0152&SUBSYS_015213A8
+%OEM_252PORT_SUB%=OEM252PORT_inst_Xp, PCI\VEN_13A8&DEV_0252&SUBSYS_025213A8
+%OEM_154PORT_SUB%=OEM154PORT_inst_Xp, PCI\VEN_13A8&DEV_0154&SUBSYS_015413A8
+%OEM_254PORT_SUB%=OEM254PORT_inst_Xp, PCI\VEN_13A8&DEV_0254&SUBSYS_025413A8
+%OEM_158PORT_SUB%=OEM158PORT_inst_Xp, PCI\VEN_13A8&DEV_0158&SUBSYS_015813A8
+%OEM_258PORT_SUB%=OEM258PORT_inst_Xp, PCI\VEN_13A8&DEV_0258&SUBSYS_025813A8
+
+%OEM_152PORT_SUB%=OEM152PORT_inst_Xp, PCI\VEN_13A8&DEV_0152&SUBSYS_00000000
+%OEM_252PORT_SUB%=OEM252PORT_inst_Xp, PCI\VEN_13A8&DEV_0252&SUBSYS_00000000
+%OEM_154PORT_SUB%=OEM154PORT_inst_Xp, PCI\VEN_13A8&DEV_0154&SUBSYS_00000000
+%OEM_254PORT_SUB%=OEM254PORT_inst_Xp, PCI\VEN_13A8&DEV_0254&SUBSYS_00000000
+%OEM_158PORT_SUB%=OEM158PORT_inst_Xp, PCI\VEN_13A8&DEV_0158&SUBSYS_00000000
+%OEM_258PORT_SUB%=OEM258PORT_inst_Xp, PCI\VEN_13A8&DEV_0258&SUBSYS_00000000
+
+%OEM_2PORT_PCIE%=OEM2PORT_inst_Xp, PCI\VEN_13A8&DEV_0352
+%OEM_4PORT_PCIE%=OEM4PORT_inst_Xp, PCI\VEN_13A8&DEV_0354
+%OEM_8PORT_PCIE%=OEM8PORT_inst_Xp, PCI\VEN_13A8&DEV_0358
+
+%OEM_2PORT_PCIE_SUB%=OEM2PORT_inst_Xp, PCI\VEN_13A8&DEV_0352&SUBSYS_035213A8
+%OEM_4PORT_PCIE_SUB%=OEM4PORT_inst_Xp, PCI\VEN_13A8&DEV_0354&SUBSYS_035413A8
+%OEM_8PORT_PCIE_SUB%=OEM8PORT_inst_Xp, PCI\VEN_13A8&DEV_0358&SUBSYS_035813A8
+
+%OEM_2PORT_PCIE_SUB%=OEM2PORT_inst_Xp, PCI\VEN_13A8&DEV_0352&SUBSYS_00000000
+%OEM_4PORT_PCIE_SUB%=OEM4PORT_inst_Xp, PCI\VEN_13A8&DEV_0354&SUBSYS_00000000
+%OEM_8PORT_PCIE_SUB%=OEM8PORT_inst_Xp, PCI\VEN_13A8&DEV_0358&SUBSYS_00000000
+
+%OEM_44PORT_PCIE%=OEM8PORT_inst_Xp, PCI\VEN_13A8&DEV_4354
+%OEM_48PORT_PCIE%=OEM8354PORT_inst_Xp, PCI\VEN_13A8&DEV_8354
+%OEM_84PORT_PCIE%=OEM4358PORT_inst_Xp, PCI\VEN_13A8&DEV_4358
+%OEM_88PORT_PCIE%=OEM16PORT_inst_Xp, PCI\VEN_13A8&DEV_8358
+
+%OEM_44PORT_PCIE_SUB%=OEM8PORT_inst_Xp, PCI\VEN_13A8&DEV_4354&SUBSYS_435413A8
+%OEM_48PORT_PCIE_SUB%=OEM8354PORT_inst_Xp, PCI\VEN_13A8&DEV_8354&SUBSYS_835413A8
+%OEM_84PORT_PCIE_SUB%=OEM4358PORT_inst_Xp, PCI\VEN_13A8&DEV_4358&SUBSYS_435813A8
+%OEM_88PORT_PCIE_SUB%=OEM16PORT_inst_Xp, PCI\VEN_13A8&DEV_8358&SUBSYS_835813A8
+
+%OEM_44PORT_PCIE_SUB%=OEM8PORT_inst_Xp, PCI\VEN_13A8&DEV_4354&SUBSYS_00000000
+%OEM_48PORT_PCIE_SUB%=OEM8354PORT_inst_Xp, PCI\VEN_13A8&DEV_8354&SUBSYS_00000000
+%OEM_84PORT_PCIE_SUB%=OEM4358PORT_inst_Xp, PCI\VEN_13A8&DEV_4358&SUBSYS_00000000
+%OEM_88PORT_PCIE_SUB%=OEM16PORT_inst_Xp, PCI\VEN_13A8&DEV_8358&SUBSYS_00000000
+
+;vista and above amd64
+[OEM.NTamd64.6.0]
+%OEM_152PORT%=OEM152PORT_inst, PCI\VEN_13A8&DEV_0152
+%OEM_252PORT%=OEM252PORT_inst, PCI\VEN_13A8&DEV_0252
+%OEM_154PORT%=OEM154PORT_inst, PCI\VEN_13A8&DEV_0154
+%OEM_254PORT%=OEM254PORT_inst, PCI\VEN_13A8&DEV_0254
+%OEM_158PORT%=OEM158PORT_inst, PCI\VEN_13A8&DEV_0158
+%OEM_258PORT%=OEM258PORT_inst, PCI\VEN_13A8&DEV_0258
+
+%OEM_152PORT_SUB%=OEM152PORT_inst, PCI\VEN_13A8&DEV_0152&SUBSYS_015213A8
+%OEM_252PORT_SUB%=OEM252PORT_inst, PCI\VEN_13A8&DEV_0252&SUBSYS_025213A8
+%OEM_154PORT_SUB%=OEM154PORT_inst, PCI\VEN_13A8&DEV_0154&SUBSYS_015413A8
+%OEM_254PORT_SUB%=OEM254PORT_inst, PCI\VEN_13A8&DEV_0254&SUBSYS_025413A8
+%OEM_158PORT_SUB%=OEM158PORT_inst, PCI\VEN_13A8&DEV_0158&SUBSYS_015813A8
+%OEM_258PORT_SUB%=OEM258PORT_inst, PCI\VEN_13A8&DEV_0258&SUBSYS_025813A8
+
+%OEM_152PORT_SUB%=OEM152PORT_inst, PCI\VEN_13A8&DEV_0152&SUBSYS_00000000
+%OEM_252PORT_SUB%=OEM252PORT_inst, PCI\VEN_13A8&DEV_0252&SUBSYS_00000000
+%OEM_154PORT_SUB%=OEM154PORT_inst, PCI\VEN_13A8&DEV_0154&SUBSYS_00000000
+%OEM_254PORT_SUB%=OEM254PORT_inst, PCI\VEN_13A8&DEV_0254&SUBSYS_00000000
+%OEM_158PORT_SUB%=OEM158PORT_inst, PCI\VEN_13A8&DEV_0158&SUBSYS_00000000
+%OEM_258PORT_SUB%=OEM258PORT_inst, PCI\VEN_13A8&DEV_0258&SUBSYS_00000000
+
+%OEM_2PORT_PCIE%=OEM2PORT_PCIE_inst, PCI\VEN_13A8&DEV_0352
+%OEM_4PORT_PCIE%=OEM4PORT_PCIE_inst, PCI\VEN_13A8&DEV_0354
+%OEM_8PORT_PCIE%=OEM8PORT_PCIE_inst, PCI\VEN_13A8&DEV_0358
+
+%OEM_2PORT_PCIE_SUB%=OEM2PORT_PCIE_inst, PCI\VEN_13A8&DEV_0352&SUBSYS_035213A8
+%OEM_4PORT_PCIE_SUB%=OEM4PORT_PCIE_inst, PCI\VEN_13A8&DEV_0354&SUBSYS_035413A8
+%OEM_8PORT_PCIE_SUB%=OEM8PORT_PCIE_inst, PCI\VEN_13A8&DEV_0358&SUBSYS_035813A8
+
+%OEM_2PORT_PCIE_SUB%=OEM2PORT_PCIE_inst, PCI\VEN_13A8&DEV_0352&SUBSYS_00000000
+%OEM_4PORT_PCIE_SUB%=OEM4PORT_PCIE_inst, PCI\VEN_13A8&DEV_0354&SUBSYS_00000000
+%OEM_8PORT_PCIE_SUB%=OEM8PORT_PCIE_inst, PCI\VEN_13A8&DEV_0358&SUBSYS_00000000
+
+%OEM_44PORT_PCIE%=OEM8PORT_4354_PCIE_inst, PCI\VEN_13A8&DEV_4354
+%OEM_48PORT_PCIE%=OEM12PORT_8354_PCIE_inst, PCI\VEN_13A8&DEV_8354
+%OEM_84PORT_PCIE%=OEM12PORT_4358_PCIE_inst, PCI\VEN_13A8&DEV_4358
+%OEM_88PORT_PCIE%=OEM16PORT_8358_PCIE_inst, PCI\VEN_13A8&DEV_8358
+
+%OEM_44PORT_PCIE_SUB%=OEM8PORT_4354_PCIE_inst, PCI\VEN_13A8&DEV_4354&SUBSYS_435413A8
+%OEM_48PORT_PCIE_SUB%=OEM12PORT_8354_PCIE_inst, PCI\VEN_13A8&DEV_8354&SUBSYS_835413A8
+%OEM_84PORT_PCIE_SUB%=OEM12PORT_4358_PCIE_inst, PCI\VEN_13A8&DEV_4358&SUBSYS_435813A8
+%OEM_88PORT_PCIE_SUB%=OEM16PORT_8358_PCIE_inst, PCI\VEN_13A8&DEV_8358&SUBSYS_835813A8
+
+%OEM_44PORT_PCIE_SUB%=OEM8PORT_4354_PCIE_inst, PCI\VEN_13A8&DEV_4354&SUBSYS_00000000
+%OEM_48PORT_PCIE_SUB%=OEM12PORT_8354_PCIE_inst, PCI\VEN_13A8&DEV_8354&SUBSYS_00000000
+%OEM_84PORT_PCIE_SUB%=OEM12PORT_4358_PCIE_inst, PCI\VEN_13A8&DEV_4358&SUBSYS_00000000
+%OEM_88PORT_PCIE_SUB%=OEM16PORT_8358_PCIE_inst, PCI\VEN_13A8&DEV_8358&SUBSYS_00000000
+
+;
+; Models sections for installation of x64 driver on downlevel (pre-Vista) machines
+;
+
+;
+; -------------------- XR17x15x 2-Port UART Card Section ------------------------
+;
+[OEM152PORT_inst_Xp]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM152PORT_inst_Xp.HW]
+AddReg=OEM152PORT_inst_Xp.RegHW
+
+[OEM152PORT_inst_Xp.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM152PORT_inst_Xp.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0152&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,00,02
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0152&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,00,02
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0152&SUBSYS_80008000
+HKR,Child02,ResourceMap,1,00,02
+
+;
+; -------------------- XR17V25x 2-Port UART Card Section ------------------------
+;
+[OEM252PORT_inst_Xp]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM252PORT_inst_Xp.HW]
+AddReg=OEM252PORT_inst_Xp.RegHW
+
+[OEM252PORT_inst_Xp.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM252PORT_inst_Xp.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0252&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,00,02
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0252&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,00,02
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0252&SUBSYS_80008000
+HKR,Child02,ResourceMap,1,00,02
+
+;
+; -------------------- XR17V35x 2-Port UART Card Section ------------------------
+;
+[OEM2PORT_inst_Xp]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM2PORT_inst_Xp.HW]
+AddReg=OEM2PORT_inst_Xp.RegHW
+
+[OEM2PORT_inst_Xp.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM2PORT_inst_Xp.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0352&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,00,02
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0352&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,00,02
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0352&SUBSYS_80008000
+HKR,Child02,ResourceMap,1,00,02
+
+;
+; -------------------- XR17x15x 4-Port UART Card Section ------------------------
+;
+[OEM154PORT_inst_Xp]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM154PORT_inst_Xp.HW]
+AddReg=OEM154PORT_inst_Xp.RegHW
+
+[OEM154PORT_inst_Xp.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM154PORT_inst_Xp.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0154&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,00,02
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0154&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,00,02
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0154&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,00,02
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_0154&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,00,02
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_0154&SUBSYS_80008000
+HKR,Child04,ResourceMap,1,00,02
+
+
+;
+; -------------------- XR17V25x 4-Port UART Card Section ------------------------
+;
+[OEM254PORT_inst_Xp]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM254PORT_inst_Xp.HW]
+AddReg=OEM254PORT_inst_Xp.RegHW
+
+[OEM254PORT_inst_Xp.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM254PORT_inst_Xp.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0254&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,00,02
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0254&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,00,02
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0254&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,00,02
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_0254&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,00,02
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_0254&SUBSYS_80008000
+HKR,Child04,ResourceMap,1,00,02
+
+;
+; -------------------- XR17V35x 4-Port UART Card Section ------------------------
+;
+[OEM4PORT_inst_Xp]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM4PORT_inst_Xp.HW]
+AddReg=OEM4PORT_inst_Xp.RegHW
+
+[OEM4PORT_inst_Xp.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM4PORT_inst_Xp.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0354&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,00,02
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0354&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,00,02
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0354&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,00,02
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_0354&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,00,02
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_0354&SUBSYS_80008000
+HKR,Child04,ResourceMap,1,00,02
+
+;
+; -------------------- XR17x15x 8-Port UART Card Section ------------------------
+;
+[OEM158PORT_inst_Xp]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM158PORT_inst_Xp.HW]
+AddReg=OEM158PORT_inst_Xp.RegHW
+
+[OEM158PORT_inst_Xp.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM158PORT_inst_Xp.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,00,02
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,00,02
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,00,02
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,00,02
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child04,ResourceMap,1,00,02
+HKR,Child05,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child05,ResourceMap,1,00,02
+HKR,Child06,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child06,ResourceMap,1,00,02
+HKR,Child07,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child07,ResourceMap,1,00,02
+HKR,Child08,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_80008000
+HKR,Child08,ResourceMap,1,00,02
+
+;
+; -------------------- XR17V25x 8-Port UART Card Section ------------------------
+;
+[OEM258PORT_inst_Xp]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM258PORT_inst_Xp.HW]
+AddReg=OEM258PORT_inst_Xp.RegHW
+
+[OEM258PORT_inst_Xp.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM258PORT_inst_Xp.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,00,02
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,00,02
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,00,02
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,00,02
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child04,ResourceMap,1,00,02
+HKR,Child05,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child05,ResourceMap,1,00,02
+HKR,Child06,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child06,ResourceMap,1,00,02
+HKR,Child07,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child07,ResourceMap,1,00,02
+HKR,Child08,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_80008000
+HKR,Child08,ResourceMap,1,00,02
+
+;
+; -------------------- XR17V35x 8-Port UART Card Section ------------------------
+;
+[OEM8PORT_inst_Xp]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM8PORT_inst_Xp.HW]
+AddReg=OEM8PORT_inst_Xp.RegHW
+
+[OEM8PORT_inst_Xp.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM8PORT_inst_Xp.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,00,02
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,00,02
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,00,02
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,00,02
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child04,ResourceMap,1,00,02
+HKR,Child05,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child05,ResourceMap,1,00,02
+HKR,Child06,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child06,ResourceMap,1,00,02
+HKR,Child07,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child07,ResourceMap,1,00,02
+HKR,Child08,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_80008000
+HKR,Child08,ResourceMap,1,00,02
+
+;
+; -------------------- 12-Port UART Card Section ------------------------
+;
+[OEM4358PORT_inst_Xp]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM4358PORT_inst_Xp.HW]
+AddReg=OEM4358PORT_inst_Xp.RegHW
+
+[OEM4358PORT_inst_Xp.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM4358PORT_inst_Xp.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,00,02
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,00,02
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,00,02
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,00,02
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child04,ResourceMap,1,00,02
+HKR,Child05,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child05,ResourceMap,1,00,02
+HKR,Child06,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child06,ResourceMap,1,00,02
+HKR,Child07,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child07,ResourceMap,1,00,02
+HKR,Child08,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child08,ResourceMap,1,00,02
+HKR,Child09,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child09,ResourceMap,1,00,02
+HKR,Child10,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child10,ResourceMap,1,00,02
+HKR,Child11,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child11,ResourceMap,1,00,02
+HKR,Child12,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_80008000
+HKR,Child12,ResourceMap,1,00,02
+
+
+;
+; -------------------- 12-Port UART Card Section ------------------------
+;
+[OEM8354PORT_inst_Xp]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM8354PORT_inst_Xp.HW]
+AddReg=OEM8354PORT_inst_Xp.RegHW
+
+[OEM8354PORT_inst_Xp.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM8354PORT_inst_Xp.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,00,02
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,00,02
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,00,02
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,00,02
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child04,ResourceMap,1,00,02
+HKR,Child05,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child05,ResourceMap,1,00,02
+HKR,Child06,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child06,ResourceMap,1,00,02
+HKR,Child07,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child07,ResourceMap,1,00,02
+HKR,Child08,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child08,ResourceMap,1,00,02
+HKR,Child09,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child09,ResourceMap,1,00,02
+HKR,Child10,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child10,ResourceMap,1,00,02
+HKR,Child11,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child11,ResourceMap,1,00,02
+HKR,Child12,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_80008000
+HKR,Child12,ResourceMap,1,00,02
+
+;
+; -------------------- 16-Port UART Card Section ------------------------
+;
+[OEM16PORT_inst_Xp]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM16PORT_inst_Xp.HW]
+AddReg=OEM16PORT_inst_Xp.RegHW
+
+[OEM16PORT_inst_Xp.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM16PORT_inst_Xp.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00100010
+HKR,Child00,ResourceMap,1,00,02
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,00,02
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,00,02
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,00,02
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child04,ResourceMap,1,00,02
+HKR,Child05,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child05,ResourceMap,1,00,02
+HKR,Child06,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child06,ResourceMap,1,00,02
+HKR,Child07,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child07,ResourceMap,1,00,02
+HKR,Child08,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child08,ResourceMap,1,00,02
+HKR,Child09,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child09,ResourceMap,1,00,02
+HKR,Child10,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child10,ResourceMap,1,00,02
+HKR,Child11,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child11,ResourceMap,1,00,02
+HKR,Child12,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child12,ResourceMap,1,00,02
+HKR,Child13,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child13,ResourceMap,1,00,02
+HKR,Child14,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child14,ResourceMap,1,00,02
+HKR,Child15,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child15,ResourceMap,1,00,02
+HKR,Child16,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_80008000
+HKR,Child16,ResourceMap,1,00,02
+
+
+;
+;Models section for installation of amd64 driver on Windows Vista and above
+;
+
+;
+; -------------------- XR17x15x 2-Port UART Card Section ------------------------
+;
+[OEM152PORT_inst]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM152PORT_inst.HW]
+AddReg=OEM152PORT_inst.RegHW
+
+[OEM152PORT_inst.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM152PORT_inst.RegHW]
+; here the system is fooled to start child01 as the first rather than child00
+; we have seen that child00 is always the last to enumerate
+; this way we can have consisten com numbers both in the app and device manager
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0152&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,02
+HKR,Child00,VaryingResourceMap,1,00, 00,02,00,00, 00,02,00,00
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0152&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,02
+HKR,Child01,VaryingResourceMap,1,00, 00,00,00,00, 00,02,00,00
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0152&SUBSYS_80008000
+HKR,Child02,ResourceMap,1,02
+HKR,Child02,VaryingResourceMap,1,00, 80,00,00,00, 20,00,00,00
+
+;
+; -------------------- XR17x25x 2-Port UART Card Section ------------------------
+;
+[OEM252PORT_inst]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM252PORT_inst.HW]
+AddReg=OEM252PORT_inst.RegHW
+
+[OEM252PORT_inst.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM252PORT_inst.RegHW]
+; here the system is fooled to start child01 as the first rather than child00
+; we have seen that child00 is always the last to enumerate
+; this way we can have consisten com numbers both in the app and device manager
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0252&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,02
+HKR,Child00,VaryingResourceMap,1,00, 00,02,00,00, 00,02,00,00
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0252&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,02
+HKR,Child01,VaryingResourceMap,1,00, 00,00,00,00, 00,02,00,00
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0252&SUBSYS_80008000
+HKR,Child02,ResourceMap,1,02
+HKR,Child02,VaryingResourceMap,1,00, 80,00,00,00, 20,00,00,00
+
+;
+; -------------------- XR17V35x 2-Port PCIe UART Card Section ------------------------
+;
+[OEM2PORT_PCIE_inst]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM2PORT_PCIE_inst.HW]
+AddReg=OEM2PORT_PCIE_inst.RegHW
+
+[OEM2PORT_PCIE_inst.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM2PORT_PCIE_inst.RegHW]
+; here the system is fooled to start child01 as the first rather than child00
+; we have seen that child00 is always the last to enumerate
+; this way we can have consisten com numbers both in the app and device manager
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0352&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,02
+HKR,Child00,VaryingResourceMap,1,00, 00,04,00,00, 00,04,00,00
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0352&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,02
+HKR,Child01,VaryingResourceMap,1,00, 00,00,00,00, 00,04,00,00
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0352&SUBSYS_80008000
+HKR,Child02,ResourceMap,1,02
+HKR,Child02,VaryingResourceMap,1,00, 80,00,00,00, 20,00,00,00
+
+;
+; -------------------- XR17x15x 4-Port UART Card Section ------------------------
+;
+[OEM154PORT_inst]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM154PORT_inst.HW]
+AddReg=OEM154PORT_inst.RegHW
+
+[OEM154PORT_inst.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+; here the system is fooled to start child03 as the first rather than child00
+; we have seen that child00 is always the last to enumerate
+; this way we can have consisten com numbers both in the app and device manager
+[OEM154PORT_inst.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0154&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,02
+HKR,Child00,VaryingResourceMap,1,00, 00,06,00,00, 00,02,00,00
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0154&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,02
+HKR,Child01,VaryingResourceMap,1,00, 00,04,00,00, 00,02,00,00
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0154&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,02
+HKR,Child02,VaryingResourceMap,1,00, 00,02,00,00, 00,02,00,00
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_0154&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,02
+HKR,Child03,VaryingResourceMap,1,00, 00,00,00,00, 00,02,00,00
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_0154&SUBSYS_80008000
+HKR,Child04,ResourceMap,1,02
+HKR,Child04,VaryingResourceMap,1,00, 80,00,00,00, 20,00,00,00
+
+;
+; -------------------- XR17V25x 4-Port UART Card Section ------------------------
+;
+[OEM254PORT_inst]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM254PORT_inst.HW]
+AddReg=OEM254PORT_inst.RegHW
+
+[OEM254PORT_inst.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+; here the system is fooled to start child03 as the first rather than child00
+; we have seen that child00 is always the last to enumerate
+; this way we can have consisten com numbers both in the app and device manager
+[OEM254PORT_inst.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0254&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,02
+HKR,Child00,VaryingResourceMap,1,00, 00,06,00,00, 00,02,00,00
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0254&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,02
+HKR,Child01,VaryingResourceMap,1,00, 00,04,00,00, 00,02,00,00
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0254&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,02
+HKR,Child02,VaryingResourceMap,1,00, 00,02,00,00, 00,02,00,00
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_0254&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,02
+HKR,Child03,VaryingResourceMap,1,00, 00,00,00,00, 00,02,00,00
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_0254&SUBSYS_80008000
+HKR,Child04,ResourceMap,1,02
+HKR,Child04,VaryingResourceMap,1,00, 80,00,00,00, 20,00,00,00
+
+;
+; -------------------- XR17V35x 4-Port PCIe UART Card Section ------------------------
+;
+[OEM4PORT_PCIE_inst]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM4PORT_PCIE_inst.HW]
+AddReg=OEM4PORT_PCIE_inst.RegHW
+
+[OEM4PORT_PCIE_inst.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+; here the system is fooled to start child03 as the first rather than child00
+; we have seen that child00 is always the last to enumerate
+; this way we can have consisten com numbers both in the app and device manager
+[OEM4PORT_PCIE_inst.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0354&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,02
+HKR,Child00,VaryingResourceMap,1,00, 00,0C,00,00, 00,04,00,00
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0354&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,02
+HKR,Child01,VaryingResourceMap,1,00, 00,08,00,00, 00,04,00,00
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0354&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,02
+HKR,Child02,VaryingResourceMap,1,00, 00,04,00,00, 00,04,00,00
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_0354&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,02
+HKR,Child03,VaryingResourceMap,1,00, 00,00,00,00, 00,04,00,00
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_0354&SUBSYS_80008000
+HKR,Child04,ResourceMap,1,02
+HKR,Child04,VaryingResourceMap,1,00, 80,00,00,00, 20,00,00,00
+
+;
+; -------------------- XR17x15x 8-Port UART Card Section ------------------------
+;
+[OEM158PORT_inst]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM158PORT_inst.HW]
+AddReg=OEM158PORT_inst.RegHW
+
+[OEM158PORT_inst.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+; here the system is fooled to start child07 as the first rather than child00
+; we have seen that child00 is always the last to enumerate
+; this way we can have consisten com numbers both in the app and device manager
+[OEM158PORT_inst.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,02
+HKR,Child00,VaryingResourceMap,1,00, 00,0E,00,00, 00,02,00,00
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,02
+HKR,Child01,VaryingResourceMap,1,00, 00,0C,00,00, 00,02,00,00
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,02
+HKR,Child02,VaryingResourceMap,1,00, 00,0A,00,00, 00,02,00,00
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,02
+HKR,Child03,VaryingResourceMap,1,00, 00,08,00,00, 00,02,00,00
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child04,ResourceMap,1,02
+HKR,Child04,VaryingResourceMap,1,00, 00,06,00,00, 00,02,00,00
+HKR,Child05,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child05,ResourceMap,1,02
+HKR,Child05,VaryingResourceMap,1,00, 00,04,00,00, 00,02,00,00
+HKR,Child06,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child06,ResourceMap,1,02
+HKR,Child06,VaryingResourceMap,1,00, 00,02,00,00, 00,02,00,00
+HKR,Child07,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_00010001
+HKR,Child07,ResourceMap,1,02
+HKR,Child07,VaryingResourceMap,1,00, 00,00,00,00, 00,02,00,00
+HKR,Child08,HardwareID,,PCI\VEN_13A8&DEV_0158&SUBSYS_80008000
+HKR,Child08,ResourceMap,1,02
+HKR,Child08,VaryingResourceMap,1,00, 80,00,00,00, 20,00,00,00
+
+;
+; -------------------- XR17V25x 8-Port UART Card Section ------------------------
+;
+[OEM258PORT_inst]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM258PORT_inst.HW]
+AddReg=OEM258PORT_inst.RegHW
+
+[OEM258PORT_inst.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+; here the system is fooled to start child07 as the first rather than child00
+; we have seen that child00 is always the last to enumerate
+; this way we can have consisten com numbers both in the app and device manager
+[OEM258PORT_inst.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,02
+HKR,Child00,VaryingResourceMap,1,00, 00,0E,00,00, 00,02,00,00
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,02
+HKR,Child01,VaryingResourceMap,1,00, 00,0C,00,00, 00,02,00,00
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,02
+HKR,Child02,VaryingResourceMap,1,00, 00,0A,00,00, 00,02,00,00
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,02
+HKR,Child03,VaryingResourceMap,1,00, 00,08,00,00, 00,02,00,00
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child04,ResourceMap,1,02
+HKR,Child04,VaryingResourceMap,1,00, 00,06,00,00, 00,02,00,00
+HKR,Child05,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child05,ResourceMap,1,02
+HKR,Child05,VaryingResourceMap,1,00, 00,04,00,00, 00,02,00,00
+HKR,Child06,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child06,ResourceMap,1,02
+HKR,Child06,VaryingResourceMap,1,00, 00,02,00,00, 00,02,00,00
+HKR,Child07,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_00010001
+HKR,Child07,ResourceMap,1,02
+HKR,Child07,VaryingResourceMap,1,00, 00,00,00,00, 00,02,00,00
+HKR,Child08,HardwareID,,PCI\VEN_13A8&DEV_0258&SUBSYS_80008000
+HKR,Child08,ResourceMap,1,02
+HKR,Child08,VaryingResourceMap,1,00, 80,00,00,00, 20,00,00,00
+
+;
+; -------------------- XR17V35x 8-Port PCIe UART Card Section ------------------------
+;
+[OEM8PORT_PCIE_inst]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM8PORT_PCIE_inst.HW]
+AddReg=OEM8PORT_PCIE_inst.RegHW
+
+[OEM8PORT_PCIE_inst.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+; here the system is fooled to start child07 as the first rather than child00
+; we have seen that child00 is always the last to enumerate
+; this way we can have consisten com numbers both in the app and device manager
+[OEM8PORT_PCIE_inst.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,02
+HKR,Child00,VaryingResourceMap,1,00, 00,1C,00,00, 00,04,00,00
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,02
+HKR,Child01,VaryingResourceMap,1,00, 00,18,00,00, 00,04,00,00
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,02
+HKR,Child02,VaryingResourceMap,1,00, 00,14,00,00, 00,04,00,00
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,02
+HKR,Child03,VaryingResourceMap,1,00, 00,10,00,00, 00,04,00,00
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child04,ResourceMap,1,02
+HKR,Child04,VaryingResourceMap,1,00, 00,0C,00,00, 00,04,00,00
+HKR,Child05,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child05,ResourceMap,1,02
+HKR,Child05,VaryingResourceMap,1,00, 00,08,00,00, 00,04,00,00
+HKR,Child06,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child06,ResourceMap,1,02
+HKR,Child06,VaryingResourceMap,1,00, 00,04,00,00, 00,04,00,00
+HKR,Child07,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_00010001
+HKR,Child07,ResourceMap,1,02
+HKR,Child07,VaryingResourceMap,1,00, 00,00,00,00, 00,04,00,00
+HKR,Child08,HardwareID,,PCI\VEN_13A8&DEV_0358&SUBSYS_80008000
+HKR,Child08,ResourceMap,1,02
+HKR,Child08,VaryingResourceMap,1,00, 80,00,00,00, 20,00,00,00
+
+;
+; -------------------- 8-Port (4354) PCIe UART Card Section ------------------------
+;
+[OEM8PORT_4354_PCIE_inst]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM8PORT_4354_PCIE_inst.HW]
+AddReg=OEM8PORT_4354_PCIE_inst.RegHW
+
+[OEM8PORT_4354_PCIE_inst.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+; here the system is fooled to start child07 as the first rather than child00
+; we have seen that child00 is always the last to enumerate
+; this way we can have consisten com numbers both in the app and device manager
+[OEM8PORT_4354_PCIE_inst.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_4354&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,02
+HKR,Child00,VaryingResourceMap,1,00, 00,2C,00,00, 00,04,00,00
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_4354&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,02
+HKR,Child01,VaryingResourceMap,1,00, 00,28,00,00, 00,04,00,00
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_4354&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,02
+HKR,Child02,VaryingResourceMap,1,00, 00,24,00,00, 00,04,00,00
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_4354&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,02
+HKR,Child03,VaryingResourceMap,1,00, 00,20,00,00, 00,04,00,00
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_4354&SUBSYS_00010001
+HKR,Child04,ResourceMap,1,02
+HKR,Child04,VaryingResourceMap,1,00, 00,0C,00,00, 00,04,00,00
+HKR,Child05,HardwareID,,PCI\VEN_13A8&DEV_4354&SUBSYS_00010001
+HKR,Child05,ResourceMap,1,02
+HKR,Child05,VaryingResourceMap,1,00, 00,08,00,00, 00,04,00,00
+HKR,Child06,HardwareID,,PCI\VEN_13A8&DEV_4354&SUBSYS_00010001
+HKR,Child06,ResourceMap,1,02
+HKR,Child06,VaryingResourceMap,1,00, 00,04,00,00, 00,04,00,00
+HKR,Child07,HardwareID,,PCI\VEN_13A8&DEV_4354&SUBSYS_00010001
+HKR,Child07,ResourceMap,1,02
+HKR,Child07,VaryingResourceMap,1,00, 00,00,00,00, 00,04,00,00
+HKR,Child08,HardwareID,,PCI\VEN_13A8&DEV_4354&SUBSYS_80008000
+HKR,Child08,ResourceMap,1,02
+HKR,Child08,VaryingResourceMap,1,00, 80,00,00,00, 20,00,00,00
+
+;
+; -------------------- 12-Port (8354) PCIe UART Card Section ------------------------
+;
+[OEM12PORT_8354_PCIE_inst]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM12PORT_8354_PCIE_inst.HW]
+AddReg=OEM12PORT_8354_PCIE_inst.RegHW
+
+[OEM12PORT_8354_PCIE_inst.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM12PORT_8354_PCIE_inst.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,02
+HKR,Child00,VaryingResourceMap,1,00, 00,3C,00,00, 00,04,00,00
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,02
+HKR,Child01,VaryingResourceMap,1,00, 00,38,00,00, 00,04,00,00
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,02
+HKR,Child02,VaryingResourceMap,1,00, 00,34,00,00, 00,04,00,00
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,02
+HKR,Child03,VaryingResourceMap,1,00, 00,30,00,00, 00,04,00,00
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child04,ResourceMap,1,02
+HKR,Child04,VaryingResourceMap,1,00, 00,2C,00,00, 00,04,00,00
+HKR,Child05,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child05,ResourceMap,1,02
+HKR,Child05,VaryingResourceMap,1,00, 00,28,00,00, 00,04,00,00
+HKR,Child06,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child06,ResourceMap,1,02
+HKR,Child06,VaryingResourceMap,1,00, 00,24,00,00, 00,04,00,00
+HKR,Child07,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child07,ResourceMap,1,02
+HKR,Child07,VaryingResourceMap,1,00, 00,20,00,00, 00,04,00,00
+HKR,Child08,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child08,ResourceMap,1,02
+HKR,Child08,VaryingResourceMap,1,00, 00,0C,00,00, 00,04,00,00
+HKR,Child09,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child09,ResourceMap,1,02
+HKR,Child09,VaryingResourceMap,1,00, 00,08,00,00, 00,04,00,00
+HKR,Child10,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child10,ResourceMap,1,02
+HKR,Child10,VaryingResourceMap,1,00, 00,04,00,00, 00,04,00,00
+HKR,Child11,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_00010001
+HKR,Child11,ResourceMap,1,02
+HKR,Child11,VaryingResourceMap,1,00, 00,00,00,00, 00,04,00,00
+HKR,Child12,HardwareID,,PCI\VEN_13A8&DEV_8354&SUBSYS_80008000
+HKR,Child12,ResourceMap,1,02
+HKR,Child12,VaryingResourceMap,1,00, 80,00,00,00, 20,00,00,00
+
+;
+; -------------------- 12-Port (4358) PCIe UART Card Section ------------------------
+;
+[OEM12PORT_4358_PCIE_inst]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM12PORT_4358_PCIE_inst.HW]
+AddReg=OEM12PORT_4358_PCIE_inst.RegHW
+
+[OEM12PORT_4358_PCIE_inst.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM12PORT_4358_PCIE_inst.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,02
+HKR,Child00,VaryingResourceMap,1,00, 00,2C,00,00, 00,04,00,00
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,02
+HKR,Child01,VaryingResourceMap,1,00, 00,28,00,00, 00,04,00,00
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,02
+HKR,Child02,VaryingResourceMap,1,00, 00,24,00,00, 00,04,00,00
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,02
+HKR,Child03,VaryingResourceMap,1,00, 00,20,00,00, 00,04,00,00
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child04,ResourceMap,1,02
+HKR,Child04,VaryingResourceMap,1,00, 00,1C,00,00, 00,04,00,00
+HKR,Child05,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child05,ResourceMap,1,02
+HKR,Child05,VaryingResourceMap,1,00, 00,18,00,00, 00,04,00,00
+HKR,Child06,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child06,ResourceMap,1,02
+HKR,Child06,VaryingResourceMap,1,00, 00,14,00,00, 00,04,00,00
+HKR,Child07,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child07,ResourceMap,1,02
+HKR,Child07,VaryingResourceMap,1,00, 00,10,00,00, 00,04,00,00
+HKR,Child08,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child08,ResourceMap,1,02
+HKR,Child08,VaryingResourceMap,1,00, 00,0C,00,00, 00,04,00,00
+HKR,Child09,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child09,ResourceMap,1,02
+HKR,Child09,VaryingResourceMap,1,00, 00,08,00,00, 00,04,00,00
+HKR,Child10,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child10,ResourceMap,1,02
+HKR,Child10,VaryingResourceMap,1,00, 00,04,00,00, 00,04,00,00
+HKR,Child11,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_00010001
+HKR,Child11,ResourceMap,1,02
+HKR,Child11,VaryingResourceMap,1,00, 00,00,00,00, 00,04,00,00
+HKR,Child12,HardwareID,,PCI\VEN_13A8&DEV_4358&SUBSYS_80008000
+HKR,Child12,ResourceMap,1,02
+HKR,Child12,VaryingResourceMap,1,00, 80,00,00,00, 20,00,00,00
+
+;
+; -------------------- 16-Port PCIe UART Card Section ------------------------
+;
+[OEM16PORT_8358_PCIE_inst]
+Include = mf.inf
+Needs = MFINSTALL.mf
+
+[OEM16PORT_8358_PCIE_inst.HW]
+AddReg=OEM16PORT_8358_PCIE_inst.RegHW
+
+[OEM16PORT_8358_PCIE_inst.Services]
+Include = mf.inf
+Needs = MFINSTALL.mf.Services
+
+[OEM16PORT_8358_PCIE_inst.RegHW]
+HKR,Child00,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child00,ResourceMap,1,02
+HKR,Child00,VaryingResourceMap,1,00, 00,3C,00,00, 00,04,00,00
+HKR,Child01,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child01,ResourceMap,1,02
+HKR,Child01,VaryingResourceMap,1,00, 00,38,00,00, 00,04,00,00
+HKR,Child02,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child02,ResourceMap,1,02
+HKR,Child02,VaryingResourceMap,1,00, 00,34,00,00, 00,04,00,00
+HKR,Child03,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child03,ResourceMap,1,02
+HKR,Child03,VaryingResourceMap,1,00, 00,30,00,00, 00,04,00,00
+HKR,Child04,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child04,ResourceMap,1,02
+HKR,Child04,VaryingResourceMap,1,00, 00,2C,00,00, 00,04,00,00
+HKR,Child05,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child05,ResourceMap,1,02
+HKR,Child05,VaryingResourceMap,1,00, 00,28,00,00, 00,04,00,00
+HKR,Child06,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child06,ResourceMap,1,02
+HKR,Child06,VaryingResourceMap,1,00, 00,24,00,00, 00,04,00,00
+HKR,Child07,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child07,ResourceMap,1,02
+HKR,Child07,VaryingResourceMap,1,00, 00,20,00,00, 00,04,00,00
+HKR,Child08,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child08,ResourceMap,1,02
+HKR,Child08,VaryingResourceMap,1,00, 00,1C,00,00, 00,04,00,00
+HKR,Child09,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child09,ResourceMap,1,02
+HKR,Child09,VaryingResourceMap,1,00, 00,18,00,00, 00,04,00,00
+HKR,Child10,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child10,ResourceMap,1,02
+HKR,Child10,VaryingResourceMap,1,00, 00,14,00,00, 00,04,00,00
+HKR,Child11,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child11,ResourceMap,1,02
+HKR,Child11,VaryingResourceMap,1,00, 00,10,00,00, 00,04,00,00
+HKR,Child12,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child12,ResourceMap,1,02
+HKR,Child12,VaryingResourceMap,1,00, 00,0C,00,00, 00,04,00,00
+HKR,Child13,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child13,ResourceMap,1,02
+HKR,Child13,VaryingResourceMap,1,00, 00,08,00,00, 00,04,00,00
+HKR,Child14,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child14,ResourceMap,1,02
+HKR,Child14,VaryingResourceMap,1,00, 00,04,00,00, 00,04,00,00
+HKR,Child15,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_00010001
+HKR,Child15,ResourceMap,1,02
+HKR,Child15,VaryingResourceMap,1,00, 00,00,00,00, 00,04,00,00
+HKR,Child16,HardwareID,,PCI\VEN_13A8&DEV_8358&SUBSYS_80008000
+HKR,Child16,ResourceMap,1,02
+HKR,Child16,VaryingResourceMap,1,00, 80,00,00,00, 20,00,00,00
+
+[Strings]
+OEM= "Exar Corporation"
+OEM_152PORT="Exar's 2-Port UART PCI Card"
+OEM_154PORT="Exar's 4-Port UART PCI Card"
+OEM_158PORT="Exar's 8-Port UART PCI Card"
+OEM_252PORT="Exar's 2-Port UART PCI Card"
+OEM_254PORT="Exar's 4-Port UART PCI Card"
+OEM_258PORT="Exar's 8-Port UART PCI Card"
+OEM_2PORT_PCIE="Exar's 2-Port UART PCI-Express Card"
+OEM_4PORT_PCIE="Exar's 4-Port UART PCI-Express Card"
+OEM_8PORT_PCIE="Exar's 8-Port UART PCI-Express Card"
+OEM_44PORT_PCIE="Exar's 8-Port (4+4) UART PCI-Express Card"
+OEM_48PORT_PCIE="Exar's 12-Port (4+8) UART PCI-Express Card"
+OEM_84PORT_PCIE="Exar's 12-Port (8+4) UART PCI-Express Card"
+OEM_88PORT_PCIE="Exar's 16-Port (8+8) UART PCI-Express Card"
+
+OEM_152PORT_SUB="Exar's 2-Port UART PCI Card"
+OEM_154PORT_SUB="Exar's 4-Port UART PCI Card"
+OEM_158PORT_SUB="Exar's 8-Port UART PCI Card"
+OEM_252PORT_SUB="Exar's 2-Port UART PCI Card"
+OEM_254PORT_SUB="Exar's 4-Port UART PCI Card"
+OEM_258PORT_SUB="Exar's 8-Port UART PCI Card"
+OEM_2PORT_PCIE_SUB="Exar's 2-Port UART PCI-Express Card"
+OEM_4PORT_PCIE_SUB="Exar's 4-Port UART PCI-Express Card"
+OEM_8PORT_PCIE_SUB="Exar's 8-Port UART PCI-Express Card"
+OEM_44PORT_PCIE_SUB="Exar's 8-Port (4+4) UART PCI-Express Card"
+OEM_48PORT_PCIE_SUB="Exar's 12-Port (4+8) UART PCI-Express Card"
+OEM_84PORT_PCIE_SUB="Exar's 12-Port (8+4) UART PCI-Express Card"
+OEM_88PORT_PCIE_SUB="Exar's 16-Port (8+8) UART PCI-Express Card"

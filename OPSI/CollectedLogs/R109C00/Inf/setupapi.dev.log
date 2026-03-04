@@ -1,0 +1,876 @@
+[Device Install Log]
+     OS Version = 10.0.26100
+     Service Pack = 0.0
+     Suite = 0x0100
+     ProductType = 1
+     Architecture = amd64
+
+[BeginLog]
+
+[Boot Session: 2025/11/05 11:08:22.500]
+
+>>>  [Device Install (Hardware initiated) - SWD\DRIVERENUM\{8541b81c-193b-4f91-a86b-53df20c1974b}#RstHsa&4&29f8ff0c&0]
+>>>  Section start 2025/11/05 11:08:28.625
+     ump: Install needed due to device being marked for re-install
+     utl: {Select Drivers - SWD\DRIVERENUM\{8541b81c-193b-4f91-a86b-53df20c1974b}#RstHsa&4&29f8ff0c&0} 11:08:28.639
+     utl:      Driver Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - oem26.inf (C:\WINDOWS\System32\DriverStore\FileRepository\iastorhsacomponent.inf_amd64_752500b3ebfb3e4f\iastorhsacomponent.inf)
+     utl:           Class GUID     - {5c4c3332-344d-483c-8739-259e934c9cc8}
+     utl:           Driver Version - 03/11/2020,17.9.0.1
+     utl:           Configuration  - SWC\VID8086&SW_RstHSA
+     utl:           Driver Rank    - 00FF0000
+     utl:           Signer Score   - WHQL (0D000005)
+     utl:           Submission ID  - 29989500_14171147344685595_1152921505691017550
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - c_swcomponent.inf (C:\WINDOWS\System32\DriverStore\FileRepository\c_swcomponent.inf_amd64_1536c854ab7bdc83\c_swcomponent.inf)
+     utl:           Class GUID     - {5c4c3332-344d-483c-8739-259e934c9cc8}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - SWC\Generic [SoftwareComponent]
+     utl:           Driver Rank    - 00FF3000
+     utl:           Signer Score   - Inbox (0D000003)
+     utl:      Driver Node:
+     utl:           Status         - Outranked
+     utl:           Driver INF     - c_swdevice.inf (C:\WINDOWS\System32\DriverStore\FileRepository\c_swdevice.inf_amd64_845d51425d14f98b\c_swdevice.inf)
+     utl:           Class GUID     - {62f9c741-b25a-46ce-b54c-9bccce08b6f2}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1
+     utl:           Configuration  - SWD\GenericRaw [SoftwareDevice]
+     utl:           Driver Rank    - 00FF3001
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:08:28.646
+     dvi: Install flags: 0x00010000
+     dvi: {Core Device Install} 11:08:28.650
+     dvi:      {Configure Device - SWD\DRIVERENUM\{8541b81c-193b-4f91-a86b-53df20c1974b}#RstHsa&4&29f8ff0c&0} 11:08:28.652
+     dvi:           Device Status: 0x0180200a
+     dvi:           Config Flags: 0x00000000
+     dvi:           Parent Device: PCI\VEN_8086&DEV_06D2&SUBSYS_12591734&REV_00\3&11583659&0&B8
+     sto:           {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\iastorhsacomponent.inf_amd64_752500b3ebfb3e4f\iastorhsacomponent.inf} 11:08:28.652
+     sto:                Source Filter  = SWC\VID8086&SW_RstHSA
+     inf:                Config Options = IsolationCompat
+     inf:                Class GUID     = {5c4c3332-344d-483c-8739-259e934c9cc8}
+     inf:                Class Options  = Configurable
+     inf:                {Configure Driver: Intel(R) Optane(TM) Memory and Storage Management Component}
+     inf:                     Section Name = RstHsaComponent_install.NTamd64
+     inf:                     Hardware Id  = SWC\VID8086&SW_RstHSA
+     inf:                     {Configure Driver Configuration: RstHsaComponent_install.NTamd64}
+     inf:                          Service Name  = <none>
+     inf:                          Driver has software pending install.
+     inf:                          Config Flags  = 0x00000000
+     inf:                     {Configure Driver Configuration: exit(0x00000000)}
+     inf:                {Configure Driver: exit(0x00000000)}
+     flq:                {FILE_QUEUE_COMMIT} 11:08:28.659
+     flq:                {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:08:28.659
+     sto:           {Configure Driver Package: exit(0x00000000)} 11:08:28.659
+     dvi:           Install Device: Configuring device. 11:08:28.659
+     dvi:                Configuration: oem26.inf:SWC\VID8086&SW_RstHSA,*
+     dvi:           Install Device: Configuring device completed. 11:08:28.659
+     dvi:           Device Status: 0x0180200a
+     dvi:           Install Device: Removing device 'SWD\DRIVERENUM\{8541B81C-193B-4F91-A86B-53DF20C1974B}#RSTHSA&4&29F8FF0C&0' and sub-tree. 11:08:28.659
+     dvi:           Install Device: Removing device sub-tree completed. 11:08:28.659
+     dvi:           Install Device: Restarting device. 11:08:28.659
+     dvi:           Install Device: Restarting device completed. 11:08:28.659
+     dvi:      {Configure Device - exit(0x00000000)} 11:08:28.659
+     dvi: {Core Device Install - exit(0x00000000)} 11:08:28.659
+<<<  Section end 2025/11/05 11:08:28.675
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup Import Driver Package - C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf]
+>>>  Section start 2025/11/05 12:09:09.468
+      cmd: C:\WINDOWS\System32\spoolsv.exe
+     inf: Provider: Microsoft
+     inf: Class GUID: {4D36E979-E325-11CE-BFC1-08002BE10318}
+     inf: Driver Version: 06/21/2006,10.0.26100.1
+     inf: Catalog File: prnms009.cat
+     ump: Import flags: 0x0000000D
+     pol: {Driver package policy check} 12:09:09.478
+     pol: {Driver package policy check - exit(0x00000000)} 12:09:09.478
+     sto: {Stage Driver Package: C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf} 12:09:09.479
+     inf:      Provider       = Microsoft
+     inf:      Class GUID     = {4d36e979-e325-11ce-bfc1-08002be10318}
+     inf:      Class Version  = 4.0
+     inf:      Driver Version = 06/21/2006,10.0.26100.1
+     inf:      Catalog File   = prnms009.cat
+     inf:      Version Flags  = 0x00000003
+     inf:      {Query Configurability: C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf} 12:09:09.483
+     inf:           Driver package is fully isolated.
+     inf:           Driver package 'prnms009.Inf' is configurable.
+     inf:      {Query Configurability: exit(0x00000000)} 12:09:09.485
+     flq:      {FILE_QUEUE_COMMIT} 12:09:09.486
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW_devmode_map.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{4d64ec4a-b9f4-4c46-9211-3d8d929b6e4d}\MPDW_devmode_map.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.cat' to 'C:\WINDOWS\System32\DriverStore\Temp\{4d64ec4a-b9f4-4c46-9211-3d8d929b6e4d}\prnms009.cat'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf' to 'C:\WINDOWS\System32\DriverStore\Temp\{4d64ec4a-b9f4-4c46-9211-3d8d929b6e4d}\prnms009.Inf'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-PDC.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{4d64ec4a-b9f4-4c46-9211-3d8d929b6e4d}\MPDW-PDC.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-manifest.ini' to 'C:\WINDOWS\System32\DriverStore\Temp\{4d64ec4a-b9f4-4c46-9211-3d8d929b6e4d}\MPDW-manifest.ini'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-pipelineconfig.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{4d64ec4a-b9f4-4c46-9211-3d8d929b6e4d}\MPDW-pipelineconfig.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-constraints.js' to 'C:\WINDOWS\System32\DriverStore\Temp\{4d64ec4a-b9f4-4c46-9211-3d8d929b6e4d}\MPDW-constraints.js'.
+     flq:      {FILE_QUEUE_COMMIT - exit(0x00000000)} 12:09:09.504
+     sto:      {DRIVERSTORE IMPORT VALIDATE} 12:09:09.504
+     sig:           Driver package catalog is valid.
+!!!  sig:           Driver package INF file hash is not present in catalog file. Filename = prnms009.Inf, Error = 0xE000024B
+!!!  sig:           Driver package appears to be tampered, and Code Integrity is enforced.
+!!!  sig:           Driver package failed signature validation. Error = 0xE000024B
+     sto:      {DRIVERSTORE IMPORT VALIDATE: exit(0xe000024b)} 12:09:09.517
+!!!  sig:      Driver package failed signature verification. Error = 0xE000024B
+!!!  sto:      Failed to import driver package into Driver Store. Error = 0xE000024B
+     sto: {Stage Driver Package: exit(0xe000024b)} 12:09:09.519
+<<<  Section end 2025/11/05 12:09:09.520
+<<<  [Exit status: FAILURE(0xe000024b)]
+
+
+[Boot Session: 2025/11/05 12:10:28.500]
+
+>>>  [Setup Import Driver Package - C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf]
+>>>  Section start 2025/11/05 12:10:46.659
+      cmd: C:\WINDOWS\System32\spoolsv.exe
+     inf: Provider: Microsoft
+     inf: Class GUID: {4D36E979-E325-11CE-BFC1-08002BE10318}
+     inf: Driver Version: 06/21/2006,10.0.26100.1
+     inf: Catalog File: prnms009.cat
+     ump: Import flags: 0x0000000D
+     pol: {Driver package policy check} 12:10:46.723
+     pol: {Driver package policy check - exit(0x00000000)} 12:10:46.725
+     sto: {Stage Driver Package: C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf} 12:10:46.726
+     inf:      Provider       = Microsoft
+     inf:      Class GUID     = {4d36e979-e325-11ce-bfc1-08002be10318}
+     inf:      Class Version  = 4.0
+     inf:      Driver Version = 06/21/2006,10.0.26100.1
+     inf:      Catalog File   = prnms009.cat
+     inf:      Version Flags  = 0x00000003
+     inf:      {Query Configurability: C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf} 12:10:46.730
+     inf:           Driver package is fully isolated.
+     inf:           Driver package 'prnms009.Inf' is configurable.
+     inf:      {Query Configurability: exit(0x00000000)} 12:10:46.730
+     flq:      {FILE_QUEUE_COMMIT} 12:10:46.730
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW_devmode_map.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{3e099b62-fe0a-9e43-bec1-c47de579c121}\MPDW_devmode_map.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.cat' to 'C:\WINDOWS\System32\DriverStore\Temp\{3e099b62-fe0a-9e43-bec1-c47de579c121}\prnms009.cat'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf' to 'C:\WINDOWS\System32\DriverStore\Temp\{3e099b62-fe0a-9e43-bec1-c47de579c121}\prnms009.Inf'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-PDC.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{3e099b62-fe0a-9e43-bec1-c47de579c121}\MPDW-PDC.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-manifest.ini' to 'C:\WINDOWS\System32\DriverStore\Temp\{3e099b62-fe0a-9e43-bec1-c47de579c121}\MPDW-manifest.ini'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-pipelineconfig.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{3e099b62-fe0a-9e43-bec1-c47de579c121}\MPDW-pipelineconfig.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-constraints.js' to 'C:\WINDOWS\System32\DriverStore\Temp\{3e099b62-fe0a-9e43-bec1-c47de579c121}\MPDW-constraints.js'.
+     flq:      {FILE_QUEUE_COMMIT - exit(0x00000000)} 12:10:46.793
+     sto:      {DRIVERSTORE IMPORT VALIDATE} 12:10:46.793
+     sig:           Driver package catalog is valid.
+!!!  sig:           Driver package INF file hash is not present in catalog file. Filename = prnms009.Inf, Error = 0xE000024B
+!!!  sig:           Driver package appears to be tampered, and Code Integrity is enforced.
+!!!  sig:           Driver package failed signature validation. Error = 0xE000024B
+     sto:      {DRIVERSTORE IMPORT VALIDATE: exit(0xe000024b)} 12:10:46.813
+!!!  sig:      Driver package failed signature verification. Error = 0xE000024B
+!!!  sto:      Failed to import driver package into Driver Store. Error = 0xE000024B
+     sto: {Stage Driver Package: exit(0xe000024b)} 12:10:46.815
+<<<  Section end 2025/11/05 12:10:46.818
+<<<  [Exit status: FAILURE(0xe000024b)]
+
+
+>>>  [Device Install (Install Windows Update driver) - acpi\ven_fuj&dev_02e3&rev_0001]
+>>>  Section start 2025/11/05 12:12:22.279
+      cmd: "C:\WINDOWS\uus\AMD64\wuaucltcore.exe" /DeploymentHandlerFullPath \\?\C:\Windows\UUS\AMD64\UpdateDeploy.dll /ClassId 6c0ac786-8eea-46c9-b029-54b6c31686b1 /RunHandlerComServer
+     dvs: INF path: C:\WINDOWS\SoftwareDistribution\Download\Install
+     dvs: Found 1 driver updates under 'C:\WINDOWS\SoftwareDistribution\Download\Install'. 12:12:22.281
+     dvs: {Driver Setup Import Driver Package: C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3.inf} 12:12:22.284
+     ump:      Import flags: 0x00000001
+     pol:      {Driver package policy check} 12:12:22.296
+     pol:      {Driver package policy check - exit(0x00000000)} 12:12:22.296
+     sto:      {Stage Driver Package: C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3.inf} 12:12:22.297
+     inf:           Provider       = Fujitsu Client Computing Limited
+     inf:           Class GUID     = {4d36e97d-e325-11ce-bfc1-08002be10318}
+     inf:           Driver Version = 03/15/2024,4.5.1.0
+     inf:           Catalog File   = fuj02e3.cat
+     inf:           Version Flags  = 0x00000003
+     inf:           {Query Configurability: C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3.inf} 12:12:22.309
+     inf:                Driver package is fully isolated.
+     inf:                Driver package uses WDF.
+     inf:                Driver package 'fuj02e3.inf' is configurable.
+     inf:           {Query Configurability: exit(0x00000000)} 12:12:22.313
+     flq:           {FILE_QUEUE_COMMIT} 12:12:22.314
+     flq:                Copying 'C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3-utility-x86.dll' to 'C:\WINDOWS\System32\DriverStore\Temp\{c7c79cb3-2c4b-b44f-9194-09deac31cdd2}\fuj02e3-utility-x86.dll'.
+     flq:                Copying 'C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3-utility-etw.dll' to 'C:\WINDOWS\System32\DriverStore\Temp\{c7c79cb3-2c4b-b44f-9194-09deac31cdd2}\fuj02e3-utility-etw.dll'.
+     flq:                Copying 'C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3-utility.dll' to 'C:\WINDOWS\System32\DriverStore\Temp\{c7c79cb3-2c4b-b44f-9194-09deac31cdd2}\fuj02e3-utility.dll'.
+     flq:                Copying 'C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3-utility.exe' to 'C:\WINDOWS\System32\DriverStore\Temp\{c7c79cb3-2c4b-b44f-9194-09deac31cdd2}\fuj02e3-utility.exe'.
+     flq:                Copying 'C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3.cat' to 'C:\WINDOWS\System32\DriverStore\Temp\{c7c79cb3-2c4b-b44f-9194-09deac31cdd2}\fuj02e3.cat'.
+     flq:                Copying 'C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3.inf' to 'C:\WINDOWS\System32\DriverStore\Temp\{c7c79cb3-2c4b-b44f-9194-09deac31cdd2}\fuj02e3.inf'.
+     flq:                Copying 'C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3.sys' to 'C:\WINDOWS\System32\DriverStore\Temp\{c7c79cb3-2c4b-b44f-9194-09deac31cdd2}\fuj02e3.sys'.
+     flq:           {FILE_QUEUE_COMMIT - exit(0x00000000)} 12:12:22.462
+     sto:           {DRIVERSTORE IMPORT VALIDATE} 12:12:22.464
+     sig:                Driver package catalog is valid.
+     sig:                {_VERIFY_FILE_SIGNATURE} 12:12:22.475
+     sig:                     Key      = fuj02e3.inf
+     sig:                     FilePath = C:\WINDOWS\System32\DriverStore\Temp\{c7c79cb3-2c4b-b44f-9194-09deac31cdd2}\fuj02e3.inf
+     sig:                     Catalog  = C:\WINDOWS\System32\DriverStore\Temp\{c7c79cb3-2c4b-b44f-9194-09deac31cdd2}\fuj02e3.cat
+     sig:                     Success: File is signed in catalog.
+     sig:                {_VERIFY_FILE_SIGNATURE exit(0x00000000)} 12:12:22.492
+     sto:           {DRIVERSTORE IMPORT VALIDATE: exit(0x00000000)} 12:12:22.520
+     sig:           Signer Score  = 0x0D000005 (WHQL)
+     sig:           Signer Name   = Microsoft Windows Hardware Compatibility Publisher
+     sig:           Submission ID = 29997810_14600061327072884_1152921505697561395
+     sto:           {Core Driver Package Import: fuj02e3.inf_amd64_922627d7b8e63cb3} 12:12:22.524
+     sto:                {DRIVERSTORE IMPORT BEGIN} 12:12:22.525
+     sto:                {DRIVERSTORE IMPORT BEGIN: exit(0x00000000)} 12:12:22.526
+     cpy:                {Copy Directory: C:\WINDOWS\System32\DriverStore\Temp\{c7c79cb3-2c4b-b44f-9194-09deac31cdd2}} 12:12:22.526
+     cpy:                     Target Path = C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3
+     cpy:                {Copy Directory: exit(0x00000000)} 12:12:22.530
+     idb:                {Register Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3.inf} 12:12:22.540
+     idb:                     Created driver package object 'fuj02e3.inf_amd64_922627d7b8e63cb3' in SYSTEM database node.
+     idb:                     Created driver INF file object 'oem53.inf' in SYSTEM database node.
+     idb:                     Registered driver package 'fuj02e3.inf_amd64_922627d7b8e63cb3' with 'oem53.inf'.
+     idb:                {Register Driver Package: exit(0x00000000)} 12:12:22.544
+     idb:                {Publish Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3.inf} 12:12:22.544
+     idb:                     Activating driver package 'fuj02e3.inf_amd64_922627d7b8e63cb3'.
+     cpy:                     Published 'fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3.inf' to 'oem53.inf'.
+     idb:                     Indexed 3 device IDs for 'fuj02e3.inf_amd64_922627d7b8e63cb3'.
+     sto:                     Flushed driver database node 'SYSTEM'. Time = 0 ms
+     idb:                {Publish Driver Package: exit(0x00000000)} 12:12:22.560
+     sto:                {DRIVERSTORE IMPORT END} 12:12:22.562
+     dvi:                     Flushed all driver package files to disk. Time = 3 ms
+     sig:                     Installed catalog 'fuj02e3.cat' as 'oem53.cat'.
+     sto:                {DRIVERSTORE IMPORT END: exit(0x00000000)} 12:12:22.621
+     sto:           {Core Driver Package Import: exit(0x00000000)} 12:12:22.621
+     sto:      {Stage Driver Package: exit(0x00000000)} 12:12:22.623
+     dvs:      Driver Package:
+     dvs:           Outcome        - Imported
+     dvs:           Driver INF     - fuj02e3.inf (oem53.inf)
+     dvs:           Class GUID     - {4d36e97d-e325-11ce-bfc1-08002be10318}
+     dvs:           Driver Version - 03/15/2024,4.5.1.0
+     dvi:      Flushed SOFTWARE registry hive. 12:12:22.662
+     dvi:      Flushed SYSTEM registry hive. 12:12:22.669
+     dvi:      Flushed DRIVERS registry hive. 12:12:22.669
+     dvs: {Driver Setup Import Driver Package - exit (0x00000000)} 12:12:22.670
+     dvs: {Driver Setup Update Device: ACPI\FUJ02E3\2&daba3ff&0} 12:12:22.674
+     utl:      {Select Drivers - ACPI\FUJ02E3\2&daba3ff&0} 12:12:22.674
+     utl:           Driver Node:
+     utl:                Status         - Selected
+     utl:                Driver INF     - oem53.inf (C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3.inf)
+     utl:                Class GUID     - {4d36e97d-e325-11ce-bfc1-08002be10318}
+     utl:                Driver Version - 03/15/2024,4.5.1.0
+     utl:                Configuration  - ACPI\VEN_FUJ&DEV_02E3&REV_0001
+     utl:                Driver Rank    - 00FF0000
+     utl:                Signer Score   - WHQL (0D000005)
+     utl:                Submission ID  - 29997810_14600061327072884_1152921505697561395
+     utl:                Flight IDs     - RD:DD5F8
+     utl:           Driver Node:
+     utl:                Status         - Outranked
+     utl:                Driver INF     - oem53.inf (C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3.inf)
+     utl:                Class GUID     - {4d36e97d-e325-11ce-bfc1-08002be10318}
+     utl:                Driver Version - 03/15/2024,4.5.1.0
+     utl:                Configuration  - ACPI\FUJ02E3
+     utl:                Driver Rank    - 00FF0002
+     utl:                Signer Score   - WHQL (0D000005)
+     utl:                Submission ID  - 29997810_14600061327072884_1152921505697561395
+     utl:                Flight IDs     - RD:DD5F8
+     utl:      {Select Drivers - exit(0x00000000} 12:12:22.679
+     dvs:      Installing best driver (oem53.inf) on device 'ACPI\FUJ02E3\2&daba3ff&0'.
+     ump:      {Plug and Play Service: Device Install for ACPI\FUJ02E3\2&DABA3FF&0}
+     dvi:           Install flags: 0x00010001
+     dvi:           {Core Device Install} 12:12:22.690
+     dvi:                {Configure Device - ACPI\FUJ02E3\2&DABA3FF&0} 12:12:22.692
+     dvi:                     Device Status: 0x01802400 [0x1c - 0xc0000490]
+     dvi:                     Config Flags: 0x00000060
+     dvi:                     Parent Device: ACPI_HAL\PNP0C08\0
+     sto:                     {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3.inf} 12:12:22.694
+     sto:                          Source Filter  = ACPI\VEN_FUJ&DEV_02E3&REV_0001
+     inf:                          Config Options = IsolationCompat
+     inf:                          Class GUID     = {4d36e97d-e325-11ce-bfc1-08002be10318}
+     inf:                          Class Options  = Configurable BootCritical
+     inf:                          {Configure Driver: Fujitsu FUJ02E3 Device Driver}
+     inf:                               Section Name = FUJ02E3_Device.NT
+     inf:                               {Add Service: fuj02e3}
+     inf:                                    Flags         = 0x2
+     inf:                                    Start Type    = 3
+     inf:                                    Service Type  = 1
+     inf:                                    Error Control = 1
+     inf:                                    Image Path    = \SystemRoot\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3.sys
+     inf:                                    Display Name  = Fujitsu FUJ02E3 Device Driver Service
+     inf:                                    Created new service 'fuj02e3'.
+     inf:                               {Add Service: exit(0x00000000)}
+     inf:                               {Add Service: Fuj02e3DriverUtilityService}
+     inf:                                    Flags         = 0x800
+     inf:                                    Start Type    = 2
+     inf:                                    Service Type  = 16
+     inf:                                    Error Control = 1
+     inf:                                    Image Path    = %SystemRoot%\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3-utility.exe
+     inf:                                    Display Name  = Fujitsu FUJ02E3 Device Driver - Utility Service
+     inf:                                    Dependencies  = RPCSS
+     inf:                                    Created new service 'Fuj02e3DriverUtilityService'.
+     inf:                               {Add Service: exit(0x00000000)}
+     inf:                               {Add Event Provider: Fujitsu-FUJ02E3-Service}
+     inf:                                    Provider ID    = {fb45d823-fc7d-4f9b-9b45-c4d7578cbdd9}
+     inf:                                    Resource File  = %SystemRoot%\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3-utility-etw.dll
+     inf:                                    Message File   = %SystemRoot%\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3-utility-etw.dll
+     inf:                               {Add Event Provider: exit(0x00000000)}
+     inf:                               Hardware Id  = ACPI\VEN_FUJ&DEV_02E3&REV_0001
+     inf:                               {Configure Driver Configuration: FUJ02E3_Device.NT}
+     inf:                                    Service Name  = fuj02e3
+     inf:                                    Win32 Services = Fuj02e3DriverUtilityService
+     inf:                                    Config Flags  = 0x00000000
+     inf:                               {Configure Driver Configuration: exit(0x00000000)}
+     inf:                          {Configure Driver: exit(0x00000000)}
+     flq:                          {FILE_QUEUE_COMMIT} 12:12:22.843
+     flq:                          {FILE_QUEUE_COMMIT - exit(0x00000000)} 12:12:22.844
+     inf:                          Started service 'Fuj02e3DriverUtilityService'. 12:12:22.932
+     sto:                     {Configure Driver Package: exit(0x00000000)} 12:12:22.933
+     dvi:                     Install Device: Configuring device. 12:12:22.934
+     dvi:                          Configuration: oem53.inf:ACPI\VEN_FUJ&DEV_02E3&REV_0001,*
+     dvi:                     Install Device: Configuring device completed. 12:12:22.938
+     dvi:                     Device Status: 0x01802000
+     dvi:                     Install Device: Starting device 'ACPI\FUJ02E3\2&DABA3FF&0'. 12:12:22.939
+     dvi:                     Install Device: Starting device completed. 12:12:22.990
+     dvi:                {Configure Device - exit(0x00000000)} 12:12:22.991
+     dvi:           {Core Device Install - exit(0x00000000)} 12:12:22.993
+     ump:      {Plug and Play Service: Device Install exit(00000000)}
+     dvs:      {Install Related Drivers} 12:12:22.997
+     dvs:      {Install Related Drivers: exit(0x00000000)} 12:12:22.998
+     dvs: {Driver Setup Update Device - exit(0x00000000)} 12:12:22.998
+     dvs: Created driver update {f793b2b8-379d-5932-9541-951e8ac923a5}. HardwareId = acpi\ven_fuj&dev_02e3&rev_0001
+<<<  Section end 2025/11/05 12:12:23.002
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Device Install (Install Windows Update driver) - acpi\ven_fuj&dev_02e3&rev_0001]
+>>>  Section start 2025/11/05 12:12:23.091
+      cmd: "C:\WINDOWS\uus\AMD64\wuaucltcore.exe" /DeploymentHandlerFullPath \\?\C:\Windows\UUS\AMD64\UpdateDeploy.dll /ClassId 6c0ac786-8eea-46c9-b029-54b6c31686b1 /RunHandlerComServer
+     dvs: INF path: C:\WINDOWS\SoftwareDistribution\Download\Install
+     dvs: Found 1 driver updates under 'C:\WINDOWS\SoftwareDistribution\Download\Install'. 12:12:23.092
+     dvs: {Driver Setup Import Driver Package: C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3ext.inf} 12:12:23.093
+     ump:      Import flags: 0x00000001
+     pol:      {Driver package policy check} 12:12:23.101
+     pol:      {Driver package policy check - exit(0x00000000)} 12:12:23.101
+     sto:      {Stage Driver Package: C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3ext.inf} 12:12:23.102
+     inf:           Provider       = Fujitsu Client Computing Limited
+     inf:           Class GUID     = {e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+     inf:           Driver Version = 03/15/2024,4.5.1.0
+     inf:           Catalog File   = fuj02e3ext.cat
+     inf:           Version Flags  = 0x00000003
+     inf:           {Query Configurability: C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3ext.inf} 12:12:23.112
+     inf:                Driver package is fully isolated.
+     inf:                Driver package 'fuj02e3ext.inf' is configurable.
+     inf:           {Query Configurability: exit(0x00000000)} 12:12:23.115
+     flq:           {FILE_QUEUE_COMMIT} 12:12:23.116
+     flq:                Copying 'C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3ext.cat' to 'C:\WINDOWS\System32\DriverStore\Temp\{e007e614-c9c9-dc40-8b94-03d1461db235}\fuj02e3ext.cat'.
+     flq:                Copying 'C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3ext.inf' to 'C:\WINDOWS\System32\DriverStore\Temp\{e007e614-c9c9-dc40-8b94-03d1461db235}\fuj02e3ext.inf'.
+     flq:                Copying 'C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3ext-devcon.exe' to 'C:\WINDOWS\System32\DriverStore\Temp\{e007e614-c9c9-dc40-8b94-03d1461db235}\fuj02e3ext-devcon.exe'.
+     flq:                Copying 'C:\WINDOWS\SoftwareDistribution\Download\Install\fuj02e3ext-hotkey.exe' to 'C:\WINDOWS\System32\DriverStore\Temp\{e007e614-c9c9-dc40-8b94-03d1461db235}\fuj02e3ext-hotkey.exe'.
+     flq:           {FILE_QUEUE_COMMIT - exit(0x00000000)} 12:12:23.177
+     sto:           {DRIVERSTORE IMPORT VALIDATE} 12:12:23.178
+     sig:                Driver package catalog is valid.
+     sig:                {_VERIFY_FILE_SIGNATURE} 12:12:23.189
+     sig:                     Key      = fuj02e3ext.inf
+     sig:                     FilePath = C:\WINDOWS\System32\DriverStore\Temp\{e007e614-c9c9-dc40-8b94-03d1461db235}\fuj02e3ext.inf
+     sig:                     Catalog  = C:\WINDOWS\System32\DriverStore\Temp\{e007e614-c9c9-dc40-8b94-03d1461db235}\fuj02e3ext.cat
+     sig:                     Success: File is signed in catalog.
+     sig:                {_VERIFY_FILE_SIGNATURE exit(0x00000000)} 12:12:23.208
+     sto:           {DRIVERSTORE IMPORT VALIDATE: exit(0x00000000)} 12:12:23.256
+     sig:           Signer Score  = 0x0D000005 (WHQL)
+     sig:           Signer Name   = Microsoft Windows Hardware Compatibility Publisher
+     sig:           Submission ID = 29997810_13968514911156020_1152921505697560368
+     sto:           {Core Driver Package Import: fuj02e3ext.inf_amd64_1acd787783b47dc5} 12:12:23.259
+     sto:                {DRIVERSTORE IMPORT BEGIN} 12:12:23.259
+     sto:                {DRIVERSTORE IMPORT BEGIN: exit(0x00000000)} 12:12:23.259
+     cpy:                {Copy Directory: C:\WINDOWS\System32\DriverStore\Temp\{e007e614-c9c9-dc40-8b94-03d1461db235}} 12:12:23.260
+     cpy:                     Target Path = C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3ext.inf_amd64_1acd787783b47dc5
+     cpy:                {Copy Directory: exit(0x00000000)} 12:12:23.263
+     idb:                {Register Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3ext.inf_amd64_1acd787783b47dc5\fuj02e3ext.inf} 12:12:23.269
+     idb:                     Created driver package object 'fuj02e3ext.inf_amd64_1acd787783b47dc5' in SYSTEM database node.
+     idb:                     Created driver INF file object 'oem54.inf' in SYSTEM database node.
+     idb:                     Registered driver package 'fuj02e3ext.inf_amd64_1acd787783b47dc5' with 'oem54.inf'.
+     idb:                {Register Driver Package: exit(0x00000000)} 12:12:23.272
+     idb:                {Publish Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3ext.inf_amd64_1acd787783b47dc5\fuj02e3ext.inf} 12:12:23.273
+     idb:                     Activating driver package 'fuj02e3ext.inf_amd64_1acd787783b47dc5'.
+     cpy:                     Published 'fuj02e3ext.inf_amd64_1acd787783b47dc5\fuj02e3ext.inf' to 'oem54.inf'.
+     idb:                     Indexed 3 device IDs for 'fuj02e3ext.inf_amd64_1acd787783b47dc5'.
+     sto:                     Flushed driver database node 'SYSTEM'. Time = 16 ms
+     idb:                {Publish Driver Package: exit(0x00000000)} 12:12:23.283
+     sto:                {DRIVERSTORE IMPORT END} 12:12:23.284
+     dvi:                     Flushed all driver package files to disk. Time = 3 ms
+     sig:                     Installed catalog 'fuj02e3ext.cat' as 'oem54.cat'.
+     sto:                {DRIVERSTORE IMPORT END: exit(0x00000000)} 12:12:23.292
+     sto:           {Core Driver Package Import: exit(0x00000000)} 12:12:23.293
+     sto:      {Stage Driver Package: exit(0x00000000)} 12:12:23.295
+     dvs:      Driver Package:
+     dvs:           Outcome        - Imported
+     dvs:           Driver INF     - fuj02e3ext.inf (oem54.inf)
+     dvs:           Class GUID     - {e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+     dvs:           Driver Version - 03/15/2024,4.5.1.0
+     dvi:      Flushed SOFTWARE registry hive. 12:12:23.337
+     dvi:      Flushed SYSTEM registry hive. 12:12:23.341
+     dvi:      Flushed DRIVERS registry hive. 12:12:23.341
+     dvs: {Driver Setup Import Driver Package - exit (0x00000000)} 12:12:23.342
+     dvs: {Driver Setup Update Device: ACPI\FUJ02E3\2&daba3ff&0} 12:12:23.349
+     utl:      {Select Drivers - ACPI\FUJ02E3\2&daba3ff&0} 12:12:23.350
+     utl:           Driver Node:
+     utl:                Status         - Selected | Installed
+     utl:                Driver INF     - oem53.inf (C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3.inf)
+     utl:                Class GUID     - {4d36e97d-e325-11ce-bfc1-08002be10318}
+     utl:                Driver Version - 03/15/2024,4.5.1.0
+     utl:                Configuration  - ACPI\VEN_FUJ&DEV_02E3&REV_0001 [FUJ02E3_Device.NT]
+     utl:                Driver Rank    - 00FF0000
+     utl:                Signer Score   - WHQL (0D000005)
+     utl:                Submission ID  - 29997810_14600061327072884_1152921505697561395
+     utl:                Flight IDs     - RD:DD5F8
+     utl:           Driver Extension Node:
+     utl:                Status         - Selected
+     utl:                Driver INF     - oem54.inf (C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3ext.inf_amd64_1acd787783b47dc5\fuj02e3ext.inf)
+     utl:                Class GUID     - {e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+     utl:                Extension ID   - {4a815762-ecf3-4b39-9a13-5ff5abf7a7e6}
+     utl:                Driver Version - 03/15/2024,4.5.1.0
+     utl:                Configuration  - ACPI\VEN_FUJ&DEV_02E3&REV_0001
+     utl:                Driver Rank    - 00FF0000
+     utl:                Signer Score   - WHQL (0D000005)
+     utl:                Submission ID  - 29997810_13968514911156020_1152921505697560368
+     utl:                Flight IDs     - RD:DD605
+     utl:           Driver Node:
+     utl:                Status         - Outranked | Installed
+     utl:                Driver INF     - oem53.inf (C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3.inf)
+     utl:                Class GUID     - {4d36e97d-e325-11ce-bfc1-08002be10318}
+     utl:                Driver Version - 03/15/2024,4.5.1.0
+     utl:                Configuration  - ACPI\FUJ02E3
+     utl:                Driver Rank    - 00FF0002
+     utl:                Signer Score   - WHQL (0D000005)
+     utl:                Submission ID  - 29997810_14600061327072884_1152921505697561395
+     utl:                Flight IDs     - RD:DD5F8
+     utl:           Driver Extension Node:
+     utl:                Status         - Outranked
+     utl:                Driver INF     - oem54.inf (C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3ext.inf_amd64_1acd787783b47dc5\fuj02e3ext.inf)
+     utl:                Class GUID     - {e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+     utl:                Extension ID   - {4a815762-ecf3-4b39-9a13-5ff5abf7a7e6}
+     utl:                Driver Version - 03/15/2024,4.5.1.0
+     utl:                Configuration  - ACPI\FUJ02E3
+     utl:                Driver Rank    - 00FF0002
+     utl:                Signer Score   - WHQL (0D000005)
+     utl:                Submission ID  - 29997810_13968514911156020_1152921505697560368
+     utl:                Flight IDs     - RD:DD605
+     utl:      {Select Drivers - exit(0x00000000} 12:12:23.362
+     dvs:      Installing best driver (oem53.inf) on device 'ACPI\FUJ02E3\2&daba3ff&0'.
+     ump:      {Plug and Play Service: Device Install for ACPI\FUJ02E3\2&DABA3FF&0}
+     dvi:           Install flags: 0x00010001
+     dvi:           {Core Device Install} 12:12:23.374
+     dvi:                {Configure Device - ACPI\FUJ02E3\2&DABA3FF&0} 12:12:23.376
+     dvi:                     Device Status: 0x0180000a
+     dvi:                     Config Flags: 0x00000000
+     dvi:                     Parent Device: ACPI_HAL\PNP0C08\0
+     sto:                     {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3.inf} 12:12:23.379
+     sto:                          Source Filter  = ACPI\VEN_FUJ&DEV_02E3&REV_0001
+     inf:                          Config Options = IsolationCompat
+     inf:                          Class GUID     = {4d36e97d-e325-11ce-bfc1-08002be10318}
+     inf:                          Class Options  = Configurable BootCritical
+     inf:                          {Configure Driver: Fujitsu FUJ02E3 Device Driver}
+     inf:                               Section Name = FUJ02E3_Device.NT
+     inf:                               {Add Service: fuj02e3}
+     inf:                                    Flags         = 0x2
+     inf:                                    Start Type    = 3
+     inf:                                    Service Type  = 1
+     inf:                                    Error Control = 1
+     inf:                                    Image Path    = \SystemRoot\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3.sys
+     inf:                                    Display Name  = Fujitsu FUJ02E3 Device Driver Service
+     inf:                                    Updated service 'fuj02e3'.
+     inf:                               {Add Service: exit(0x00000000)}
+     inf:                               {Add Service: Fuj02e3DriverUtilityService}
+     inf:                                    Flags         = 0x800
+     inf:                                    Start Type    = 2
+     inf:                                    Service Type  = 16
+     inf:                                    Error Control = 1
+     inf:                                    Image Path    = %SystemRoot%\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3-utility.exe
+     inf:                                    Display Name  = Fujitsu FUJ02E3 Device Driver - Utility Service
+     inf:                                    Dependencies  = RPCSS
+     inf:                                    Updated service 'Fuj02e3DriverUtilityService'.
+     inf:                               {Add Service: exit(0x00000000)}
+     inf:                               {Add Event Provider: Fujitsu-FUJ02E3-Service}
+     inf:                                    Provider ID    = {fb45d823-fc7d-4f9b-9b45-c4d7578cbdd9}
+     inf:                                    Resource File  = %SystemRoot%\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3-utility-etw.dll
+     inf:                                    Message File   = %SystemRoot%\System32\DriverStore\FileRepository\fuj02e3.inf_amd64_922627d7b8e63cb3\fuj02e3-utility-etw.dll
+     inf:                               {Add Event Provider: exit(0x00000000)}
+     inf:                               Hardware Id  = ACPI\VEN_FUJ&DEV_02E3&REV_0001
+     inf:                               {Configure Driver Configuration: FUJ02E3_Device.NT}
+     inf:                                    Service Name  = fuj02e3
+     inf:                                    Win32 Services = Fuj02e3DriverUtilityService
+     inf:                                    Config Flags  = 0x00000000
+     inf:                               {Configure Driver Configuration: exit(0x00000000)}
+     inf:                          {Configure Driver: exit(0x00000000)}
+     flq:                          {FILE_QUEUE_COMMIT} 12:12:23.580
+     flq:                          {FILE_QUEUE_COMMIT - exit(0x00000000)} 12:12:23.580
+     inf:                          Stopping service 'Fuj02e3DriverUtilityService'. Current State = 3 12:12:23.581
+     inf:                          Stopped service 'Fuj02e3DriverUtilityService'. 12:12:23.582
+     inf:                          Restarted service 'Fuj02e3DriverUtilityService'. 12:12:23.593
+     sto:                     {Configure Driver Package: exit(0x00000000)} 12:12:23.594
+     sto:                     {Configure Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\fuj02e3ext.inf_amd64_1acd787783b47dc5\fuj02e3ext.inf} 12:12:23.595
+     sto:                          Source Filter  = ACPI\VEN_FUJ&DEV_02E3&REV_0001
+     inf:                          Config Options = IsolationCompat
+     inf:                          Class GUID     = {e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+     inf:                          Class Options  = Configurable
+     inf:                          {Configure Driver: Fujitsu FUJ02E3 Device Driver Extension}
+     inf:                               Section Name = Fuj02e3Ext_Device.NTamd64
+     inf:                               Hardware Id  = ACPI\VEN_FUJ&DEV_02E3&REV_0001
+     inf:                               {Configure Driver Configuration: Fuj02e3Ext_Device.NTamd64}
+     inf:                                    No associated service.
+     inf:                                    Config Flags  = 0x00000000
+     inf:                               {Configure Driver Configuration: exit(0x00000000)}
+     inf:                          {Configure Driver: exit(0x00000000)}
+     flq:                          {FILE_QUEUE_COMMIT} 12:12:23.604
+     flq:                          {FILE_QUEUE_COMMIT - exit(0x00000000)} 12:12:23.604
+     sto:                     {Configure Driver Package: exit(0x00000000)} 12:12:23.605
+     dvi:                     Install Device: Configuring device. 12:12:23.605
+     dvi:                          Configuration: oem53.inf:ACPI\VEN_FUJ&DEV_02E3&REV_0001,FUJ02E3_Device.NT
+     dvi:                          Configuration: oem54.inf:ACPI\VEN_FUJ&DEV_02E3&REV_0001,*
+     dvi:                     Install Device: Configuring device completed. 12:12:23.609
+     dvi:                     Device Status: 0x0180000a
+     dvi:                     Install Device: Removing device 'ACPI\FUJ02E3\2&DABA3FF&0' and sub-tree. 12:12:23.610
+     dvi:                     Install Device: Removing device sub-tree completed. 12:12:23.614
+     dvi:                     Install Device: Restarting device. 12:12:23.615
+     dvi:                     Install Device: Restarting device completed. 12:12:23.625
+     dvi:                {Configure Device - exit(0x00000000)} 12:12:23.626
+     dvi:           {Core Device Install - exit(0x00000000)} 12:12:23.627
+     ump:      {Plug and Play Service: Device Install exit(00000000)}
+     dvs:      {Install Related Drivers} 12:12:23.631
+     dvs:      {Install Related Drivers: exit(0x00000000)} 12:12:23.632
+     dvs: {Driver Setup Update Device - exit(0x00000000)} 12:12:23.632
+     dvs: Created driver update {67af9260-efa6-5e48-8f1d-2f769f35fe50}. HardwareId = acpi\ven_fuj&dev_02e3&rev_0001
+<<<  Section end 2025/11/05 12:12:23.636
+<<<  [Exit status: SUCCESS]
+
+
+[Boot Session: 2025/11/05 12:14:08.500]
+
+>>>  [Setup Import Driver Package - C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf]
+>>>  Section start 2025/11/05 12:16:23.026
+      cmd: C:\WINDOWS\System32\spoolsv.exe
+     inf: Provider: Microsoft
+     inf: Class GUID: {4D36E979-E325-11CE-BFC1-08002BE10318}
+     inf: Driver Version: 06/21/2006,10.0.26100.1
+     inf: Catalog File: prnms009.cat
+     ump: Import flags: 0x0000000D
+     pol: {Driver package policy check} 12:16:23.082
+     pol: {Driver package policy check - exit(0x00000000)} 12:16:23.082
+     sto: {Stage Driver Package: C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf} 12:16:23.083
+     inf:      Provider       = Microsoft
+     inf:      Class GUID     = {4d36e979-e325-11ce-bfc1-08002be10318}
+     inf:      Class Version  = 4.0
+     inf:      Driver Version = 06/21/2006,10.0.26100.1
+     inf:      Catalog File   = prnms009.cat
+     inf:      Version Flags  = 0x00000003
+     inf:      {Query Configurability: C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf} 12:16:23.088
+     inf:           Driver package is fully isolated.
+     inf:           Driver package 'prnms009.Inf' is configurable.
+     inf:      {Query Configurability: exit(0x00000000)} 12:16:23.089
+     flq:      {FILE_QUEUE_COMMIT} 12:16:23.090
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW_devmode_map.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{8fb4304f-48d6-0648-b90b-888a2e1b7619}\MPDW_devmode_map.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.cat' to 'C:\WINDOWS\System32\DriverStore\Temp\{8fb4304f-48d6-0648-b90b-888a2e1b7619}\prnms009.cat'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf' to 'C:\WINDOWS\System32\DriverStore\Temp\{8fb4304f-48d6-0648-b90b-888a2e1b7619}\prnms009.Inf'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-PDC.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{8fb4304f-48d6-0648-b90b-888a2e1b7619}\MPDW-PDC.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-manifest.ini' to 'C:\WINDOWS\System32\DriverStore\Temp\{8fb4304f-48d6-0648-b90b-888a2e1b7619}\MPDW-manifest.ini'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-pipelineconfig.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{8fb4304f-48d6-0648-b90b-888a2e1b7619}\MPDW-pipelineconfig.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-constraints.js' to 'C:\WINDOWS\System32\DriverStore\Temp\{8fb4304f-48d6-0648-b90b-888a2e1b7619}\MPDW-constraints.js'.
+     flq:      {FILE_QUEUE_COMMIT - exit(0x00000000)} 12:16:23.137
+     sto:      {DRIVERSTORE IMPORT VALIDATE} 12:16:23.138
+     sig:           Driver package catalog is valid.
+!!!  sig:           Driver package INF file hash is not present in catalog file. Filename = prnms009.Inf, Error = 0xE000024B
+!!!  sig:           Driver package appears to be tampered, and Code Integrity is enforced.
+!!!  sig:           Driver package failed signature validation. Error = 0xE000024B
+     sto:      {DRIVERSTORE IMPORT VALIDATE: exit(0xe000024b)} 12:16:23.149
+!!!  sig:      Driver package failed signature verification. Error = 0xE000024B
+!!!  sto:      Failed to import driver package into Driver Store. Error = 0xE000024B
+     sto: {Stage Driver Package: exit(0xe000024b)} 12:16:23.151
+<<<  Section end 2025/11/05 12:16:23.153
+<<<  [Exit status: FAILURE(0xe000024b)]
+
+
+>>>  [Setup Import Driver Package - C:\Program Files\Microsoft Office\root\Office16\OneNote\\prnms006.inf]
+>>>  Section start 2025/11/05 12:50:06.670
+      cmd: integrator.exe /I /Extension /Msi MsiName=C2RInt.16.msi,C2RIntLoc.de-de.16.msi,* /C2R PackageGUID="9AC08E99-230B-47e8-9721-4577B7F124EA" PackageRoot="C:\Program Files\Microsoft Office\root"
+     inf: Provider: Microsoft
+     inf: Class GUID: {4D36E979-E325-11CE-BFC1-08002BE10318}
+     inf: Driver Version: 11/29/2016,16.0.7629.4000
+     inf: Catalog File: prnSendToOneNote.cat
+     ump: Import flags: 0x00000009
+     pol: {Driver package policy check} 12:50:06.737
+     pol: {Driver package policy check - exit(0x00000000)} 12:50:06.738
+     sto: {Stage Driver Package: C:\Program Files\Microsoft Office\root\Office16\OneNote\\prnms006.inf} 12:50:06.739
+     inf:      Provider       = Microsoft
+     inf:      Class GUID     = {4d36e979-e325-11ce-bfc1-08002be10318}
+     inf:      Class Version  = 4.0
+     inf:      Driver Version = 11/29/2016,16.0.7629.4000
+     inf:      Catalog File   = prnSendToOneNote.cat
+     inf:      Version Flags  = 0x00000001
+     inf:      {Query Configurability: C:\Program Files\Microsoft Office\root\Office16\OneNote\\prnms006.inf} 12:50:06.744
+     inf:           Driver package 'prnms006.inf' is configurable.
+     inf:      {Query Configurability: exit(0x00000000)} 12:50:06.746
+     flq:      {FILE_QUEUE_COMMIT} 12:50:06.747
+     flq:           Copying 'C:\Program Files\Microsoft Office\root\Office16\OneNote\prnms006.inf' to 'C:\WINDOWS\System32\DriverStore\Temp\{45296c4f-5a4d-ad4e-9689-a5dc68ee639f}\prnms006.inf'.
+     flq:           Copying 'C:\Program Files\Microsoft Office\root\Office16\OneNote\prnSendToOneNote.cat' to 'C:\WINDOWS\System32\DriverStore\Temp\{45296c4f-5a4d-ad4e-9689-a5dc68ee639f}\prnSendToOneNote.cat'.
+     flq:           Copying 'C:\Program Files\Microsoft Office\root\Office16\OneNote\SendToOneNote-manifest.ini' to 'C:\WINDOWS\System32\DriverStore\Temp\{45296c4f-5a4d-ad4e-9689-a5dc68ee639f}\SendToOneNote-manifest.ini'.
+     flq:           Copying 'C:\Program Files\Microsoft Office\root\Office16\OneNote\SendToOneNote.gpd' to 'C:\WINDOWS\System32\DriverStore\Temp\{45296c4f-5a4d-ad4e-9689-a5dc68ee639f}\SendToOneNote.gpd'.
+     flq:           Copying 'C:\Program Files\Microsoft Office\root\Office16\OneNote\SendToOneNoteNames.gpd' to 'C:\WINDOWS\System32\DriverStore\Temp\{45296c4f-5a4d-ad4e-9689-a5dc68ee639f}\SendToOneNoteNames.gpd'.
+     flq:           Copying 'C:\Program Files\Microsoft Office\root\Office16\OneNote\SendToOneNote-pipelineconfig.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{45296c4f-5a4d-ad4e-9689-a5dc68ee639f}\SendToOneNote-pipelineconfig.xml'.
+     flq:           Copying 'C:\Program Files\Microsoft Office\root\Office16\OneNote\SendToOneNoteFilter.dll' to 'C:\WINDOWS\System32\DriverStore\Temp\{45296c4f-5a4d-ad4e-9689-a5dc68ee639f}\SendToOneNoteFilter.dll'.
+     flq:      {FILE_QUEUE_COMMIT - exit(0x00000000)} 12:50:06.805
+     sto:      {DRIVERSTORE IMPORT VALIDATE} 12:50:06.806
+     sig:           Driver package catalog is valid.
+     sig:           {_VERIFY_FILE_SIGNATURE} 12:50:06.816
+     sig:                Key      = prnms006.inf
+     sig:                FilePath = C:\WINDOWS\System32\DriverStore\Temp\{45296c4f-5a4d-ad4e-9689-a5dc68ee639f}\prnms006.inf
+     sig:                Catalog  = C:\WINDOWS\System32\DriverStore\Temp\{45296c4f-5a4d-ad4e-9689-a5dc68ee639f}\prnSendToOneNote.cat
+     sig:                Success: File is signed in catalog.
+     sig:           {_VERIFY_FILE_SIGNATURE exit(0x00000000)} 12:50:06.833
+     sto:      {DRIVERSTORE IMPORT VALIDATE: exit(0x00000000)} 12:50:06.842
+     sig:      Signer Score  = 0x0D000005 (WHQL)
+     sig:      Signer Name   = Microsoft Windows Hardware Compatibility Publisher
+     sig:      Submission ID = 29989680_14206859558559577_1152921504627300933
+     sto:      {Core Driver Package Import: prnms006.inf_amd64_c3bdcb6fc975b614} 12:50:06.844
+     sto:           {DRIVERSTORE IMPORT BEGIN} 12:50:06.845
+     sto:           {DRIVERSTORE IMPORT BEGIN: exit(0x00000000)} 12:50:06.845
+     cpy:           {Copy Directory: C:\WINDOWS\System32\DriverStore\Temp\{45296c4f-5a4d-ad4e-9689-a5dc68ee639f}} 12:50:06.846
+     cpy:                Target Path = C:\WINDOWS\System32\DriverStore\FileRepository\prnms006.inf_amd64_c3bdcb6fc975b614
+     cpy:           {Copy Directory: exit(0x00000000)} 12:50:06.849
+     idb:           {Register Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\prnms006.inf_amd64_c3bdcb6fc975b614\prnms006.inf} 12:50:06.856
+     idb:                Created driver package object 'prnms006.inf_amd64_c3bdcb6fc975b614' in DRIVERS database node.
+     idb:                Created driver INF file object 'oem55.inf' in DRIVERS database node.
+     idb:                Registered driver package 'prnms006.inf_amd64_c3bdcb6fc975b614' with 'oem55.inf'.
+     idb:           {Register Driver Package: exit(0x00000000)} 12:50:06.860
+     idb:           {Publish Driver Package: C:\WINDOWS\System32\DriverStore\FileRepository\prnms006.inf_amd64_c3bdcb6fc975b614\prnms006.inf} 12:50:06.860
+     idb:                Activating driver package 'prnms006.inf_amd64_c3bdcb6fc975b614'.
+     cpy:                Published 'prnms006.inf_amd64_c3bdcb6fc975b614\prnms006.inf' to 'oem55.inf'.
+     idb:                Indexed 2 device IDs for 'prnms006.inf_amd64_c3bdcb6fc975b614'.
+     sto:                Flushed driver database node 'DRIVERS'. Time = 0 ms
+     sto:                Flushed driver database node 'SYSTEM'. Time = 0 ms
+     idb:           {Publish Driver Package: exit(0x00000000)} 12:50:06.873
+     sto:           {DRIVERSTORE IMPORT END} 12:50:06.875
+     dvi:                Flushed all driver package files to disk. Time = 4 ms
+     sig:                Installed catalog 'prnSendToOneNote.cat' as 'oem55.cat'.
+     sto:           {DRIVERSTORE IMPORT END: exit(0x00000000)} 12:50:06.886
+     sto:      {Core Driver Package Import: exit(0x00000000)} 12:50:06.887
+     sto: {Stage Driver Package: exit(0x00000000)} 12:50:06.889
+<<<  Section end 2025/11/05 12:50:06.926
+<<<  [Exit status: SUCCESS]
+
+
+[Boot Session: 2025/11/06 09:27:55.500]
+
+>>>  [Setup Import Driver Package - C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf]
+>>>  Section start 2025/11/06 09:30:02.163
+      cmd: C:\WINDOWS\System32\spoolsv.exe
+     inf: Provider: Microsoft
+     inf: Class GUID: {4D36E979-E325-11CE-BFC1-08002BE10318}
+     inf: Driver Version: 06/21/2006,10.0.26100.1
+     inf: Catalog File: prnms009.cat
+     ump: Import flags: 0x0000000D
+     pol: {Driver package policy check} 09:30:02.232
+     pol: {Driver package policy check - exit(0x00000000)} 09:30:02.232
+     sto: {Stage Driver Package: C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf} 09:30:02.232
+     inf:      Provider       = Microsoft
+     inf:      Class GUID     = {4d36e979-e325-11ce-bfc1-08002be10318}
+     inf:      Class Version  = 4.0
+     inf:      Driver Version = 06/21/2006,10.0.26100.1
+     inf:      Catalog File   = prnms009.cat
+     inf:      Version Flags  = 0x00000003
+     inf:      {Query Configurability: C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf} 09:30:02.232
+     inf:           Driver package is fully isolated.
+     inf:           Driver package 'prnms009.Inf' is configurable.
+     inf:      {Query Configurability: exit(0x00000000)} 09:30:02.243
+     flq:      {FILE_QUEUE_COMMIT} 09:30:02.243
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW_devmode_map.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{606496f0-8277-0244-a87d-c8279cb01569}\MPDW_devmode_map.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.cat' to 'C:\WINDOWS\System32\DriverStore\Temp\{606496f0-8277-0244-a87d-c8279cb01569}\prnms009.cat'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf' to 'C:\WINDOWS\System32\DriverStore\Temp\{606496f0-8277-0244-a87d-c8279cb01569}\prnms009.Inf'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-PDC.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{606496f0-8277-0244-a87d-c8279cb01569}\MPDW-PDC.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-manifest.ini' to 'C:\WINDOWS\System32\DriverStore\Temp\{606496f0-8277-0244-a87d-c8279cb01569}\MPDW-manifest.ini'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-pipelineconfig.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{606496f0-8277-0244-a87d-c8279cb01569}\MPDW-pipelineconfig.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-constraints.js' to 'C:\WINDOWS\System32\DriverStore\Temp\{606496f0-8277-0244-a87d-c8279cb01569}\MPDW-constraints.js'.
+     flq:      {FILE_QUEUE_COMMIT - exit(0x00000000)} 09:30:02.294
+     sto:      {DRIVERSTORE IMPORT VALIDATE} 09:30:02.294
+     sig:           Driver package catalog is valid.
+!!!  sig:           Driver package INF file hash is not present in catalog file. Filename = prnms009.Inf, Error = 0xE000024B
+!!!  sig:           Driver package appears to be tampered, and Code Integrity is enforced.
+!!!  sig:           Driver package failed signature validation. Error = 0xE000024B
+     sto:      {DRIVERSTORE IMPORT VALIDATE: exit(0xe000024b)} 09:30:02.306
+!!!  sig:      Driver package failed signature verification. Error = 0xE000024B
+!!!  sto:      Failed to import driver package into Driver Store. Error = 0xE000024B
+     sto: {Stage Driver Package: exit(0xe000024b)} 09:30:02.306
+<<<  Section end 2025/11/06 09:30:02.306
+<<<  [Exit status: FAILURE(0xe000024b)]
+
+
+>>>  [Device Install (Hardware initiated) - SWD\WPDBUSENUM\{7ec5a2fc-baea-11f0-b036-98eecbd62e46}#0000000000100000]
+>>>  Section start 2025/11/07 11:43:14.558
+     ump: Install needed due to device having problem code CM_PROB_NOT_CONFIGURED
+     utl: {Select Drivers - SWD\WPDBUSENUM\{7ec5a2fc-baea-11f0-b036-98eecbd62e46}#0000000000100000} 11:43:14.573
+     utl:      Driver Node:
+     utl:           Status         - Selected
+     utl:           Driver INF     - wpdfs.inf (C:\WINDOWS\System32\DriverStore\FileRepository\wpdfs.inf_amd64_ad25f929f12efbf8\wpdfs.inf)
+     utl:           Class GUID     - {eec5ad98-8080-425f-922a-dabf3de3f69a}
+     utl:           Driver Version - 06/21/2006,10.0.26100.1150
+     utl:           Configuration  - wpdbusenum\fs
+     utl:           Driver Rank    - 00FF2000
+     utl:           Signer Score   - Inbox (0D000003)
+     utl: {Select Drivers - exit(0x00000000} 11:43:14.580
+!    dvi: Device class {eec5ad98-8080-425f-922a-dabf3de3f69a} is not configurable.
+     dvi: Install flags: 0x00010000
+     dvi: Searching for compatible ID(s):
+     dvi:      wpdbusenum\fs
+     dvi:      swd\generic
+     dvi: Class GUID of device changed to: {eec5ad98-8080-425f-922a-dabf3de3f69a}.
+     ndv: {Core Device Install} 11:43:14.595
+     dvi:      {Install Device - SWD\WPDBUSENUM\{7EC5A2FC-BAEA-11F0-B036-98EECBD62E46}#0000000000100000} 11:43:14.595
+     dvi:           Device Status: 0x01802400 [0x01 - 0xc0000493]
+     dvi:           Config Flags: 0x00000000
+     dvi:           Parent Device: STORAGE\Volume\{7ec5a2fc-baea-11f0-b036-98eecbd62e46}#0000000000100000
+     dvi:           {DIF_ALLOW_INSTALL} 11:43:14.603
+     dvi:                Using exported function 'WpdClassInstaller' in module 'C:\WINDOWS\system32\wpd_ci.dll'.
+     dvi:                Class installer == wpd_ci.dll,WpdClassInstaller
+     dvi:                Using exported function 'CoDeviceInstall' in module 'C:\WINDOWS\system32\WUDFCoinstaller.dll'.
+     dvi:                CoInstaller 1 == WUDFCoinstaller.dll
+     dvi:                CoInstaller 1: Enter 11:43:14.613
+     dvi:                CoInstaller 1: Exit
+     dvi:                Class installer: Enter 11:43:14.613
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:43:14.620
+     dvi:                Default installer: Exit
+     dvi:           {DIF_ALLOW_INSTALL - exit(0xe000020e)} 11:43:14.620
+     dvi:           {DIF_INSTALLDEVICEFILES} 11:43:14.620
+     dvi:                CoInstaller 1: Enter 11:43:14.620
+     dvi:                CoInstaller 1: Exit
+     dvi:                Class installer: Enter 11:43:14.627
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:43:14.627
+     dvi:                Default installer: Exit
+     dvi:           {DIF_INSTALLDEVICEFILES - exit(0x00000000)} 11:43:14.632
+     dvi:           {_SCAN_FILE_QUEUE} 11:43:14.632
+     dvi:           {_SCAN_FILE_QUEUE - exit(0x00000000)} 11:43:14.632
+     flq:           {FILE_QUEUE_COMMIT} 11:43:14.635
+     flq:                Hardlinking 'C:\WINDOWS\System32\DriverStore\FileRepository\wpdfs.inf_amd64_ad25f929f12efbf8\WpdFs.dll' to 'C:\WINDOWS\system32\DRIVERS\UMDF\WpdFs.dll'.
+     flq:           {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:43:14.670
+     dvi:           {_SCAN_FILE_QUEUE} 11:43:14.670
+     dvi:           {_SCAN_FILE_QUEUE - exit(0x00000000)} 11:43:14.670
+     dvi:           {DIF_REGISTER_COINSTALLERS} 11:43:14.670
+     dvi:                Reset Device: Resetting device configuration. 11:43:14.680
+     dvi:                Reset Device: Resetting device configuration completed. 11:43:14.681
+     dvi:                CoInstaller 1: Enter 11:43:14.682
+     dvi:                CoInstaller 1: Exit
+     dvi:                Class installer: Enter 11:43:14.683
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:43:14.684
+     inf:                     {Install from INF Section - Basic_Install.CoInstallers} 11:43:14.686
+     inf:                          Flags         - 0x001001ee
+     inf:                     {Install from INF Section - exit(0x00000000)} 11:43:14.687
+     dvi:                     {DIF_DESTROYPRIVATEDATA} 11:43:14.688
+     dvi:                          CoInstaller 1: Enter 11:43:14.688
+     dvi:                          CoInstaller 1: Exit
+     dvi:                          Class installer: Enter 11:43:14.689
+     dvi:                          Class installer: Exit
+     dvi:                          Default installer: Enter 11:43:14.690
+     dvi:                          Default installer: Exit
+     dvi:                     {DIF_DESTROYPRIVATEDATA - exit(0xe000020e)} 11:43:14.691
+     dvi:                Default installer: Exit
+     dvi:           {DIF_REGISTER_COINSTALLERS - exit(0x00000000)} 11:43:14.692
+     dvi:           {DIF_INSTALLINTERFACES} 11:43:14.693
+     dvi:                Using exported function 'CoDeviceInstall' in module 'C:\WINDOWS\system32\WUDFCoInstaller.dll'.
+     dvi:                CoInstaller 1 == WUDFCoInstaller.dll
+     dvi:                CoInstaller 1: Enter 11:43:14.695
+     dvi:                CoInstaller 1: Exit
+     dvi:                Class installer: Enter 11:43:14.696
+     dvi:                Class installer: Exit
+     dvi:                Default installer: Enter 11:43:14.697
+     dvi:                Default installer: Exit
+     dvi:           {DIF_INSTALLINTERFACES - exit(0x00000000)} 11:43:14.700
+     dvi:           {DIF_INSTALLDEVICE} 11:43:14.700
+     dvi:                CoInstaller 1: Enter 11:43:14.701
+     inf:                     {Install from INF Section - WpdFs_Install} 11:43:14.712
+     inf:                          Flags         - 0x00000004
+     inf:                     {Install from INF Section - exit(0x00000000)} 11:43:14.717
+     dvi:                CoInstaller 1: Exit
+     dvi:                Class installer: Enter 11:43:14.727
+     dvi:                     {Install DEVICE}
+     inf:                          {Install from INF Section - Basic_Install} 11:43:14.729
+     inf:                               Flags         - 0x001005ee
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:43:14.729
+     inf:                          {Install from INF Section - Basic_Install.Hw} 11:43:14.729
+     inf:                               Flags         - 0x00100004
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:43:14.729
+     dvi:                          {Writing Device Properties}
+     dvi:                               Strong Name=wpdfs.inf:0c0663c081fd6f5b:Basic_Install:10.0.26100.1150:wpdbusenum\fs
+     dvi:                          {Writing Device Properties - Complete}
+     inf:                          AddService=WUDFWpdFs,0x000001fa,WUDFWpdFs_ServiceInstall  (wpdfs.inf line 39)
+     dvi:                          Add Service: Created service 'WUDFWpdFs'.
+     inf:                          {Install from INF Section - WUDFWpdFs_ServiceInstall} 11:43:14.740
+     inf:                               Flags         - 0x00100004
+     inf:                          {Install from INF Section - exit(0x00000000)} 11:43:14.740
+     dvi:                     {Install DEVICE exit (0x00000000)}
+     dvi:                     Install Device: Configuring device class. 11:43:14.743
+     dvi:                     Install Device: Configuring device class completed. 11:43:14.743
+     dvi:                     Device Status: 0x01802400 [0x01 - 0xc0000493]
+     dvi:                     Install Device: Starting device 'SWD\WPDBUSENUM\{7EC5A2FC-BAEA-11F0-B036-98EECBD62E46}#0000000000100000'. 11:43:14.743
+     dvi:                     Install Device: Starting device completed. 11:43:14.870
+     dvi:                Class installer: Exit
+     dvi:                CoInstaller 1: Enter (Post Processing) 11:43:14.900
+     dvi:                CoInstaller 1: Exit (Post Processing)
+     dvi:           {DIF_INSTALLDEVICE - exit(0x00000000)} 11:43:14.901
+     dvi:           {DIF_NEWDEVICEWIZARD_FINISHINSTALL} 11:43:14.901
+     dvi:                CoInstaller 1: Enter 11:43:14.901
+     dvi:                CoInstaller 1: Exit
+     dvi:                Class installer: Enter 11:43:14.901
+     dvi:                Class installer: Exit
+     dvi:           {DIF_NEWDEVICEWIZARD_FINISHINSTALL - exit(0x00000000)} 11:43:14.933
+     dvi:      {Install Device - exit(0x00000000)} 11:43:14.940
+     dvi: {Core Device Install - exit(0x00000000)} 11:43:14.940
+<<<  Section end 2025/11/07 11:43:14.944
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Setup Import Driver Package - C:\Program Files\Microsoft Office\root\Office16\OneNote\\prnms006.inf]
+>>>  Section start 2025/11/07 11:49:40.754
+      cmd: integrator.exe /I /Extension /Msi /C2R PackageGUID="9AC08E99-230B-47e8-9721-4577B7F124EA" PackageRoot="C:\Program Files\Microsoft Office\root"
+     sto: Driver package already imported as 'oem55.inf'.
+<<<  Section end 2025/11/07 11:49:40.770
+<<<  [Exit status: SUCCESS]
+
+
+>>>  [Delete Device - SWD\PRINTENUM\{E78540B9-293F-45C5-A5F2-8D7F30A6E758}]
+>>>  Section start 2025/11/07 11:49:40.786
+      cmd: C:\WINDOWS\System32\spoolsv.exe
+!    dvi: Access denied from Query and Remove
+<<<  Section end 2025/11/07 11:49:40.802
+<<<  [Exit status: SUCCESS]
+
+
+[Boot Session: 2025/11/07 11:54:42.500]
+
+>>>  [Setup Import Driver Package - C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf]
+>>>  Section start 2025/11/07 11:56:48.929
+      cmd: C:\WINDOWS\System32\spoolsv.exe
+     inf: Provider: Microsoft
+     inf: Class GUID: {4D36E979-E325-11CE-BFC1-08002BE10318}
+     inf: Driver Version: 06/21/2006,10.0.26100.1
+     inf: Catalog File: prnms009.cat
+     ump: Import flags: 0x0000000D
+     pol: {Driver package policy check} 11:56:48.997
+     pol: {Driver package policy check - exit(0x00000000)} 11:56:48.997
+     sto: {Stage Driver Package: C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf} 11:56:48.997
+     inf:      Provider       = Microsoft
+     inf:      Class GUID     = {4d36e979-e325-11ce-bfc1-08002be10318}
+     inf:      Class Version  = 4.0
+     inf:      Driver Version = 06/21/2006,10.0.26100.1
+     inf:      Catalog File   = prnms009.cat
+     inf:      Version Flags  = 0x00000003
+     inf:      {Query Configurability: C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf} 11:56:48.997
+     inf:           Driver package is fully isolated.
+     inf:           Driver package 'prnms009.Inf' is configurable.
+     inf:      {Query Configurability: exit(0x00000000)} 11:56:48.997
+     flq:      {FILE_QUEUE_COMMIT} 11:56:49.009
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW_devmode_map.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{62b04617-8a3f-0941-a89a-07ef5dd620aa}\MPDW_devmode_map.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.cat' to 'C:\WINDOWS\System32\DriverStore\Temp\{62b04617-8a3f-0941-a89a-07ef5dd620aa}\prnms009.cat'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\prnms009.Inf' to 'C:\WINDOWS\System32\DriverStore\Temp\{62b04617-8a3f-0941-a89a-07ef5dd620aa}\prnms009.Inf'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-PDC.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{62b04617-8a3f-0941-a89a-07ef5dd620aa}\MPDW-PDC.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-manifest.ini' to 'C:\WINDOWS\System32\DriverStore\Temp\{62b04617-8a3f-0941-a89a-07ef5dd620aa}\MPDW-manifest.ini'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-pipelineconfig.xml' to 'C:\WINDOWS\System32\DriverStore\Temp\{62b04617-8a3f-0941-a89a-07ef5dd620aa}\MPDW-pipelineconfig.xml'.
+     flq:           Copying 'C:\WINDOWS\system32\spool\tools\Microsoft Print To PDF\MPDW-constraints.js' to 'C:\WINDOWS\System32\DriverStore\Temp\{62b04617-8a3f-0941-a89a-07ef5dd620aa}\MPDW-constraints.js'.
+     flq:      {FILE_QUEUE_COMMIT - exit(0x00000000)} 11:56:49.077
+     sto:      {DRIVERSTORE IMPORT VALIDATE} 11:56:49.077
+     sig:           Driver package catalog is valid.
+!!!  sig:           Driver package INF file hash is not present in catalog file. Filename = prnms009.Inf, Error = 0xE000024B
+!!!  sig:           Driver package appears to be tampered, and Code Integrity is enforced.
+!!!  sig:           Driver package failed signature validation. Error = 0xE000024B
+     sto:      {DRIVERSTORE IMPORT VALIDATE: exit(0xe000024b)} 11:56:49.088
+!!!  sig:      Driver package failed signature verification. Error = 0xE000024B
+!!!  sto:      Failed to import driver package into Driver Store. Error = 0xE000024B
+     sto: {Stage Driver Package: exit(0xe000024b)} 11:56:49.088
+<<<  Section end 2025/11/07 11:56:49.088
+<<<  [Exit status: FAILURE(0xe000024b)]
+

@@ -1,0 +1,102 @@
+;
+; File Name: exarmpio.inf
+; Install information file for Exar MPIO Driver
+;
+
+;--------- Version Section ---------------------------------------------------
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=MultiPortSerial
+ClassGuid={50906CB8-BA12-11D1-BF5D-0000F805F530}
+Provider=%Provider%
+DriverVer=02/27/2018,5.4.1.0
+CatalogFile=xrpciempiox64.cat
+
+[ControlFlags]
+; Pnp drivers should not be installable via non-PnP hardware dialogs
+ExcludeFromSelect = *
+
+;--------- DestinationDirs Section -------------------------------------------
+
+[DestinationDirs]
+ExarMPIO_Files_Driver = 12
+ExarMPIO.PropPageCopy = 11
+
+
+;--------- SourceDiskNames and SourceDiskFiles Section -----------------------
+; These sections identify source disks and files for installation.
+
+[SourceDisksNames]
+1 = %DiskId1%,,,""
+
+[SourceDisksFiles]
+exarmpio.sys  = 1,,
+exarmpioproppage.dll = 1,,
+
+
+;--------- Manufacturer and Models Sections ----------------------------------
+
+[Manufacturer]
+%MfgName% = ExarMPIO_Mfg, ntamd64
+
+[ExarMPIO_Mfg.ntamd64]
+; DisplayName               Section           DeviceId
+%ExarMPIO_DeviceDesc%=ExarMPIO_DDI, PCI\VEN_13A8&DEV_0152&SUBSYS_80008000
+%ExarMPIO_DeviceDesc%=ExarMPIO_DDI, PCI\VEN_13A8&DEV_0252&SUBSYS_80008000
+%ExarMPIO_DeviceDesc%=ExarMPIO_DDI, PCI\VEN_13A8&DEV_0352&SUBSYS_80008000
+%ExarMPIO_DeviceDesc%=ExarMPIO_DDI, PCI\VEN_13A8&DEV_0154&SUBSYS_80008000
+%ExarMPIO_DeviceDesc%=ExarMPIO_DDI, PCI\VEN_13A8&DEV_0254&SUBSYS_80008000
+%ExarMPIO_DeviceDesc%=ExarMPIO_DDI, PCI\VEN_13A8&DEV_0354&SUBSYS_80008000
+%ExarMPIO_DeviceDesc%=ExarMPIO_DDI, PCI\VEN_13A8&DEV_0158&SUBSYS_80008000
+%ExarMPIO_DeviceDesc%=ExarMPIO_DDI, PCI\VEN_13A8&DEV_0258&SUBSYS_80008000
+%ExarMPIO_DeviceDesc%=ExarMPIO_DDI, PCI\VEN_13A8&DEV_0358&SUBSYS_80008000
+%ExarMPIO_DeviceDesc%=ExarMPIO_DDI, PCI\VEN_13A8&DEV_4354&SUBSYS_80008000
+%ExarMPIO_DeviceDesc%=ExarMPIO_DDI, PCI\VEN_13A8&DEV_4358&SUBSYS_80008000
+%ExarMPIO_DeviceDesc%=ExarMPIO_DDI, PCI\VEN_13A8&DEV_8358&SUBSYS_80008000
+%ExarMPIO_DeviceDesc%=ExarMPIO_DDI, PCI\VEN_13A8&DEV_8354&SUBSYS_80008000
+
+;---------- DDInstall Sections -----------------------------------------------
+[ExarMPIO_DDI.NT]
+AddReg=ExarMPIO_DDI.NT.AddReg
+CopyFiles=ExarMPIO_Files_Driver, ExarMPIO.PropPageCopy
+
+[ExarMPIO_DDI.NT.AddReg]
+HKR,,EnumPropPages32,,"exarmpioproppage.dll,ComGPIOPropPageProvider"
+
+[ExarMPIO_DDI.NT.Services]
+Addservice = ExarMPIO, %FLG_ADDREG_NOCLOBBER%, ExarMPIO_Service
+
+; --------- Service ----------------------
+
+[ExarMPIO_Service]
+DisplayName    = %ExarMPIO_SvcDesc%
+ServiceType    = %SERVICE_KERNEL_DRIVER%
+StartType      = %SERVICE_DEMAND_START%
+ErrorControl   = %SERVICE_ERROR_NORMAL%
+ServiceBinary  = %12%\exarmpio.sys
+LoadOrderGroup = Extended Base
+
+; --------- Files ----------------------
+
+[ExarMPIO_Files_Driver]
+exarmpio.sys,,,2
+
+[ExarMPIO.PropPageCopy]
+exarmpioproppage.dll
+
+;--------- Strings Section ---------------------------------------------------
+
+[Strings]
+Provider = "Exar Corporation"
+MfgName = "Exar Corporation"
+ExarMPIO_DeviceDesc = "ExarMPIO-Access Device"
+ExarMPIO_SvcDesc = "Driver for ExarMPIO-Access Device"
+DiskId1 = "ExarMPIO Device Installation Disk #1"
+
+REG_SZ                      = 0x00000000
+REG_DWORD                   = 0x00010001
+SERVICE_KERNEL_DRIVER       = 0x00000001
+SERVICE_DEMAND_START        = 0x3
+SERVICE_ERROR_NORMAL        = 0x00000001
+FLG_ADDREG_NOCLOBBER        = 0x00000002

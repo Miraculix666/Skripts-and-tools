@@ -1,0 +1,156 @@
+;===============================================================================
+; [FUJ02E3.INF]
+;  Fujitsu FUJ02E3 Device Driver INF File
+;-------------------------------------------------------------------------------
+; Copyright Fujitsu Client Computing Limited 2003-2024.
+;===============================================================================
+
+[Version]
+Signature=$Windows NT$
+Class=System
+CLASSGUID={4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider=%ManufacturerName%
+DriverVer=03/15/2024,4.5.1.0
+CatalogFile=fuj02e3.cat
+PnpLockdown=1
+
+
+[SourceDisksNames]
+1=%DiskName%,,,
+
+[SourceDisksFiles.amd64]
+fuj02e3.sys         = 1
+fuj02e3-utility.dll = 1              ; @Remove from server inf
+fuj02e3-utility.exe = 1              ; @Remove from server inf
+fuj02e3-utility-etw.dll = 1          ; @Remove from server inf
+fuj02e3-utility-x86.dll = 1          ; @Remove from server inf
+
+[DestinationDirs]
+DefaultDestDir = 13        ; driver store, %WINDIR%\System32\DriverStore\FileRepository\***
+Driver_Dir     = 13        ; driver store, 
+Utility_Dir    = 13        ; driver store,             ; @Remove from server inf
+
+
+; 1  : client OS -> dev for fbiosdrv, fjwrdswd, NT service
+; 2,3: server OS -> no special installation
+; 17763: Windows 10, version 1809 or later, Windows Server 2019 or later
+[Manufacturer]
+%ManufacturerName%=FUJ02E3,NTamd64.10.0.1..17763
+%ManufacturerName%=FUJ02E3_Server,NTamd64.10.0.2..17763
+%ManufacturerName%=FUJ02E3_Server,NTamd64.10.0.3..17763
+
+
+[FUJ02E3.NTamd64.10.0.1..17763]
+%FUJ02E3.DeviceDesc%=FUJ02E3_Device, ACPI\FUJ02E3                          ; -2018.06
+%FUJ02E3.DeviceDescRev1%=FUJ02E3_Device, ACPI\VEN_FUJ&DEV_02E3&REV_0001    ; 2018.07-
+
+[FUJ02E3_Server.NTamd64.10.0.2..17763]
+%FUJ02E3.DeviceDesc%=FUJ02E3_Server_Device, ACPI\FUJ02E3                         ; -2018.06
+%FUJ02E3.DeviceDescRev1%=FUJ02E3_Server_Device, ACPI\VEN_FUJ&DEV_02E3&REV_0001   ; 2018.07-
+
+[FUJ02E3_Server.NTamd64.10.0.3..17763]
+%FUJ02E3.DeviceDesc%=FUJ02E3_Server_Device, ACPI\FUJ02E3                         ; -2018.06
+%FUJ02E3.DeviceDescRev1%=FUJ02E3_Server_Device, ACPI\VEN_FUJ&DEV_02E3&REV_0001   ; 2018.07-
+
+
+[FUJ02E3_Device.NT]
+CopyFiles=Driver_Dir
+CopyFiles=Utility_Dir         ; @Remove from server inf
+
+[FUJ02E3_Device.NT.HW]
+AddReg=FUJ02E3_Device_NT_HW_AddReg
+
+[FUJ02E3_Server_Device.NT]
+CopyFiles=Driver_Dir
+
+[Driver_Dir]
+fuj02e3.sys
+
+[Utility_Dir]                 ; @Remove from server inf
+fuj02e3-utility.dll           ; @Remove from server inf
+fuj02e3-utility.exe           ; @Remove from server inf
+fuj02e3-utility-etw.dll       ; @Remove from server inf
+fuj02e3-utility-x86.dll       ; @Remove from server inf
+
+[FUJ02E3_Device_NT_HW_AddReg]                              ; @Remove from server inf
+HKR,"WDF","WdfDirectedPowerTransitionEnable",0x00010001,1  ; @Remove from server inf
+
+;-------------- Service installation (client)
+[FUJ02E3_Device.NT.Services]
+AddService = fuj02e3,%SPSVCINST_ASSOCSERVICE%, FUJ02E3_Service_Inst
+AddService = Fuj02e3DriverUtilityService,0x00000800, Fuj02e3_Utility_Service_Inst   ; 0x00000800=SPSVCSINST_STARTSERVICE   ; @Remove from server inf
+
+; -------------- fuj02e3driver driver install sections
+[FUJ02E3_Service_Inst]
+DisplayName    = %Fuj02e3_Driver_DisplayName%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %13%\fuj02e3.sys
+AddReg         = FUJ02E3_Service_Inst_AddReg                                            ; @Remove from server inf
+
+; child device definition                                                               ; @Remove from server inf
+[FUJ02E3_Service_Inst_AddReg]                                                           ; @Remove from server inf
+HKR,Parameters\child,hwids,0x00010000,fbiosdrv,fjwrdswd  ; hwid definitions             ; @Remove from server inf
+HKR,Parameters\child,fbiosdrv,0x00010001,0x0102  ; Fujitsu BIOS Driver Deivce           ; @Remove from server inf
+HKR,Parameters\child,fjwrdswd,0x00010001,0x0202  ; Wireless Radio Switch Driver Device  ; @Remove from server inf
+
+; System Extension Utility Service                                                      ; @Remove from server inf
+[Fuj02e3_Utility_Service_Inst]                                                          ; @Remove from server inf
+DisplayName    = %Fuj02e3_Utility_Service_DisplayName%                                  ; @Remove from server inf
+ServiceType    = 0x00000010          ; SERVICE_WIN32_OWN_PROCESS                        ; @Remove from server inf
+StartType      = 2                   ; SERVICE_AUTO_START                               ; @Remove from server inf
+ErrorControl   = 1                   ; SERVICE_ERROR_NORMAL                             ; @Remove from server inf
+ServiceBinary  = %13%\fuj02e3-utility.exe                                               ; @Remove from server inf
+Dependencies   = RPCSS                                                                  ; @Remove from server inf
+AddReg         = FUJ02E3_Utility_Service_Inst_AddReg                                    ; @Remove from server inf
+
+[FUJ02E3_Utility_Service_Inst_AddReg]                                                               ; @Remove from server inf
+HKR,Utility,DllPath,   0x00000000,%13%\fuj02e3-utility.dll         ; API module path                ; @Remove from server inf
+HKR,Utility,DllPathX86,0x00000000,%13%\fuj02e3-utility-x86.dll     ; API module path (x86)          ; @Remove from server inf
+HKR,Utility,AppServiceDelayOnResume,0x00010001,5000       ; Delay for AppService event notificaton  ; @Remove from server inf
+HKR,Utility,AppServiceDelayOnLogon,0x00010001,5000        ; Delay for AppService event notificaton  ; @Remove from server inf
+
+
+;-------------- ETW installation (client)                                               ; @Remove from server inf
+[FUJ02E3_Device.NT.Events]                                                              ; @Remove from server inf
+AddEventProvider = {FB45D823-FC7D-4F9B-9B45-C4D7578CBDD9},FUJ02E3_Utility_Etw_Install   ; @Remove from server inf
+
+[FUJ02E3_Utility_Etw_Install]                                                     ; @Remove from server inf
+ProviderName=Fujitsu-FUJ02E3-Service                                              ; @Remove from server inf
+ResourceFile=%13%\fuj02e3-utility-etw.dll                                         ; @Remove from server inf
+MessageFile=%13%\fuj02e3-utility-etw.dll                                          ; @Remove from server inf
+AddChannel=FujitsuFUJ02E3ServiceEvents,0x2,FUJ02E3_Utility_Etw_Install_Channel    ; @Remove from server inf
+
+[FUJ02E3_Utility_Etw_Install_Channel]    ; @Remove from server inf
+Enabled=1                                ; @Remove from server inf
+
+
+;-------------- Service installation (server)
+[FUJ02E3_Server_Device.NT.Services]
+AddService = fuj02e3,%SPSVCINST_ASSOCSERVICE%, FUJ02E3_Server_Service_Inst
+
+; -------------- fuj02e3driver driver install sections
+[FUJ02E3_Server_Service_Inst]
+DisplayName    = %Fuj02e3_Driver_DisplayName%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %13%\fuj02e3.sys
+
+
+; -------------- KMDF sections ------------------
+[FUJ02E3_Device.NT.Wdf]
+KmdfService =  fuj02e3, FUJ02E3_wdfsect
+[FUJ02E3_wdfsect]
+KmdfLibraryVersion = 1.15
+;------------------------------------------------
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName="Fujitsu Client Computing Limited"
+DiskName = "Fujitsu FUJ02E3 Device Driver Installation Disk"
+FUJ02E3.DeviceDesc = "Fujitsu FUJ02E3 Device Driver"
+FUJ02E3.DeviceDescRev1 = "Fujitsu FUJ02E3 Device Driver"
+Fuj02e3_Driver_DisplayName = "Fujitsu FUJ02E3 Device Driver Service"
+Fuj02e3_Utility_Service_DisplayName = "Fujitsu FUJ02E3 Device Driver - Utility Service"      ; @Remove from server inf

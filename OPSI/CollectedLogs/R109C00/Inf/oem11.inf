@@ -1,0 +1,82 @@
+;
+; GabiAcpi.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%ManufacturerName%
+CatalogFile=GabiAcpi.cat
+DriverVer = 07/14/2020,3.0.0.4
+
+[DestinationDirs]
+DefaultDestDir = 12
+GabiAcpi_Device_CoInstaller_CopyFiles = 11
+
+; ================= Class section =====================
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+GabiAcpi.sys  = 1,,
+;
+
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NTamd64
+
+[Standard.NTamd64]
+%GabiAcpi.DeviceDesc%=GabiAcpi_Device, ACPI\FUJ0420
+%GabiAcpi.DeviceDesc1%=GabiAcpi_Device, ACPI\VEN_FUJ&DEV_0430&REV_0001
+
+[GabiAcpi_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+GabiAcpi.sys
+
+;-------------- Service installation
+[GabiAcpi_Device.NT.Services]
+AddService = GabiAcpi,%SPSVCINST_ASSOCSERVICE%, GabiAcpi_Service_Inst
+
+; -------------- GabiAcpi driver install sections
+[GabiAcpi_Service_Inst]
+DisplayName    = %GabiAcpi.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\GabiAcpi.sys
+
+;
+;--- GabiAcpi_Device Coinstaller installation ------
+;
+[GabiAcpi_Device.NT.CoInstallers]
+AddReg=GabiAcpi_Device_CoInstaller_AddReg
+CopyFiles=GabiAcpi_Device_CoInstaller_CopyFiles
+
+[GabiAcpi_Device_CoInstaller_AddReg]
+;
+
+
+[GabiAcpi_Device_CoInstaller_CopyFiles]
+;
+
+
+[GabiAcpi_Device.NT.Wdf]
+KmdfService =  GabiAcpi, GabiAcpi_wdfsect
+[GabiAcpi_wdfsect]
+KmdfLibraryVersion = 1.15
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName="Fujitsu"
+DiskName = "FUJ0420 Installation Disk"
+GabiAcpi.DeviceDesc = "Fujitsu FUJ0420 Device"
+GabiAcpi.DeviceDesc1 = "Fujitsu FUJ0430 Device"
+GabiAcpi.SVCDESC = "FUJ0420 Service"

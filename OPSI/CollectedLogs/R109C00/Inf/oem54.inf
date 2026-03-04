@@ -1,0 +1,66 @@
+;===============================================================================
+; fuj02e3ext.inf
+; FUJ02E3 Device Driver Extension for Fujitsu Hardware Apps
+;-------------------------------------------------------------------------------
+; Copyright Fujitsu Client Computing Limited 2018-2024
+;===============================================================================
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=Extension
+ClassGuid={e2f84ce7-8efa-411c-aa69-97454ca4cb57}
+ExtensionId={4A815762-ECF3-4B39-9A13-5FF5ABF7A7E6}
+Provider=%ManufacturerName%
+CatalogFile=fuj02e3ext.cat
+DriverVer= 03/15/2024, 4.5.1.0
+PnpLockdown=1
+
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles.amd64]
+fuj02e3ext-hotkey.exe  = 1,,
+fuj02e3ext-devcon.exe  = 1,,
+
+[DestinationDirs]
+DefaultDestDir = 13                            ; driver store, %WINDIR%\System32\DriverStore\FileRepository\***
+Drivers_Dir = 13
+
+[Manufacturer]
+%ManufacturerName%=Fuj02e3Ext,NTamd64.10.0...17763
+
+[Fuj02e3Ext.NTamd64.10.0...17763]
+%Fuj02e3Ext.DeviceDesc%=Fuj02e3Ext_Device, ACPI\FUJ02E3                        ; -2018.06
+%Fuj02e3Ext.DeviceDesc%=Fuj02e3Ext_Device, ACPI\VEN_FUJ&DEV_02E3&REV_0001      ; 2018.07-
+
+[Fuj02e3Ext_Device.NTamd64]
+CopyFiles=Drivers_Dir
+AddReg=Fuj02e3Ext_Device_AddReg_RestrictedRpc, Fuj02e3Ext_Device_AddReg_ExtensionCommand
+AddProperty=Fuj02e3Ext_Device_AddProperty
+
+[Drivers_Dir]
+fuj02e3ext-devcon.exe
+fuj02e3ext-hotkey.exe
+
+
+[Fuj02e3Ext_Device_AddReg_RestrictedRpc]
+HKR,Extension\RestrictedRpc, 96E699BA.Fuj02e3DeviceUtility_7shgd1s8y1app,   0x10001, 1   ; FUJ02E3 Device Utility
+HKR,Extension\RestrictedRpc, 96E699BA.516784C40F2C7_7shgd1s8y1app,          0x10001, 1   ; LIFEBOOK Application Panel
+HKR,Extension\RestrictedRpc, 96E699BA.PointingDeviceUtility_7shgd1s8y1app,  0x10001, 1   ; Pointing Device Utility
+HKR,Extension\RestrictedRpc, 96E699BA.TouchBlockUtility_7shgd1s8y1app,      0x10001, 1   ; Touch Block Utility
+HKR,Extension\RestrictedRpc, 96E699BA.FunctionManagerforQ509_7shgd1s8y1app, 0x10001, 1   ; Function Manager for Q509
+
+[Fuj02e3Ext_Device_AddReg_ExtensionCommand]
+HKR,Extension\Command,devcon-touchpanel,0x00010000, "%13%\fuj02e3ext-devcon.exe", "-hwid HID_DEVICE_UP:000D_U:0004"
+HKR,Extension\Command,hotkey,0x00010000, "%13%\fuj02e3ext-hotkey.exe"
+
+[Fuj02e3Ext_Device_AddProperty]
+{2FD6E3B2-0A11-4240-96AB-59C90BC1C9EA}, 2,   18,, %ExtensionDisplayName%   ; Name, DEVPROP_TYPE_STRING (0x12)
+
+
+[Strings]
+ManufacturerName="Fujitsu Client Computing Limited"
+DiskName = "Fujitsu FUJ02E3 Device Driver Extension Installation Disk"
+Fuj02e3Ext.DeviceDesc = "Fujitsu FUJ02E3 Device Driver Extension"
+ExtensionDisplayName = "Fujitsu FUJ02E3 Device Driver Extension for Fujitsu Hardware Apps"

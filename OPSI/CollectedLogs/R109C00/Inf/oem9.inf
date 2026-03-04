@@ -1,0 +1,121 @@
+; FBIOSDRV.inf - install information file for Fujitsu BIOS Driver
+; Copyright FUJITSU CLIENT COMPUTING LIMITED 2009-2019
+
+[Version]
+Signature="$Windows NT$"
+Class=System
+ClassGuid={4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider=%Mfg%
+CatalogFile=fbiosdrv.cat
+DriverVer=06/30/2020,2.3.41.0
+
+[Manufacturer]
+%Mfg% = Fujitsu,NTamd64
+
+[Fujitsu.NTamd64]
+%DeviceDesc%=FBIOSDRV.Install, *FUJITSU\FBIOSDRV2
+%DeviceDesc%=FBIOSDRV.Install, {B9413967-19D1-4D29-A163-31B951A5E08D}\FBIOSDRV2
+
+[SourceDisksNames]
+1=%DiskId1%,,,
+
+[SourceDisksFiles]
+FBIOSDRV.sys=1
+fbiosdrv-utility.dll=1
+fbiosdrv-service.exe=1
+
+[SourceDisksFiles.amd64]
+FBIOSDRV.sys=1
+fbiosdrv-utility.dll=1
+fbiosdrv-service.exe=1
+
+[DestinationDirs]
+FBIOSDRV.Files.Driver=13     ; driver store, %WINDIR%\System32\DriverStore\FileRepository\***
+FBIOSDRV.Files.Utility=13    ; driver store
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[FBIOSDRV.Install.NTamd64]
+CopyFiles=FBIOSDRV.Files.Driver
+CopyFiles=FBIOSDRV.Files.Utility
+
+[FBIOSDRV.Files.Driver]
+FBIOSDRV.sys,,,%COPYFLG_NOSKIP%
+
+[FBIOSDRV.Files.Utility]
+fbiosdrv-utility.dll,,,%COPYFLG_NOSKIP%
+fbiosdrv-service.exe,,,%COPYFLG_NOSKIP%
+
+[FBIOSDRV.Install.NTamd64.Services]
+AddService = FBIOSDRV, %SPSVCINST_ASSOCSERVICE%, FBIOSDRV.Service
+AddService = FBIOSDRVService,0x00000800, FBIOSDRV.UtilityService   ; 0x00000800=SPSVCSINST_STARTSERVICE
+
+[FBIOSDRV.Service]
+DisplayName    = %FjGenIo.ServiceName%
+ServiceType    = %SERVICE_KERNEL_DRIVER%
+StartType      = %SERVICE_DEMAND_START%
+ErrorControl   = %SERVICE_ERROR_NORMAL%
+LoadOrderGroup = "Base"
+ServiceBinary  = %13%\FBIOSDRV.sys
+AddReg         = FBIOSDRV_Service_AddReg
+
+[FBIOSDRV_Service_AddReg]
+HKR,Utility,DllPath,0x00000000,%13%\fbiosdrv-utility.dll           ; API module path
+
+
+; Fujtisu BIOS Driver Assistant Service
+[FBIOSDRV.UtilityService]
+DisplayName    = %FBIOSDRV_Utility_Service_DisplayName%
+ServiceType    = 0x00000010          ; SERVICE_WIN32_OWN_PROCESS
+StartType      = 2                   ; SERVICE_AUTO_START
+ErrorControl   = 1                   ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %13%\fbiosdrv-service.exe
+Dependencies   = RPCSS
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+[Strings]
+Mfg="FUJITSU CLIENT COMPUTING LIMITED"
+DeviceDesc="Fujitsu BIOS Driver"
+FjGenIo.ServiceName="Fujitsu BIOS Driver"
+FBIOSDRV_Utility_Service_DisplayName="Fujitsu BIOS Driver Service"
+DiskId1 = "Fujitsu BIOS Driver Install Disk (1)"
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+SPSVCINST_TAGTOFRONT               = 0x00000001
+SPSVCINST_ASSOCSERVICE             = 0x00000002
+SPSVCINST_DELETEEVENTLOGENTRY      = 0x00000004
+SPSVCINST_NOCLOBBER_DISPLAYNAME    = 0x00000008
+SPSVCINST_NOCLOBBER_STARTTYPE      = 0x00000010
+SPSVCINST_NOCLOBBER_ERRORCONTROL   = 0x00000020
+SPSVCINST_NOCLOBBER_LOADORDERGROUP = 0x00000040
+SPSVCINST_NOCLOBBER_DEPENDENCIES   = 0x00000080
+SPSVCINST_NOCLOBBER_DESCRIPTION    = 0x00000100
+
+COPYFLG_WARN_IF_SKIP         = 0x00000001
+COPYFLG_NOSKIP               = 0x00000002
+COPYFLG_NOVERSIONCHECK       = 0x00000004
+COPYFLG_FORCE_FILE_IN_USE    = 0x00000008
+COPYFLG_NO_OVERWRITE         = 0x00000010
+COPYFLG_NO_VERSION_DIALOG    = 0x00000020
+COPYFLG_OVERWRITE_OLDER_ONLY = 0x00000040
+COPYFLG_REPLACEONLY          = 0x00000400
+COPYFLG_REPLACE_BOOT_FILE    = 0x00001000
+COPYFLG_NOPRUNE              = 0x00002000
+
+SERVICE_KERNEL_DRIVER      = 0x00000001
+SERVICE_FILE_SYSTEM_DRIVER = 0x00000002
+
+SERVICE_BOOT_START   = 0x00000000
+SERVICE_SYSTEM_START = 0x00000001
+SERVICE_AUTO_START   = 0x00000002
+SERVICE_DEMAND_START = 0x00000003
+SERVICE_DISABLED     = 0x00000004
+
+SERVICE_ERROR_IGNORE   = 0x00000000
+SERVICE_ERROR_NORMAL   = 0x00000001
+SERVICE_ERROR_SEVERE   = 0x00000002
+SERVICE_ERROR_CRITICAL = 0x00000003

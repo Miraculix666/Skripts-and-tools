@@ -1,0 +1,16 @@
+{
+    "powershell.scriptAnalysis.enable": true,
+    "powershell.codeFormatting.preset": "OTBS",
+    "powershell.codeFormatting.addWhitespaceAroundPipe": true,
+    "editor.defaultFormatter": "ms-vscode.powershell",
+    "editor.formatOnSave": true,
+    "editor.rulers": [120],
+    "files.associations": {
+        "*.ps1": "powershell",
+        "*.psm1": "powershell",
+        "*.psd1": "powershell",
+        "*.vba": "vba"
+    },
+    "powershell.cwd": "${workspaceFolder}",
+    "terminal.integrated.defaultProfile.windows": "PowerShell"
+}

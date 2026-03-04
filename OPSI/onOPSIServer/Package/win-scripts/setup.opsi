@@ -1,0 +1,69 @@
+[Actions]
+requiredWinstVersion >= "4.11.2"
+
+; Variables
+DefVar $Profile$
+DefVar $ModulePrivacy$
+DefVar $ModuleSecurity$
+DefVar $ModuleDebloat$
+DefVar $ModuleUI$
+DefVar $EnableDefender$
+DefVar $DriversPath$
+DefVar $AdditionalScripts$
+DefVar $ExitCode$
+
+; Read Properties from OPSI
+Set $Profile$ = GetProductProperty("profile", "Standard")
+Set $ModulePrivacy$ = GetProductProperty("module_privacy", "True")
+Set $ModuleSecurity$ = GetProductProperty("module_security", "True")
+Set $ModuleDebloat$ = GetProductProperty("module_debloat", "True")
+Set $ModuleUI$ = GetProductProperty("module_ui", "True")
+Set $EnableDefender$ = GetProductProperty("enable_defender", "False")
+Set $DriversPath$ = GetProductProperty("drivers_path", "C:\Drivers_Temp")
+Set $AdditionalScripts$ = GetProductProperty("additional_scripts", "")
+
+; Profile Logic (Overrides if not Custom)
+if ($Profile$ = "Standard")
+    Set $ModulePrivacy$ = "True"
+    Set $ModuleSecurity$ = "True"
+    Set $ModuleDebloat$ = "True"
+    Set $ModuleUI$ = "True"
+endif
+if ($Profile$ = "BSI-Safe")
+    Set $ModulePrivacy$ = "True"
+    Set $ModuleSecurity$ = "True"
+    Set $ModuleDebloat$ = "True"
+    Set $ModuleUI$ = "False"
+endif
+if ($Profile$ = "Gaming")
+    Set $ModulePrivacy$ = "True"
+    Set $ModuleSecurity$ = "False"
+    Set $ModuleDebloat$ = "True"
+    Set $ModuleUI$ = "True"
+endif
+
+Message "Starte PS-Coding Windows 11 Hardening Suite V9.0 (Profile: " + $Profile$ + ")..."
+
+; Main execution
+Winbatch_Apply_Harden
+
+Set $ExitCode$ = getLastExitCode
+if ($ExitCode$ = "0")
+    comment "Hardening erfolgreich abgeschlossen."
+else
+    LogError "Fehler während der Härtung. ExitCode: " + $ExitCode$
+    isFatalError
+endif
+
+; Execute Additional Scripts
+if not ($AdditionalScripts$ = "")
+    comment "Executing additional scripts..."
+    Sub_Execute_Additional
+endif
+
+[Winbatch_Apply_Harden]
+powershell.exe -ExecutionPolicy Bypass -File "%ScriptPath%\Apply_Hardening.ps1" -ModulePrivacy:$ModulePrivacy$ -ModuleSecurity:$ModuleSecurity$ -ModuleDebloat:$ModuleDebloat$ -ModuleUI:$ModuleUI$ -EnableDefender:$EnableDefender$ -DriversPathSource "$DriversPath$" -SilentMode
+
+[Sub_Execute_Additional]
+; Note: OPSI Script doesn't have a built-in split but we can pass the string to PS
+powershell.exe -ExecutionPolicy Bypass -Command "$scripts = '$AdditionalScripts$'; $scripts.Split(',') | ForEach-Object { $s = $_.Trim(); if ($s -ne '') { Write-Host \"Running external script: $s\"; & \"%ScriptPath%\$s\" } }"

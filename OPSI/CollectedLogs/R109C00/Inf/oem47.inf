@@ -1,0 +1,114 @@
+;/*++
+;
+;Copyright (c) 2009-2013 Realtek Semiconductor Corporation All rights Reserved
+;
+;Module Name:
+;
+;    Btfilter.INF
+;--*/
+[Version]
+Signature   = "$WINDOWS NT$"
+Class=Bluetooth
+CLASSGUID={e0cbf06c-cd8b-4647-bb8a-263b43f0f974}
+CatalogFile= RtkFilter.cat
+Provider    = %REALTEK%
+DriverVer = 07/28/2021,1.9.1038.3001
+;*************************
+; Source file information
+;*************************
+[SourceDisksNames]
+1 = %DiskId1%,,,""
+[SourceDisksFiles]
+PidVid_List.dat         = 1
+RtkBtfilter.sys         = 1,,
+RtkBtManServ.exe	= 1,,      ;RtkServ
+rtl8852a_mp_chip_bt40_fw_asic_rom_patch_new.dat		    =   1
+;*************************
+; Destination information
+;*************************
+[DestinationDirs]
+RsBthFilter.CopyList = 12
+RsBthpatch.CopyList = 10
+RtkBtManServ.CopyList = 10                      ;RtkServ
+[RsBthFilter.CopyList]
+RtkBtfilter.sys
+[RtkBtManServ.CopyList]                         ;RtkServ
+RtkBtManServ.exe                                ;RtkServ
+[RsBthpatch.CopyList]
+PidVid_List,PidVid_List.dat,,0x00002000
+rtl8852a_mp_chip_bt40_fw_asic_rom_patch_new,rtl8852a_mp_chip_bt40_fw_asic_rom_patch_new.dat,,0x00002000
+;*************************
+; Manufacturer information
+;*************************
+[Manufacturer]
+%REALTEK% = Realtek,NTamd64.10.0    ;NTamd64
+;We only support Vista and later
+[Realtek.NTamd64.10.0]   ;NTamd64
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_0BDA&PID_8852    ;8852AE
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_0BDA&PID_A852   ;8852AE-VS 
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_0BDA&PID_2852    ;8852AE for HP 
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_0BDA&PID_385A    ;8852AE-VT for HP
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_0BDA&PID_3852    ;8852AE-VS for HP 
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_0BDA&PID_1852    ;8852AE-VS for HP 
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_0BDA&PID_4852    ;8852AE for Lenovo
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_04CA&PID_4006    ;8852AE for Asus
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_13D3&PID_3561    ;8852AE for Asus 
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_13D3&PID_3562    ;8852AE for Azurewave 
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_0BDA&PID_588A    ;8852AE for AMD
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_0BDA&PID_589A    ;8852AE for ACER
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_0BDA&PID_590A    ;8852AE for DELL
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_0BDA&PID_E852    ;8852AE for NEC
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_0BDA&PID_B852    ;8852AE for Fujitsu
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_0BDA&PID_C852    ;8852AE for Dynabook
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_13D3&PID_3565    ;8852AE for Asus 
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_13D3&PID_3566    ;8852AE for Azurewave 
+%RealTK.DeviceDesc%		=	RsBthFilter, USB\VID_04C5&PID_165C	  ;8852AE for Fujitsu
+
+[RsBthFilter.NT]
+Include=bth.inf
+Needs=BthUsb.NT
+CopyFiles=RsBthFilter.CopyList
+CopyFiles=RtkBtManServ.CopyList                   ;RtkServ
+CopyFiles=RsBthpatch.CopyList
+[RsBthFilter.NT.HW]
+include    = bth.inf
+needs      = BthUsb.NT.HW
+AddReg=RsBthFilter.NT.HW.Reg
+[RsBthFilter.NT.HW.Reg]
+HKR, , LowerFilters, 0x00010000, RtkBtFilter
+HKR, ,"RemoteWakeEnabled",0x00010001,1
+HKR, ,"DeviceRemoteWakeSupported",0x00010001,1
+HKR, ,"VsMsftOpCode",0x00010001,0Xfcf0
+[RsBthFilter.NT.Services]
+include    = bth.inf
+needs      = BthUsb.NT.Services
+;Addservice = BTHUSB, 0x00000002, BthUsb_Service_Inst, BthUsb_EventLog_Inst
+;Addservice = BTHPORT, , BthPort_Service_Inst, BthPort_EventLog_Inst
+AddService = RtkBtFilter, , RtkBtFilter_Service_Inst
+AddService = RtkBtManServ, 0x00000800, RtkBtManServ_Service_Inst     ;RtkServ
+[RtkBtFilter_Service_Inst]
+DisplayName     = %BtFilt.SvcDesc%                            
+ServiceType     = 1                  ; SERVICE_KERNEL_DRIVER
+StartType       = 3                  ; SERVICE_DEMAND_START
+ErrorControl    = 1                  ; SERVICE_ERROR_NORMAL
+ServiceBinary   = %12%\RtkBtfilter.sys                            
+LoadOrderGroup = PNP Filter  
+AddReg=RsBthFilter_Services_Inst_AddReg
+[RsBthFilter_Services_Inst_AddReg]
+HKR,"Parameters","bPatchInSystemRoot",0x00010001,1    ; SetBit
+;HKR,"Parameters","bPatchInSystemRoot",0x00010001,0    ; ClearBit
+[RtkBtManServ_Service_Inst]                                        ;RtkServ
+DisplayName     = %RtkBtManServ.SvcDesc%                               ;RtkServ
+ServiceType     = 0x10                  ; Service                  ;RtkServ
+StartType       = 2                  ; SERVICE_DEMAND_START        ;RtkServ
+ErrorControl    = 0                  ; SERVICE_ERROR_NORMAL        ;RtkServ
+ServiceBinary   = %10%\RtkBtManServ.exe                            ;RtkServ
+;*****************************************
+; Bluetooth Filter String Section
+;*****************************************
+[Strings]
+REALTEK		= "Realtek Semiconductor Corp."
+DiskId1			= "Realtek Bluetooth Filter Installation Disk #1"
+BtFilt.SvcDesc		= "Realtek Bluetooth Filter Driver"
+RealTK.DeviceDesc		= "Realtek Bluetooth Adapter"
+RtkBtManServ.SvcDesc	= "Realtek Bluetooth Device Manager Service"    ;RtkServ

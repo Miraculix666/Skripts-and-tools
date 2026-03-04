@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<actions>
+    <action index="0"
+            command="C:\WINDOWS\SYSTEM32\RUNDLL32.EXE"
+            arguments="cmifw.dll,unattend"
+            identity="Networking-MPSSVC-Svc, Culture=neutral, Version=10.0.26100.1591, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=amd64, versionScope=NonSxS"
+            manifestPath="C:\WINDOWS\Winsxs\Manifests\amd64_networking-mpssvc-svc_31bf3856ad364e35_10.0.26100.1591_none_35d4369f77e394dd.manifest"
+            pass="specialize"/>
+    <action index="1"
+            command="C:\WINDOWS\SYSTEM32\SETUPUGC.EXE"
+            arguments=""
+            identity="Microsoft-Windows-Deployment, Culture=neutral, Version=10.0.26100.1591, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=amd64, versionScope=NonSxS"
+            manifestPath="C:\WINDOWS\Winsxs\Manifests\amd64_microsoft-windows-deployment_31bf3856ad364e35_10.0.26100.1591_none_97aef1f19d54d967.manifest"
+            pass="specialize"/>
+    <action index="2"
+            command="C:\WINDOWS\SYSTEM32\MUIUNATTEND.EXE"
+            arguments=""
+            identity="Microsoft-Windows-International-Core, Culture=neutral, Version=10.0.26100.1, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=amd64, versionScope=NonSxS"
+            manifestPath="C:\WINDOWS\Winsxs\Manifests\amd64_microsoft-windows-international-core_31bf3856ad364e35_10.0.26100.1_none_e69e0ce9424d9abb.manifest"
+            pass="specialize"/>
+    <action index="3"
+            command="C:\WINDOWS\SYSTEM32\RUNDLL32.EXE"
+            arguments="shsetup.dll,SHUnattendedSetup"
+            identity="Microsoft-Windows-Shell-Setup, Culture=neutral, Version=10.0.26100.1150, PublicKeyToken=31bf3856ad364e35, ProcessorArchitecture=amd64, versionScope=NonSxS"
+            manifestPath="C:\WINDOWS\Winsxs\Manifests\amd64_microsoft-windows-shell-setup_31bf3856ad364e35_10.0.26100.1150_none_6e422322998a171f.manifest"
+            pass="specialize"/>
+</actions>

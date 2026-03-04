@@ -1,0 +1,57 @@
+11/05 11:05:18	Info	
+
+11/05 11:05:18	Info	Volume name is \\?\Volume{5afb1073-41a8-11f0-ad89-806e6f6e6963}\
+11/05 11:05:18	Info	Mount Point are :
+11/05 11:05:18	Info	
+11/05 11:05:18	Info	Volume is Fixed Drive
+11/05 11:05:18	Info	Volume is not ntfs
+11/05 11:05:18	Info	
+
+11/05 11:05:18	Info	Volume name is \\?\Volume{5afb1074-41a8-11f0-ad89-806e6f6e6963}\
+11/05 11:05:18	Info	Mount Point are :
+11/05 11:05:18	Info	
+11/05 11:05:18	Info	Volume is Fixed Drive
+11/05 11:05:18	Info	Ignoring 0x3ed error code
+11/05 11:05:18	Info	
+
+11/05 11:05:18	Info	Volume name is \\?\Volume{866c2779-9cf1-4c1c-8d3a-8ae2cba909af}\
+11/05 11:05:18	Info	Mount Point are :
+11/05 11:05:18	Info	
+11/05 11:05:18	Info	Volume is Fixed Drive
+11/05 11:05:18	Info	Volume is ntfs
+11/05 11:05:18	Info	Volume is not system
+11/05 11:05:18	Info	Volume \\?\Volume{866c2779-9cf1-4c1c-8d3a-8ae2cba909af}\ has other OS 1 
+11/05 11:05:18	Info	
+
+11/05 11:05:18	Info	Volume name is \\?\Volume{1e10a982-b554-46a9-8022-184232296bdc}\
+11/05 11:05:18	Info	Mount Point are :
+11/05 11:05:18	Info	C:\	
+11/05 11:05:18	Info	Volume is Fixed Drive
+11/05 11:05:18	Info	Volume is ntfs
+11/05 11:05:18	Info	Volume is not system
+11/05 11:05:18	Info	Volume \\?\Volume{1e10a982-b554-46a9-8022-184232296bdc}\ has other OS 0 
+11/05 11:05:18	Info	SDDL for Volume is D:(A;;FA;;;BA)(A;OICIIO;GA;;;BA)(A;;FA;;;SY)(A;OICIIO;GA;;;SY)(A;;0x1301bf;;;AU)(A;OICIIO;SDGXGWGR;;;AU)(A;;0x1200a9;;;BU)(A;OICIIO;GXGR;;;BU)
+11/05 11:05:18	Info	Volume \\?\Volume{1e10a982-b554-46a9-8022-184232296bdc}\ has Default XP DACL 0
+11/05 11:05:18	Info	
+
+11/05 11:05:18	Info	Volume name is \\?\Volume{55379c46-dc13-4122-9223-63679788dc00}\
+11/05 11:05:18	Info	Mount Point are :
+11/05 11:05:18	Info	W:\	
+11/05 11:05:18	Info	Volume is Fixed Drive
+11/05 11:05:18	Info	Volume is not ntfs
+11/05 11:05:18	Info	
+
+11/05 11:05:18	Info	Volume name is \\?\Volume{9e6d7980-ba78-11f0-9d39-806e6f6e6963}\
+11/05 11:05:18	Info	Mount Point are :
+11/05 11:05:18	Info	
+11/05 11:05:18	Info	Volume is Fixed Drive
+11/05 11:05:18	Info	Volume is not ntfs
+11/05 11:05:18	Info	
+
+11/05 11:05:18	Info	Volume name is \\?\Volume{d9b257fc-684e-4dcb-ab79-03cfa2f6b750}\
+11/05 11:05:18	Info	Mount Point are :
+11/05 11:05:18	Info	X:\	
+11/05 11:05:18	Info	Volume is Fixed Drive
+11/05 11:05:18	Info	Volume is ntfs
+11/05 11:05:18	Info	Volume is not system
+11/05 11:05:18	Info	Volume \\?\Volume{d9b257fc-684e-4dcb-ab79-03cfa2f6b750}\ has other OS 1 

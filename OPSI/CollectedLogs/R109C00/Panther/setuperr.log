@@ -1,0 +1,35 @@
+﻿2025-11-05 10:53:32, Error                        CDiagnosticsHelper::PersistDiagnosticsData: Failed to persist diagnostics data.: Win32Exception: \\?\o:\$WINDOWS.~BT\Sources\Diagnostics: The system cannot find the path specified. [0x00000003] class UnBCL::DirectoryInfo *__cdecl UnBCL::Directory::CreateDir(const class UnBCL::String *)[gle=0x00000003]
+2025-11-05 10:53:34, Error                 MOUPG  CSetupManager::GetWuIdFromRegistry(12357): Result = 0x80070002
+2025-11-05 10:53:37, Error                        CDiagnosticsHelper::PersistDiagnosticsData: Failed to persist diagnostics data.: Win32Exception: \\?\o:\$WINDOWS.~BT\Sources\Diagnostics: The system cannot find the path specified. [0x00000003] class UnBCL::DirectoryInfo *__cdecl UnBCL::Directory::CreateDir(const class UnBCL::String *)[gle=0x00000003]
+2025-11-05 10:53:41, Error                 MOUPG  CDlpActionProductKeyValidate::ReportDownlevelInstallChannel(3611): Result = 0x80070490
+2025-11-05 10:53:41, Error                 MOUPG  ProductKey: Failed to report Host OS channel to telemetry.
+2025-11-05 10:53:45, Error                        CDiagnosticsHelper::PersistDiagnosticsData: Failed to persist diagnostics data.: Win32Exception: \\?\o:\$WINDOWS.~BT\Sources\Diagnostics: The system cannot find the path specified. [0x00000003] class UnBCL::DirectoryInfo *__cdecl UnBCL::Directory::CreateDir(const class UnBCL::String *)[gle=0x00000003]
+2025-11-05 10:53:47, Error                 CONX   hwreqchk: ERROR,Windows::Compat::HardwareRequirements::HardwareRequirementSettings::IsMeteredConnection,29,Failed to get NetworkCostType assuming metered network [0x80040154].
+
+2025-11-05 10:53:47, Error                 CONX   hwreqchk: ERROR,Windows::Compat::HardwareRequirements::HardwareRequirementSettings::GetSettingsFromEndpoint,244,Failed to retrieve Sqm DeviceId: [0x80070002].
+
+2025-11-05 10:53:47, Error                 CONX   hwreqchk: ERROR,Windows::Compat::HardwareRequirements::HardwareRequirementSettings::GetSettings,94,Failed to get settings from endpoint [0x80070002].
+
+2025-11-05 10:53:47, Error                 CONX   hwreqchk: ERROR,ProcessJson,606,Unable to GetSettings [0x80070002]
+
+2025-11-05 10:53:47, Error                 CONX   hwreqchk: ERROR,Windows::Compat::HardwareRequirements::HardwareRequirementSettings::IsMeteredConnection,29,Failed to get NetworkCostType assuming metered network [0x80040154].
+
+2025-11-05 10:53:47, Error                 CONX   hwreqchk: ERROR,Windows::Compat::HardwareRequirements::HardwareRequirementSettings::GetSettingsFromEndpoint,244,Failed to retrieve Sqm DeviceId: [0x80070002].
+
+2025-11-05 10:53:47, Error                 CONX   hwreqchk: ERROR,Windows::Compat::HardwareRequirements::HardwareRequirementSettings::GetSettings,94,Failed to get settings from endpoint [0x80070002].
+
+2025-11-05 10:53:47, Error                 CONX   hwreqchk: ERROR,ProcessJson,606,Unable to GetSettings [0x80070002]
+
+2025-11-05 10:53:51, Error                        CDiagnosticsHelper::PersistDiagnosticsData: Failed to persist diagnostics data.: Win32Exception: \\?\o:\$WINDOWS.~BT\Sources\Diagnostics: The system cannot find the path specified. [0x00000003] class UnBCL::DirectoryInfo *__cdecl UnBCL::Directory::CreateDir(const class UnBCL::String *)[gle=0x00000003]
+2025-11-05 10:54:03, Error                        CDiagnosticsHelper::PersistDiagnosticsData: Failed to persist diagnostics data.: Win32Exception: \\?\o:\$WINDOWS.~BT\Sources\Diagnostics: The system cannot find the path specified. [0x00000003] class UnBCL::DirectoryInfo *__cdecl UnBCL::Directory::CreateDir(const class UnBCL::String *)[gle=0x00000003]
+2025-11-05 10:54:04, Error                        CDiagnosticsHelper::PersistDiagnosticsData: Failed to persist diagnostics data.: Win32Exception: \\?\o:\$WINDOWS.~BT\Sources\Diagnostics: The system cannot find the path specified. [0x00000003] class UnBCL::DirectoryInfo *__cdecl UnBCL::Directory::CreateDir(const class UnBCL::String *)[gle=0x00000003]
+2025-11-05 10:54:19, Error                 SP     CNewSystem::PreInitialize: FveCheckSuspendBitLockerOnUpgrade failed: 0x8031004a, assuming auto-unlock is not supported
+2025-11-05 11:05:37, Error                 SP         BFSVC: AddBootmgrLast and PreserveBootOrder options are ignored when custom volume is specified
+2025-11-05 11:05:37, Error                 SP         BFSVC: AddBootmgrLast and PreserveBootOrder options are ignored when custom volume is specified
+2025-11-05 11:05:37, Error                 SP         Error loading SrClient.dll. Error: 0x0000007E[gle=0x0000007e]
+2025-11-05 11:06:28, Error                            [SetupPlatform.exe] System disks found
+2025-11-05 11:07:53, Error                        [setup.exe] System disks found
+2025-11-05 11:08:33, Error                 SP     SPRestoreBootTimeout: Failed to read the boot manager timeout from file: C:\$WINDOWS.~BT\Sources\SetupPlatform.ini. Error: 0x80070002[gle=0x00000002]
+2025-11-05 11:08:33, Error                        SppDeleteSnapshots failed. hr = 0x800401f0
+2025-11-05 12:08:39, Error                 MOUPG  CUnattendManager::Initialize(90): Result = 0x80070490[gle=0x00000001]
+2025-11-05 12:08:39, Error                 MOUPG  CSetupManager::GetWuIdFromRegistry(12357): Result = 0x80070002[gle=0x00000003]

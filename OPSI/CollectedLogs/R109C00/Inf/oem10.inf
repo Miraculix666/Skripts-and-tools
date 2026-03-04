@@ -1,0 +1,51 @@
+;==============================================================================
+; [FUJ0435NL.INF]
+;  Fujitsu FUJ0435 Device Driver INF File
+;------------------------------------------------------------------------------
+; Copyright FUJITSU CLIENT COMPUTING LIMITED 2018-2021.
+;==============================================================================
+
+
+[Version]
+Signature="$Windows NT$"
+Class=System
+CLASSGUID={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%Mfg%
+DriverVer=09/03/2021,2.0.0.4
+CatalogFile=fuj0435nl.cat
+
+
+[Manufacturer]
+%Mfg%=FUJ0435NL,NTamd64
+
+
+[SourceDisksNames]
+1 = %DiskId1%,,,
+
+
+[SourceDisksFiles]
+
+[DestinationDirs]
+
+
+
+[FUJ0435NL.NTamd64]
+%DeviceDesc%=FUJ0435NL.Install, ACPI\FUJ0435
+
+
+[FUJ0435NL.Install.NTamd64]
+
+
+[FUJ0435NL.Install.NTamd64.Services]
+AddService=, 2
+
+
+
+
+;==============================================================================
+; Strings
+;------------------------------------------------------------------------------
+[Strings]
+Mfg="FUJITSU CLIENT COMPUTING LIMITED"
+DeviceDesc="Fujitsu FUJ0435 Device Driver"
+DiskId1="Fujitsu FUJ0435 Device Driver Install Disk (1)"
