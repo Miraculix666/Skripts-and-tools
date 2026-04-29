@@ -222,21 +222,26 @@ process {
         $domain = Get-ADDomain | Select-Object -ExpandProperty DistinguishedName
         Write-UserVerbose "Domänen-DN ermittelt: '$domain'."
 
-        $targetOUs = @()
-        foreach ($name in $OUNames) {
+        $targetOUs = foreach ($name in $OUNames) {
             Write-UserVerbose "Suche nach OU mit Name '$name'."
             try {
                 $ou = Get-ADOrganizationalUnit -Filter "Name -eq '$name'" `
                     -SearchBase $domain `
                     -SearchScope Subtree `
                     -ErrorAction Stop
-                $targetOUs += $ou
+
+                # Output found OU directly to the pipeline, avoiding += array operations
+                $ou
+
                 Write-UserVerbose "OU '$name' ($($ou.DistinguishedName)) gefunden."
             } catch {
                 Write-Warning "OU '$name' konnte nicht gefunden werden: $($_.Exception.Message)"
                 Write-Host "OU '$name' konnte nicht gefunden werden. Bitte überprüfen Sie den Namen." -ForegroundColor Yellow
             }
         }
+
+        # Convert to an array to ensure .Count works correctly even if only one OU is found
+        $targetOUs = @($targetOUs)
 
         if (-not $targetOUs.Count) {
             Write-Host "Keine der angegebenen OUs ($($OUNames -join ', ')) konnte gefunden werden. Skript wird beendet." -ForegroundColor Red
@@ -251,8 +256,7 @@ process {
         Write-Host "Suche nach Benutzern mit Namensmustern 'L110*' oder 'L114*'." -ForegroundColor Yellow
         Write-UserVerbose "Beginne Benutzersuche in den gefundenen OUs."
 
-        $users = @()
-        foreach ($ou in $targetOUs) {
+        $users = foreach ($ou in $targetOUs) {
             Write-UserVerbose "Suche Benutzer in OU: $($ou.DistinguishedName)."
             try {
                 $foundUsers = Get-ADUser -LDAPFilter "(|(sAMAccountName=L110*)(sAMAccountName=L114*))" `
@@ -262,12 +266,18 @@ process {
                                 LastLogonTimestamp, UserAccountControl, PasswordChangeRequired `
                     -SearchScope Subtree `
                     -ErrorAction Stop
-                $users += $foundUsers
+
+                # Output found users directly to the pipeline, avoiding += array operations
+                $foundUsers
+
                 Write-UserVerbose "$($foundUsers.Count) Benutzer in $($ou.Name) gefunden."
             } catch {
                 Write-Warning "Fehler beim Suchen von Benutzern in OU '$($ou.Name)': $($_.Exception.Message)"
             }
         }
+
+        # Convert to an array to ensure .Count works correctly even if only one user is found
+        $users = @($users)
 
         if (-not $users.Count) {
             Write-Host "Keine passenden Benutzer mit den Mustern 'L110*' oder 'L114*' in den angegebenen OUs gefunden." -ForegroundColor Yellow
@@ -357,7 +367,7 @@ process {
 
                         # AD-Einstellungen über Set-ADUser aktualisieren (Passwort-Attribute und LastLogonTimestamp)
                         Write-UserVerbose "Aktualisiere AD-Attribute für $($user.SamAccountName) mittels Set-ADUser."
-                        Set-ADUser -Identity $user.DistinguishedName `
+                        $user | Set-ADUser `
                                    -PasswordNeverExpires $true `
                                    -CannotChangePassword $true `
                                    -PasswordChangeRequired $false ` # Sicherstellen, dass dieses Flag nicht gesetzt ist
@@ -369,7 +379,7 @@ process {
                         # Option B: Passwort-Reset und Attribut-Update über 'Set-ADUser' (bevorzugt)
                         Write-Host "`nVerarbeite Benutzer: $($user.SamAccountName) (mittels 'Set-ADUser')" -ForegroundColor Cyan
                         Write-UserVerbose "Versuche Passwort-Reset und Attribut-Update für $($user.SamAccountName) mittels 'Set-ADUser'."
-                        Set-ADUser -Identity $user.DistinguishedName `
+                        $user | Set-ADUser `
                                    -NewPassword $securePass `
                                    -PasswordNeverExpires $true `
                                    -CannotChangePassword $true `
