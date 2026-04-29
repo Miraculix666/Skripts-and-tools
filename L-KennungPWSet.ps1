@@ -222,7 +222,7 @@ process {
         $domain = Get-ADDomain | Select-Object -ExpandProperty DistinguishedName
         Write-UserVerbose "Domänen-DN ermittelt: '$domain'."
 
-        $targetOUs = @()
+        $targetOUs = [System.Collections.Generic.List[PSObject]]::new()
         foreach ($name in $OUNames) {
             Write-UserVerbose "Suche nach OU mit Name '$name'."
             try {
@@ -230,7 +230,7 @@ process {
                     -SearchBase $domain `
                     -SearchScope Subtree `
                     -ErrorAction Stop
-                $targetOUs += $ou
+                $targetOUs.Add($ou)
                 Write-UserVerbose "OU '$name' ($($ou.DistinguishedName)) gefunden."
             } catch {
                 Write-Warning "OU '$name' konnte nicht gefunden werden: $($_.Exception.Message)"
@@ -251,7 +251,7 @@ process {
         Write-Host "Suche nach Benutzern mit Namensmustern 'L110*' oder 'L114*'." -ForegroundColor Yellow
         Write-UserVerbose "Beginne Benutzersuche in den gefundenen OUs."
 
-        $users = @()
+        $users = [System.Collections.Generic.List[PSObject]]::new()
         foreach ($ou in $targetOUs) {
             Write-UserVerbose "Suche Benutzer in OU: $($ou.DistinguishedName)."
             try {
@@ -262,7 +262,11 @@ process {
                                 LastLogonTimestamp, UserAccountControl, PasswordChangeRequired `
                     -SearchScope Subtree `
                     -ErrorAction Stop
-                $users += $foundUsers
+                if ($null -ne $foundUsers) {
+                    foreach ($u in $foundUsers) {
+                        $users.Add($u)
+                    }
+                }
                 Write-UserVerbose "$($foundUsers.Count) Benutzer in $($ou.Name) gefunden."
             } catch {
                 Write-Warning "Fehler beim Suchen von Benutzern in OU '$($ou.Name)': $($_.Exception.Message)"
