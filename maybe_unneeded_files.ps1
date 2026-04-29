@@ -355,7 +355,7 @@ function New-HTMLReport {
         function toggleArchive() {
             const archives = document.getElementsByClassName('archive');
             for (let item of archives) {
-                item.style.display = item.style.display === 'none' ? 'flex' : 'none';
+                item.style.display = item.style.display === 'flex' ? 'none' : 'flex';
             }
         }
         
@@ -392,40 +392,42 @@ function New-HTMLReport {
 }
 
 # Main execution block
-try {
-    Write-Log "Starting file analysis on path: $TargetPath" -Level Info
-    Write-Log "Results will be saved to: $OutputDirectory" -Level Info
-    
-    # Create date thresholds
-    $dateThresholds = @{}
-    foreach ($key in $AgeThresholds.Keys) {
-        $dateThresholds[$key] = (Get-Date).AddYears(-$AgeThresholds[$key])
+if ($MyInvocation.InvocationName -ne '.') {
+    try {
+        Write-Log "Starting file analysis on path: $TargetPath" -Level Info
+        Write-Log "Results will be saved to: $OutputDirectory" -Level Info
+
+        # Create date thresholds
+        $dateThresholds = @{}
+        foreach ($key in $AgeThresholds.Keys) {
+            $dateThresholds[$key] = (Get-Date).AddYears(-$AgeThresholds[$key])
+        }
+
+        # Analyze files by age
+        $ageResults = @()
+        foreach ($key in $dateThresholds.Keys) {
+            $ageResults += Get-FilesByAge -Path $TargetPath -Threshold $dateThresholds[$key] -OutputFileName "OlderThan$($AgeThresholds[$key])Years"
+        }
+
+        # Analyze files by size
+        $sizeResults = @()
+        foreach ($key in $SizeThresholds.Keys) {
+            $sizeResults += Get-FilesBySize -Path $TargetPath -Threshold $SizeThresholds[$key] -OutputFileName "LargerThan$key"
+        }
+
+        # Find duplicates
+        $duplicatesPath = Find-Duplicates -Path $TargetPath
+
+        # Generate HTML reports
+        New-HTMLReport -Title "Files by Age" -FilePaths $ageResults
+        New-HTMLReport -Title "Files by Size" -FilePaths $sizeResults
+        New-HTMLReport -Title "Duplicate Files" -FilePaths @($duplicatesPath)
+
+        Write-Log "Analysis completed successfully" -Level Info
+        Write-Log "Reports are available in: $OutputDirectory" -Level Info
     }
-    
-    # Analyze files by age
-    $ageResults = @()
-    foreach ($key in $dateThresholds.Keys) {
-        $ageResults += Get-FilesByAge -Path $TargetPath -Threshold $dateThresholds[$key] -OutputFileName "OlderThan$($AgeThresholds[$key])Years"
+    catch {
+        Write-Log "Critical error during analysis: $_" -Level Error
+        throw
     }
-    
-    # Analyze files by size
-    $sizeResults = @()
-    foreach ($key in $SizeThresholds.Keys) {
-        $sizeResults += Get-FilesBySize -Path $TargetPath -Threshold $SizeThresholds[$key] -OutputFileName "LargerThan$key"
-    }
-    
-    # Find duplicates
-    $duplicatesPath = Find-Duplicates -Path $TargetPath
-    
-    # Generate HTML reports
-    New-HTMLReport -Title "Files by Age" -FilePaths $ageResults
-    New-HTMLReport -Title "Files by Size" -FilePaths $sizeResults
-    New-HTMLReport -Title "Duplicate Files" -FilePaths @($duplicatesPath)
-    
-    Write-Log "Analysis completed successfully" -Level Info
-    Write-Log "Reports are available in: $OutputDirectory" -Level Info
-}
-catch {
-    Write-Log "Critical error during analysis: $_" -Level Error
-    throw
 }
