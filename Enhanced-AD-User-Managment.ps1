@@ -460,27 +460,16 @@ begin {
     }
 
 
-    # Funktion zum Kopieren eines AD-Benutzers mit Gruppen und OU
-    function Copy-ADUserAdvanced {
+    function Remove-ExistingTargetADUser {
         [CmdletBinding(SupportsShouldProcess = $true)]
         param(
             [Parameter(Mandatory = $true)]
-            [Microsoft.ActiveDirectory.Management.ADUser]$SourceUser, # Ist der ReferenceUser
-
-            [Parameter(Mandatory = $true)]
             [string]$TargetSamAccountName,
 
-            [Parameter(Mandatory = $true)]
-            [System.Security.SecureString]$Password,
-
             [Parameter(Mandatory = $false)]
-            [string]$DestinationOU, # Optional: Ziel-OU
-
-            [Parameter(Mandatory = $false)]
-            [switch]$OverwriteTarget # Optional: Ziel überschreiben
+            [switch]$OverwriteTarget
         )
 
-        Write-Log -Level Info -Message "Beginne Kopiervorgang von $($SourceUser.SamAccountName) nach $TargetSamAccountName."
         $targetUserExists = $false
         $existingTargetUser = $null
         try {
@@ -498,7 +487,7 @@ begin {
                 $msg = "Zielbenutzer '$TargetSamAccountName' existiert bereits. Verwenden Sie -Force zum Überschreiben."
                 Write-Log -Level Error -Message $msg
                 Add-UserReportEntry -SamAccountName $TargetSamAccountName -Status "Fehler" -Detail $msg
-                return $null # Fehler signalisieren
+                return $false # Fehler signalisieren, Vorgang abbrechen
             } else {
                 Write-Log -Level Warning -Message "Zielbenutzer '$TargetSamAccountName' existiert und wird überschrieben (-Force)."
                 # Detailliertere ShouldProcess-Meldung für das Löschen
@@ -512,18 +501,31 @@ begin {
                         $msg = "Fehler beim Entfernen des vorhandenen Benutzers '$TargetSamAccountName': $_"
                         Write-Log -Level Error -Message $msg
                         Add-UserReportEntry -SamAccountName $TargetSamAccountName -Status "Fehler" -Detail $msg
-                        return $null
+                        return $false # Fehler signalisieren, Vorgang abbrechen
                     }
                 } else {
                     $msg = "Entfernen des vorhandenen Benutzers '$TargetSamAccountName' übersprungen (ShouldProcess)."
                     Write-Log -Level Info -Message $msg
                     Add-UserReportEntry -SamAccountName $TargetSamAccountName -Status "Übersprungen" -Detail $msg
-                    return $null
+                    return $false # Übersprungen, nicht fortfahren
                 }
             }
         }
+        return $true # Kein vorhandener Benutzer oder erfolgreich entfernt
+    }
 
-        # OU bestimmen
+    function Get-ValidTargetOU {
+        param(
+            [Parameter(Mandatory = $true)]
+            [Microsoft.ActiveDirectory.Management.ADUser]$SourceUser,
+
+            [Parameter(Mandatory = $false)]
+            [string]$DestinationOU,
+
+            [Parameter(Mandatory = $true)]
+            [string]$TargetSamAccountName
+        )
+
         $finalOU = $DestinationOU # Aus Parameter verwenden
         if (-not $finalOU) {
             # Wenn nicht im Parameter, nimm die OU des Quellbenutzers
@@ -548,6 +550,80 @@ begin {
             return $null
         }
 
+        return $finalOU
+    }
+
+    function Copy-ADUserGroupMembership {
+        [CmdletBinding(SupportsShouldProcess = $true)]
+        param(
+            [Parameter(Mandatory = $true)]
+            [Microsoft.ActiveDirectory.Management.ADUser]$SourceUser,
+
+            [Parameter(Mandatory = $true)]
+            [Microsoft.ActiveDirectory.Management.ADUser]$TargetUser
+        )
+
+        try {
+            $sourceGroups = Get-ADPrincipalGroupMembership -Identity $SourceUser -ErrorAction Stop
+             # Filter optionale problematische Gruppen (z.B. 'Domain Users' wird oft automatisch hinzugefügt)
+             $groupsToCopy = $sourceGroups | Where-Object {$_.Name -ne "Domain Users"} # Beispiel Filter
+
+            if ($groupsToCopy) {
+                $groupNames = $groupsToCopy.Name -join ', '
+                Write-Log -Level Info -Message "Kopiere $($groupsToCopy.Count) Gruppenmitgliedschaften von $($SourceUser.SamAccountName) zu $($TargetUser.SamAccountName)."
+                # Detailliertere ShouldProcess-Meldung
+                $shouldProcessTarget = "Benutzer '$($TargetUser.SamAccountName)'"
+                $shouldProcessAction = "Hinzufügen zu Gruppen ($($groupsToCopy.Count)): $groupNames"
+                if ($PSCmdlet.ShouldProcess($shouldProcessTarget, $shouldProcessAction)) {
+                    Add-ADPrincipalGroupMembership -Identity $TargetUser -MemberOf $groupsToCopy -ErrorAction Stop
+                    Write-Log -Level Info -Message "Gruppenmitgliedschaften erfolgreich kopiert."
+                    # Optional: Update Report
+                    # Add-UserReportEntry -SamAccountName $TargetUser.SamAccountName -Status "Gruppen kopiert" -Detail "$($groupsToCopy.Count) Gruppen"
+                } else {
+                     Write-Log -Level Info -Message "Kopieren der Gruppenmitgliedschaften übersprungen (ShouldProcess)."
+                }
+            } else {
+                Write-Log -Level Info -Message "Quellbenutzer $($SourceUser.SamAccountName) hat keine (relevanten) Gruppenmitgliedschaften zum Kopieren."
+            }
+        }
+        catch {
+            $msg = "Fehler beim Kopieren der Gruppenmitgliedschaften für '$($TargetUser.SamAccountName)': $_. Der Benutzer wurde erstellt, aber Gruppen fehlen möglicherweise."
+            Write-Log -Level Warning -Message $msg
+            Add-UserReportEntry -SamAccountName $TargetUser.SamAccountName -Status "Warnung" -Detail "Fehler beim Kopieren der Gruppen: $_"
+            # Nicht abbrechen, Benutzer existiert ja schon
+        }
+    }
+
+    # Funktion zum Kopieren eines AD-Benutzers mit Gruppen und OU
+    function Copy-ADUserAdvanced {
+        [CmdletBinding(SupportsShouldProcess = $true)]
+        param(
+            [Parameter(Mandatory = $true)]
+            [Microsoft.ActiveDirectory.Management.ADUser]$SourceUser, # Ist der ReferenceUser
+
+            [Parameter(Mandatory = $true)]
+            [string]$TargetSamAccountName,
+
+            [Parameter(Mandatory = $true)]
+            [System.Security.SecureString]$Password,
+
+            [Parameter(Mandatory = $false)]
+            [string]$DestinationOU, # Optional: Ziel-OU
+
+            [Parameter(Mandatory = $false)]
+            [switch]$OverwriteTarget # Optional: Ziel überschreiben
+        )
+
+        Write-Log -Level Info -Message "Beginne Kopiervorgang von $($SourceUser.SamAccountName) nach $TargetSamAccountName."
+
+        if (-not (Remove-ExistingTargetADUser -TargetSamAccountName $TargetSamAccountName -OverwriteTarget:$OverwriteTarget)) {
+            return $null
+        }
+
+        $finalOU = Get-ValidTargetOU -SourceUser $SourceUser -DestinationOU $DestinationOU -TargetSamAccountName $TargetSamAccountName
+        if (-not $finalOU) {
+            return $null
+        }
 
         # Parameter für New-ADUser vorbereiten
         $newUserParams = @{
@@ -603,34 +679,8 @@ begin {
         }
 
         # Gruppenmitgliedschaften kopieren
-        try {
-            $sourceGroups = Get-ADPrincipalGroupMembership -Identity $SourceUser -ErrorAction Stop
-             # Filter optionale problematische Gruppen (z.B. 'Domain Users' wird oft automatisch hinzugefügt)
-             $groupsToCopy = $sourceGroups | Where-Object {$_.Name -ne "Domain Users"} # Beispiel Filter
-
-            if ($groupsToCopy) {
-                $groupNames = $groupsToCopy.Name -join ', '
-                Write-Log -Level Info -Message "Kopiere $($groupsToCopy.Count) Gruppenmitgliedschaften von $($SourceUser.SamAccountName) zu $($newUser.SamAccountName)."
-                # Detailliertere ShouldProcess-Meldung
-                $shouldProcessTarget = "Benutzer '$($newUser.SamAccountName)'"
-                $shouldProcessAction = "Hinzufügen zu Gruppen ($($groupsToCopy.Count)): $groupNames"
-                if ($PSCmdlet.ShouldProcess($shouldProcessTarget, $shouldProcessAction)) {
-                    Add-ADPrincipalGroupMembership -Identity $newUser -MemberOf $groupsToCopy -ErrorAction Stop
-                    Write-Log -Level Info -Message "Gruppenmitgliedschaften erfolgreich kopiert."
-                    # Optional: Update Report
-                    # Add-UserReportEntry -SamAccountName $newUser.SamAccountName -Status "Gruppen kopiert" -Detail "$($groupsToCopy.Count) Gruppen"
-                } else {
-                     Write-Log -Level Info -Message "Kopieren der Gruppenmitgliedschaften übersprungen (ShouldProcess)."
-                }
-            } else {
-                Write-Log -Level Info -Message "Quellbenutzer $($SourceUser.SamAccountName) hat keine (relevanten) Gruppenmitgliedschaften zum Kopieren."
-            }
-        }
-        catch {
-            $msg = "Fehler beim Kopieren der Gruppenmitgliedschaften für '$($newUser.SamAccountName)': $_. Der Benutzer wurde erstellt, aber Gruppen fehlen möglicherweise."
-            Write-Log -Level Warning -Message $msg
-            Add-UserReportEntry -SamAccountName $newUser.SamAccountName -Status "Warnung" -Detail "Fehler beim Kopieren der Gruppen: $_"
-            # Nicht abbrechen, Benutzer existiert ja schon
+        if ($newUser) {
+            Copy-ADUserGroupMembership -SourceUser $SourceUser -TargetUser $newUser
         }
 
         Write-Log -Level Info -Message "Kopiervorgang für $TargetSamAccountName abgeschlossen."
