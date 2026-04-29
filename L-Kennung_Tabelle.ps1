@@ -194,37 +194,19 @@ function Export-ToExcel {
     }
 }
 
-function Export-ToHtml {
+function Get-HtmlReportScript {
     param (
-        [Parameter(Mandatory)][object[]]$Data,
-        [Parameter(Mandatory)][string]$Path
+        [Parameter(Mandatory)][string]$JsonData
     )
     
-    $html = @"
-<!DOCTYPE html>
-<html>
-<head>
-    <title>AD User Groups Visualization</title>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-        .node circle { fill: #fff; stroke: steelblue; stroke-width: 1.5px; }
-        .node text { font: 12px sans-serif; }
-        .link { fill: none; stroke: #ccc; stroke-width: 1.5px; }
-        #visualization { width: 100%; height: 800px; border: 1px solid #ccc; }
-    </style>
-</head>
-<body>
-    <h1>AD User Groups Visualization</h1>
-    <div id="visualization"></div>
-    <script>
+    return @"
         const data = {
             nodes: [],
             links: []
         };
         
         // Process data for visualization
-        const users = $($Data | ConvertTo-Json);
+        const users = $JsonData;
         const processedUsers = new Set();
         const processedGroups = new Set();
         
@@ -320,10 +302,49 @@ function Export-ToHtml {
             d.fx = null;
             d.fy = null;
         }
+"@
+}
+
+function Get-HtmlReportContent {
+    param (
+        [Parameter(Mandatory)][string]$JsonData
+    )
+
+    $scriptContent = Get-HtmlReportScript -JsonData $JsonData
+
+    return @"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AD User Groups Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .node circle { fill: #fff; stroke: steelblue; stroke-width: 1.5px; }
+        .node text { font: 12px sans-serif; }
+        .link { fill: none; stroke: #ccc; stroke-width: 1.5px; }
+        #visualization { width: 100%; height: 800px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>AD User Groups Visualization</h1>
+    <div id="visualization"></div>
+    <script>
+$scriptContent
     </script>
 </body>
 </html>
 "@
+}
+
+function Export-ToHtml {
+    param (
+        [Parameter(Mandatory)][object[]]$Data,
+        [Parameter(Mandatory)][string]$Path
+    )
+
+    $jsonData = $($Data | ConvertTo-Json)
+    $html = Get-HtmlReportContent -JsonData $jsonData
     
     $html | Out-File -FilePath $Path -Encoding UTF8
     Write-Host "HTML visualization exported: $Path" -ForegroundColor Green
