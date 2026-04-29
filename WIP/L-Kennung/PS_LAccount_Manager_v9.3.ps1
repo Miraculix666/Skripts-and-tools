@@ -68,16 +68,9 @@ function Write-Log {
     $Msg | Out-File -FilePath $LogFile -Append
 }
 
-function Invoke-Main {
-    Show-Header
-    Import-Module ActiveDirectory
 
-    if (-not $CsvPath) { $CsvPath = Read-Host "Pfad zur Master-CSV eingeben" }
-    $CsvPath = $CsvPath.Trim().Trim('"')
-    if (-not (Test-Path $CsvPath)) {
-        Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERROR"; return
-    }
-
+function Get-RequiredList {
+    param([string]$RequiredCsvPath)
     # 1. BEDARFSLISTE
     $RequiredList = New-Object System.Collections.Generic.HashSet[string]
     if ($RequiredCsvPath -and (Test-Path $RequiredCsvPath)) {
@@ -88,6 +81,11 @@ function Invoke-Main {
         Write-Log "Bedarfsliste: $($RequiredList.Count) Eintraege." "SUCCESS"
     }
 
+    return $RequiredList
+}
+
+function Get-MasterCsvData {
+    param([string]$CsvPath)
     # 2. MASTER-CSV
     Write-Log "Lese Master-CSV..." "DEBUG"
     $MasterCsvData = @{}
@@ -97,6 +95,11 @@ function Invoke-Main {
     }
     Write-Log "Master-CSV: $($MasterCsvData.Count) Zeilen." "SUCCESS"
 
+    return $MasterCsvData
+}
+
+function Get-ADData {
+    param([switch]$SearchGlobal, [hashtable]$MasterCsvData, [int]$TestCount)
     # 3. AD-DISCOVERY
     Write-Log "Schritt 1: AD-Discovery (OUs 81/82)..." "INFO"
     $ADCache      = @{}
@@ -147,6 +150,25 @@ function Invoke-Main {
     Write-Log ("Discovery beendet ({0}s). Starte Verarbeitung von {1} Eintraegen..." `
                -f $Stopwatch.Elapsed.TotalSeconds.ToString('F2'), $ProcessList.Count) "SUCCESS"
 
+    return @{
+        ADCache = $ADCache
+        UniqueGroups = $UniqueGroups
+        SortedGroups = $SortedGroups
+        AllUniqueSAMs = $AllUniqueSAMs
+        ProcessList = $ProcessList
+    }
+}
+
+function Process-Runspaces {
+    param(
+        [int]$MaxThreads,
+        [array]$ProcessList,
+        [hashtable]$MasterCsvData,
+        [hashtable]$ADCache,
+        [System.Collections.Generic.HashSet[string]]$RequiredList,
+        [array]$SortedGroups,
+        [string]$LogFile
+    )
     # 4. RUNSPACE-POOL
     $Pool = [runspacefactory]::CreateRunspacePool(
         1, $MaxThreads,
@@ -386,6 +408,19 @@ function Invoke-Main {
     Write-Progress -Activity "Verarbeite L-Kennungen" -Completed
     $Pool.Close(); $Pool.Dispose()
 
+    return @{
+        Results = $Results
+        ErrCount = $ErrCount
+    }
+}
+
+function Export-Results {
+    param(
+        [System.Collections.Generic.List[PSObject]]$Results,
+        [array]$SortedGroups,
+        [string]$Version,
+        [string]$ScriptDir
+    )
     # 5. EXPORT
     # FIX-6: Bounds-Check
     if ($Results.Count -eq 0) {
@@ -417,6 +452,40 @@ function Invoke-Main {
     }
     $lines | Out-File -FilePath $Path2 -Encoding UTF8 -Force
 
+    return @{
+        Path1 = $Path1
+        Path2 = $Path2
+    }
+}
+
+function Invoke-Main {
+    Show-Header
+    Import-Module ActiveDirectory
+
+    if (-not $CsvPath) { $CsvPath = Read-Host "Pfad zur Master-CSV eingeben" }
+    $CsvPath = $CsvPath.Trim().Trim('"')
+    if (-not (Test-Path $CsvPath)) {
+        Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERROR"; return
+    }
+
+    $RequiredList = Get-RequiredList -RequiredCsvPath $RequiredCsvPath
+    $MasterCsvData = Get-MasterCsvData -CsvPath $CsvPath
+
+    $adData = Get-ADData -SearchGlobal:$SearchGlobal -MasterCsvData $MasterCsvData -TestCount $TestCount
+    $ADCache = $adData.ADCache
+    $SortedGroups = $adData.SortedGroups
+    $ProcessList = $adData.ProcessList
+
+    $processResult = Process-Runspaces -MaxThreads $MaxThreads -ProcessList $ProcessList -MasterCsvData $MasterCsvData -ADCache $ADCache -RequiredList $RequiredList -SortedGroups $SortedGroups -LogFile $LogFile
+    $Results = $processResult.Results
+    $ErrCount = $processResult.ErrCount
+
+    if ($Results.Count -gt 0) {
+        $exportResult = Export-Results -Results $Results -SortedGroups $SortedGroups -Version $Version -ScriptDir $ScriptDir
+        $Path1 = $exportResult.Path1
+        $Path2 = $exportResult.Path2
+    }
+
     $Stopwatch.Stop()
 
     Write-Host "`n====================================================" -ForegroundColor Cyan
@@ -426,8 +495,10 @@ function Invoke-Main {
     Write-Host "ZEILEN  : $($Results.Count)"
     Write-Host "FEHLER  : $ErrCount"
     Write-Host "DAUER   : $($Stopwatch.Elapsed.TotalSeconds.ToString('F2'))s"
-    Write-Host "TAB 1   : $Path1"
-    Write-Host "TAB 2   : $Path2"
+    if ($Results.Count -gt 0) {
+        Write-Host "TAB 1   : $Path1"
+        Write-Host "TAB 2   : $Path2"
+    }
     Write-Host "LOG     : $LogFile"
     Write-Host "====================================================`n" -ForegroundColor Cyan
 }
