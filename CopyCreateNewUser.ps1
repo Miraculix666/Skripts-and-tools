@@ -117,28 +117,23 @@ function Export-TemplateUserData {
     }
 }
 
-# Funktion zum Erstellen eines neuen AD-Benutzers
-function New-ADUserFromTemplate {
-    param (
 # Hauptfunktion zur Benutzerverarbeitung
 function Process-UserCreation {
     param(
-[hashtable]$UserData,
-        [string]$TemplateUser
+        [hashtable]$UserData,
+        [string]$TemplateUser,
         [string]$TargetOU
-)
+    )
     $template = Get-ADUser -Identity $TemplateUser -Properties *
     
-$securePassword = ConvertTo-SecureString $UserData.Password -AsPlainText -Force
-
+    $securePassword = ConvertTo-SecureString $UserData.Password -AsPlainText -Force
     
-$newUserParams = @{
+    $newUserParams = @{
         SamAccountName = $UserData.SamAccountName
-        UserPrincipalName = "$($UserData.SamAccountName)@$((Get-ADDomain).DNSRoot)"
-        Name = $UserData.Name
+        UserPrincipalName = "$($UserData.SamAccountName)@$($env:USERDNSDOMAIN)"
         Name = "$($UserData.GivenName) $($UserData.Surname)"
-GivenName = $UserData.GivenName
-Surname = $UserData.Surname
+        GivenName = $UserData.GivenName
+        Surname = $UserData.Surname
         DisplayName = $UserData.DisplayName
         Description = $UserData.Description
         Office = $UserData.Office
@@ -152,16 +147,12 @@ Surname = $UserData.Surname
         PostalCode = $UserData.PostalCode
         Country = $UserData.Country
         OfficePhone = $UserData.OfficePhone
-        SamAccountName = $UserData.SamAccountName
-        UserPrincipalName = "$($UserData.SamAccountName)@$($env:USERDNSDOMAIN)"
-AccountPassword = $securePassword
-Enabled = $true
-        Path = ($template.DistinguishedName -split ',', 2)[1]
+        AccountPassword = $securePassword
+        Enabled = $true
         Instance = $template
         Path = $TargetOU
-}
+    }
 
-    
     # Optionale Parameter hinzufügen wenn vorhanden
     @('Department','Title','City','Country','Company','Office') | ForEach-Object {
         if ($UserData.$_) {
@@ -169,15 +160,13 @@ Enabled = $true
         }
     }
     
-try {
-New-ADUser @newUserParams
-        Write-Log "Benutzer $($UserData.SamAccountName) wurde erfolgreich erstellt."
+    try {
+        New-ADUser @newUserParams
         Write-LogMessage "Benutzer $($UserData.SamAccountName) erfolgreich erstellt" -Type Success
-}
-catch {
-        Write-Log "Fehler beim Erstellen des Benutzers $($UserData.SamAccountName): $_"
+    }
+    catch {
         Write-LogMessage "Fehler beim Erstellen von $($UserData.SamAccountName): $_" -Type Error
-}
+    }
 }
 
 # Hauptlogik
