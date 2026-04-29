@@ -78,8 +78,7 @@ if ($allUsers.Count -gt 0) {
 }
 
 # Define the new password
-$passwordString = "P2f7aL4!01"
-$newPassword = ConvertTo-SecureString -String $passwordString -AsPlainText -Force
+$newPassword = Read-Host "Bitte neues Passwort eingeben" -AsSecureString
 
 # Read SamAccountNames from the file
 $samAccountNames = Get-Content -Path $inputFilePath
