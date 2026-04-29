@@ -84,18 +84,10 @@ function Write-Log {
     $Msg | Out-File -FilePath $LogFile -Append
 }
 
-# [FIX-1] Umbenannt von 'Start-Process' -> 'Invoke-Main'
-# Grund: 'Start-Process' ist ein eingebautes PowerShell-Cmdlet.
-# Eine gleichnamige Funktion führt zu Namenskonflikt und unerwartetem Verhalten.
-function Invoke-Main {
-    Show-Header
-    Import-Module ActiveDirectory
 
-    if (-not $CsvPath) { $CsvPath = Read-Host "Pfad zur Master-CSV eingeben" }
-    $CsvPath = $CsvPath.Trim().Trim('"')
-    if (-not (Test-Path $CsvPath)) { Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERROR"; return }
 
-    # 1. BEDARFSLISTE
+function Get-RequiredList {
+    param([string]$RequiredCsvPath)
     $RequiredList = New-Object System.Collections.Generic.HashSet[string]
     if ($RequiredCsvPath -and (Test-Path $RequiredCsvPath)) {
         Write-Log "Lade Bedarfsliste..." "DEBUG"
@@ -105,8 +97,11 @@ function Invoke-Main {
         }
         Write-Log "Bedarfsliste geladen ($($RequiredList.Count) Einträge)." "SUCCESS"
     }
+    return $RequiredList
+}
 
-    # 2. MASTER-CSV
+function Get-MasterCsvData {
+    param([string]$CsvPath)
     Write-Log "Lese Master-CSV..." "DEBUG"
     $MasterCsvData = @{}
     $RawCsv = Import-Csv -Path $CsvPath -Delimiter ';' -Encoding Default
@@ -115,8 +110,16 @@ function Invoke-Main {
         if ($key) { $MasterCsvData[$key] = $line }
     }
     Write-Log "Master-CSV geladen ($($MasterCsvData.Count) Zeilen)." "SUCCESS"
+    return $MasterCsvData
+}
 
-    # 3. AD-DISCOVERY
+function Get-ADDiscovery {
+    param(
+        [switch]$SearchGlobal,
+        [int]$TestCount,
+        [hashtable]$MasterCsvData,
+        [System.Diagnostics.Stopwatch]$Stopwatch
+    )
     Write-Log "Schritt 1: AD-Discovery (OUs 81/82)..." "INFO"
     $ADCache = @{}
     $UniqueGroups = New-Object System.Collections.Generic.HashSet[string]
@@ -168,7 +171,23 @@ function Invoke-Main {
 
     Write-Log "Discovery beendet ($($Stopwatch.Elapsed.TotalSeconds.ToString('F2'))s). Starte Verarbeitung von $($ProcessList.Count) Einträgen..." "SUCCESS"
 
-    # 4. PARALLELE VERARBEITUNG
+    return [PSCustomObject]@{
+        ADCache = $ADCache
+        SortedGroups = $SortedGroups
+        ProcessList = $ProcessList
+    }
+}
+
+function Invoke-ParallelProcessing {
+    param(
+        [int]$MaxThreads,
+        [array]$ProcessList,
+        [hashtable]$MasterCsvData,
+        [hashtable]$ADCache,
+        [System.Collections.Generic.HashSet[string]]$RequiredList,
+        [array]$SortedGroups,
+        [string]$LogFile
+    )
     $SessionState = [system.management.automation.runspaces.initialsessionstate]::CreateDefault()
     $Pool = [runspacefactory]::CreateRunspacePool(1, $MaxThreads, $SessionState, $Host)
     $Pool.Open()
@@ -378,7 +397,22 @@ function Invoke-Main {
     $Pool.Close()
     $Pool.Dispose()
 
-    # 5. EXPORTE
+    return [PSCustomObject]@{
+        Results = $Results
+        ErrCount = $ErrCount
+    }
+}
+
+function Export-Results {
+    param(
+        [System.Collections.Generic.List[PSObject]]$Results,
+        [int]$ErrCount,
+        [array]$SortedGroups,
+        [string]$ScriptDir,
+        [string]$Version,
+        [string]$LogFile,
+        [System.Diagnostics.Stopwatch]$Stopwatch
+    )
     # [FIX-6] Bounds-Check vor $Results[0]-Zugriff
     if ($Results.Count -eq 0) {
         Write-Log "FEHLER: Keine Ergebnisse generiert. Bitte Eingabedaten und AD-Verbindung prüfen." "ERROR"
@@ -429,6 +463,31 @@ function Invoke-Main {
     Write-Host "TABELLE 2:`t$Path2"
     Write-Host "LOG:`t`t$LogFile"
     Write-Host "====================================================`n" -ForegroundColor Cyan
+}
+
+# [FIX-1] Umbenannt von 'Start-Process' -> 'Invoke-Main'
+# Grund: 'Start-Process' ist ein eingebautes PowerShell-Cmdlet.
+# Eine gleichnamige Funktion führt zu Namenskonflikt und unerwartetem Verhalten.
+function Invoke-Main {
+    Show-Header
+    Import-Module ActiveDirectory
+
+    if (-not $CsvPath) { $CsvPath = Read-Host "Pfad zur Master-CSV eingeben" }
+    $CsvPath = $CsvPath.Trim().Trim('"')
+    if (-not (Test-Path $CsvPath)) { Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERROR"; return }
+
+    $RequiredList = Get-RequiredList -RequiredCsvPath $RequiredCsvPath
+    $MasterCsvData = Get-MasterCsvData -CsvPath $CsvPath
+    $DiscoveryData = Get-ADDiscovery -SearchGlobal:$SearchGlobal -TestCount $TestCount -MasterCsvData $MasterCsvData -Stopwatch $Stopwatch
+
+    $ProcessData = Invoke-ParallelProcessing -MaxThreads $MaxThreads `
+        -ProcessList $DiscoveryData.ProcessList -MasterCsvData $MasterCsvData `
+        -ADCache $DiscoveryData.ADCache -RequiredList $RequiredList `
+        -SortedGroups $DiscoveryData.SortedGroups -LogFile $LogFile
+
+    Export-Results -Results $ProcessData.Results -ErrCount $ProcessData.ErrCount `
+        -SortedGroups $DiscoveryData.SortedGroups -ScriptDir $ScriptDir `
+        -Version $Version -LogFile $LogFile -Stopwatch $Stopwatch
 }
 
 # [FIX-1] Aufruf der umbenannten Funktion
