@@ -189,28 +189,32 @@ Function Get-ADUserLockouts {
     End{}
 }
 ------------------------------------------------------
-"dsquery.exe user ""ou=Benutzer,ou=82,ou=Polizei-NRW-PB-PE-2012,dc=polizei,dc=nrw,dc=de"" -name L110* | DSMOD user -pwdneverexpires no -canchpwd no -mustchpwd no -pwd P2f2aL4!10"
+# Prompt for password to use with dsmod commands
+$securePromptedPassword = Read-Host "Bitte geben Sie das Passwort für dsmod ein" -AsSecureString
+$promptedPassword = [System.Net.NetworkCredential]::new("", $securePromptedPassword).Password
+
+"dsquery.exe user ""ou=Benutzer,ou=82,ou=Polizei-NRW-PB-PE-2012,dc=polizei,dc=nrw,dc=de"" -name L110* | DSMOD user -pwdneverexpires no -canchpwd no -mustchpwd no -pwd $promptedPassword"
 
 
-"dsquery.exe user ""ou=Benutzer,ou=81,ou=Polizei-NRW-PB-PE-2012,dc=polizei,dc=nrw,dc=de"" -name L110* | DSMOD user -pwdneverexpires no -canchpwd no -mustchpwd no -pwd P2f2aL4!10"
+"dsquery.exe user ""ou=Benutzer,ou=81,ou=Polizei-NRW-PB-PE-2012,dc=polizei,dc=nrw,dc=de"" -name L110* | DSMOD user -pwdneverexpires no -canchpwd no -mustchpwd no -pwd $promptedPassword"
 
 
 
 Neue Abfrage ohne die Hochkommata:
 
-dsquery.exe user "ou=Benutzer,ou=82,ou=Polizei-NRW-PB-PE-2012,dc=polizei,dc=nrw,dc=de" -name L110* | DSMOD user -pwdneverexpires no -canchpwd no -mustchpwd no -pwd P2f2aL4!10
+dsquery.exe user "ou=Benutzer,ou=82,ou=Polizei-NRW-PB-PE-2012,dc=polizei,dc=nrw,dc=de" -name L110* | DSMOD user -pwdneverexpires no -canchpwd no -mustchpwd no -pwd $promptedPassword
 
 
 
 Hier das Script für zusätzliche Entsperrung der Benutzerkonten:
 
-dsquery.exe user "ou=Benutzer,ou=82,ou=Polizei-NRW-PB-PE-2012,dc=polizei,dc=nrw,dc=de" -name L110* | DSMOD user -pwdneverexpires no -canchpwd no -mustchpwd no -pwd P2f2aL4!10 -disabled no -limit 300
+dsquery.exe user "ou=Benutzer,ou=82,ou=Polizei-NRW-PB-PE-2012,dc=polizei,dc=nrw,dc=de" -name L110* | DSMOD user -pwdneverexpires no -canchpwd no -mustchpwd no -pwd $promptedPassword -disabled no -limit 300
 
 
 
 #Hier das Script für die User ab L11012* und Entsperrung:
 
-dsquery.exe user "ou=Benutzer,ou=82,ou=Polizei-NRW-PB-PE-2012,dc=polizei,dc=nrw,dc=de" -name L11012* | DSMOD user -pwdneverexpires no -canchpwd no -mustchpwd no -pwd P2f2aL4!10 -disabled no 
+dsquery.exe user "ou=Benutzer,ou=82,ou=Polizei-NRW-PB-PE-2012,dc=polizei,dc=nrw,dc=de" -name L11012* | DSMOD user -pwdneverexpires no -canchpwd no -mustchpwd no -pwd $promptedPassword -disabled no
 
 
 #Hier das Sript für die inaktiven User(39 Wochen) ohne Limit:
@@ -252,8 +256,8 @@ Write-Host "LastLogonDate update completed for expired users."
 # Input file path containing the list of affected users
 $inputFilePath = "C:\Daten\Deaktivierte_L_Kennung_SAM.txt"
 
-# Set the new password
-$newPassword = ConvertTo-SecureString -String "P2f7aL4!01" -AsPlainText -Force
+# Set the new password securely
+$newPassword = Read-Host "Bitte geben Sie das neue Passwort ein" -AsSecureString
 
 # Read SamAccountNames from the file
 $samAccountNames = Get-Content -Path $inputFilePath
@@ -261,7 +265,7 @@ $samAccountNames = Get-Content -Path $inputFilePath
 # Reset password for each user
 foreach ($samAccountName in $samAccountNames) {
     try {
-        Set-ADAccountPassword -Identity $samAccountName -Reset -NewPassword (ConvertTo-SecureString -AsPlainText $newPassword -Force) -ErrorAction Stop
+        Set-ADAccountPassword -Identity $samAccountName -Reset -NewPassword $newPassword -ErrorAction Stop
         Write-Host "Password reset successful for user: $samAccountName" -ForegroundColor Green
     } catch {
         Write-Host "Failed to reset password for user: $samAccountName" -ForegroundColor Red
