@@ -1,0 +1,13 @@
+🧹 [Refactor] Split Invoke-Main into helper functions in PS_LAccount_Manager_v9.5.ps1
+
+🎯 What:
+Refactored the overly long `Invoke-Main` function in `WIP/L-Kennung/PS_LAccount_Manager_v9.5.ps1` by splitting it into smaller, more focused helper functions (`Get-RequiredList`, `Get-MasterCsvData`, `Get-ADDiscovery`, `Process-Entries`, and `Export-Results`).
+
+💡 Why:
+The original `Invoke-Main` function was over 350 lines long, making it difficult to read, test, and maintain. Extracting the distinct logical steps into separate helper functions improves code organization, reusability, and readability, aligning with clean code practices.
+
+✅ Verification:
+Verified visually that the extracted logic precisely mirrors the original implementation, including variable handling, data structures, and the usage of the unary comma operator (`return ,$Results`) to prevent array unrolling issues in PowerShell. A diff comparison confirmed no behavioral changes were introduced.
+
+✨ Result:
+The script is now modular and much easier to maintain, while fully preserving its original functionality.
