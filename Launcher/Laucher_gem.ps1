@@ -173,16 +173,7 @@ Function Launch-Application {
 
 # --- 5. GUI Definition and Setup ---
 
-Function Build-GUI {
-    
-    # Prepare data and credentials
-    $AppStructure = Scan-Applications
-    $AdminCreds = $null
-    if ($AppStructure.Where({$_.Nodes.NeedsAdmin}).Count -gt 0) {
-        $AdminCreds = Get-AdminCredential
-    }
-
-    # --- 5.1 Main Form Setup ---
+Function New-LauncherForm {
     $Form = New-Object System.Windows.Forms.Form
     $Form.Text = "Portable Script Launcher - PS-Coding"
     $Form.Size = New-Object System.Drawing.Size(600, 700)
@@ -190,8 +181,11 @@ Function Build-GUI {
     $Form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedSingle
     $Form.MaximizeBox = $false
     $Form.MinimizeBox = $false
-    
-    # --- 5.2 TreeView Control (Categories and Apps) ---
+    return $Form
+}
+
+Function New-LauncherTreeView {
+    param([System.Windows.Forms.Form]$Form)
     $TreeView = New-Object System.Windows.Forms.TreeView
     $TreeView.Location = New-Object System.Drawing.Point(10, 10)
     $TreeView.Size = New-Object System.Drawing.Size(565, 400)
@@ -201,33 +195,48 @@ Function Build-GUI {
 
     # Add a default blank icon to the list
     $TreeView.ImageList.Images.Add("default", [System.Drawing.SystemIcons]::Application)
-    $IconIndex = 0
+    return $TreeView
+}
 
-    # --- 5.3 Rich Text Box (Description/Balloon Text) ---
+Function New-LauncherDescBox {
+    param([System.Windows.Forms.Form]$Form)
     $DescBox = New-Object System.Windows.Forms.RichTextBox
     $DescBox.Text = "Wählen Sie ein Element zum Anzeigen der Beschreibung aus."
     $DescBox.Location = New-Object System.Drawing.Point(10, 420)
     $DescBox.Size = New-Object System.Drawing.Size(565, 120)
     $DescBox.ReadOnly = $true
     $Form.Controls.Add($DescBox)
+    return $DescBox
+}
 
-    # --- 5.4 Launch Button ---
+Function New-LauncherLaunchButton {
+    param([System.Windows.Forms.Form]$Form)
     $LaunchButton = New-Object System.Windows.Forms.Button
     $LaunchButton.Text = "Starten"
     $LaunchButton.Location = New-Object System.Drawing.Point(455, 555)
     $LaunchButton.Size = New-Object System.Drawing.Size(120, 40)
     $LaunchButton.Enabled = $false
     $Form.Controls.Add($LaunchButton)
+    return $LaunchButton
+}
 
-    # --- 5.5 Status Label ---
+Function New-LauncherStatusLabel {
+    param([System.Windows.Forms.Form]$Form)
     $StatusLabel = New-Object System.Windows.Forms.Label
     $StatusLabel.Text = "Bereit."
     $StatusLabel.Location = New-Object System.Drawing.Point(10, 555)
     $StatusLabel.Size = New-Object System.Drawing.Size(400, 40)
     $StatusLabel.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
     $Form.Controls.Add($StatusLabel)
+    return $StatusLabel
+}
 
-    # --- 5.6 Populate TreeView ---
+Function Populate-LauncherTreeView {
+    param(
+        [System.Windows.Forms.TreeView]$TreeView,
+        [array]$AppStructure
+    )
+    $IconIndex = 0
 
     foreach ($Category in $AppStructure) {
         $CatNode = New-Object System.Windows.Forms.TreeNode ($Category.Name)
@@ -274,8 +283,50 @@ Function Build-GUI {
 
     # Expand all categories for better visibility
     $TreeView.ExpandAll()
+}
+
+Function Build-GUI {
+
+    # Prepare data and credentials
+    $AppStructure = Scan-Applications
+    $AdminCreds = $null
+    if ($AppStructure.Where({$_.Nodes.NeedsAdmin}).Count -gt 0) {
+        $AdminCreds = Get-AdminCredential
+    }
+
+    # --- 5.1 Main Form Setup ---
+    $Form = New-LauncherForm
+
+    # --- 5.2 TreeView Control (Categories and Apps) ---
+    $TreeView = New-LauncherTreeView -Form $Form
+
+    # --- 5.3 Rich Text Box (Description/Balloon Text) ---
+    $DescBox = New-LauncherDescBox -Form $Form
+
+    # --- 5.4 Launch Button ---
+    $LaunchButton = New-LauncherLaunchButton -Form $Form
+
+    # --- 5.5 Status Label ---
+    $StatusLabel = New-LauncherStatusLabel -Form $Form
+
+    # --- 5.6 Populate TreeView ---
+    Populate-LauncherTreeView -TreeView $TreeView -AppStructure $AppStructure
 
     # --- 5.7 Event Handlers ---
+    Register-LauncherEvents -TreeView $TreeView -DescBox $DescBox -LaunchButton $LaunchButton -StatusLabel $StatusLabel -AdminCreds $AdminCreds
+
+    # --- 5.8 Show the GUI ---
+    [void]$Form.ShowDialog()
+}
+
+Function Register-LauncherEvents {
+    param(
+        [System.Windows.Forms.TreeView]$TreeView,
+        [System.Windows.Forms.RichTextBox]$DescBox,
+        [System.Windows.Forms.Button]$LaunchButton,
+        [System.Windows.Forms.Label]$StatusLabel,
+        $AdminCreds
+    )
 
     # TreeView Selection Change Handler
     $TreeView.Add_AfterSelect({
@@ -297,7 +348,7 @@ Function Build-GUI {
             $LaunchButton.Enabled = $false
             $StatusLabel.Text = "Bereit."
         }
-    })
+    }.GetNewClosure())
 
     # Launch Button Click Handler
     $LaunchButton.Add_Click({
@@ -309,10 +360,7 @@ Function Build-GUI {
             
             Launch-Application -AppObject $AppObject -AdminCredential $CredsToUse
         }
-    })
-
-    # --- 5.8 Show the GUI ---
-    [void]$Form.ShowDialog()
+    }.GetNewClosure())
 }
 
 # --- 6. Main Script Execution ---
