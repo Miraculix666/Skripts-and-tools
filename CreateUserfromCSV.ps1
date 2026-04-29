@@ -99,40 +99,6 @@ function Get-ValidADUser {
     }
 }
 
-# Function to get all OUs from template user's path
-function Get-TemplateUserOUs {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$TemplateUser
-    )
-
-    $user = Get-ValidADUser -Identity $TemplateUser -Operation "OU-Ermittlung"
-    if ($user) {
-        try {
-            $ouPath = ($user.DistinguishedName -split ',', 2)[1]
-            Write-Verbose "Base OU path: $ouPath"
-
-            # Get all OUs from the path
-            $ous = @()
-            $ous += Get-ADOrganizationalUnit -Filter * -SearchBase $ouPath -SearchScope Subtree |
-                   Select-Object -ExpandProperty DistinguishedName
-
-            # Add the template user's direct OU
-            $ous += $ouPath
-
-            $uniqueOUs = $ous | Select-Object -Unique
-            Write-Verbose "Gefundene OUs: $($uniqueOUs.Count)"
-            Write-Verbose ($uniqueOUs -join "`n")
-
-            return $uniqueOUs
-        } catch {
-            Write-CustomLog "Fehler beim Abrufen der OUs: $_" -Level "FEHLER"
-            return @($ouPath)
-        }
-    }
-    return $null
-}
-
 # Function to compare group memberships
 function Compare-GroupMembership {
     param (
@@ -166,30 +132,23 @@ function Export-ADUsers {
         $templateGroups = $Template.MemberOf
         Write-Verbose "Template Gruppen: $($templateGroups.Count)"
 
-        $templateOUs = Get-TemplateUserOUs -TemplateUser $TemplateUser
-        if (-not $templateOUs) {
-            throw "Keine OUs für Template-Benutzer gefunden"
-        }
+        $ouPath = ($Template.DistinguishedName -split ',', 2)[1]
+        Write-Verbose "Suche Benutzer im Subtree der Base-OU: $ouPath"
 
-        Write-Verbose "Suche Benutzer in allen relevanten OUs"
-        $allUsers = @()
-        foreach ($ou in $templateOUs) {
-            Write-Verbose "Durchsuche OU: $ou"
-            try {
-                $usersInOU = Get-ADUser -Filter * -SearchBase $ou -SearchScope OneLevel `
-                            -Properties SamAccountName, UserPrincipalName, Name, GivenName, Surname, `
-                                      Department, Title, Manager, Office, OfficePhone, EmailAddress, `
-                                      Company, Description, MemberOf, DistinguishedName
+        $allUsers = [System.Collections.Generic.List[psobject]]::new()
+        try {
+            $usersInSubtree = Get-ADUser -Filter * -SearchBase $ouPath -SearchScope Subtree `
+                        -Properties SamAccountName, UserPrincipalName, Name, GivenName, Surname, `
+                                  Department, Title, Manager, Office, OfficePhone, EmailAddress, `
+                                  Company, Description, MemberOf, DistinguishedName
 
-                foreach ($user in $usersInOU) {
-                    if (Compare-GroupMembership -TemplateGroups $templateGroups -UserGroups $user.MemberOf) {
-                        $allUsers += $user
-                    }
+            foreach ($user in $usersInSubtree) {
+                if (Compare-GroupMembership -TemplateGroups $templateGroups -UserGroups $user.MemberOf) {
+                    $allUsers.Add($user)
                 }
-            } catch {
-                Write-CustomLog "Fehler beim Durchsuchen von OU '$ou': $_" -Level "WARNUNG"
-                continue
             }
+        } catch {
+            Write-CustomLog "Fehler beim Durchsuchen der Base-OU '$ouPath': $_" -Level "WARNUNG"
         }
 
         Write-Verbose "Gefundene Benutzer: $($allUsers.Count)"
