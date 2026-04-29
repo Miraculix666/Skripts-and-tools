@@ -146,28 +146,10 @@ function Write-CsvLine {
 }
 
 # ══════════════════════════════════════════════════════════════════
-#  MAIN
+#  MAIN REFACTORING HELPERS
 # ══════════════════════════════════════════════════════════════════
-function Invoke-Main {
-    Show-Banner
-    Import-Module ActiveDirectory -Verbose:$false
-
-    Write-Log "PowerShell v$($PSVersionTable.PSVersion)  |  PID $PID  |  Host: $env:COMPUTERNAME" "DBG"
-    Write-Log "Logfile: $LogFile" "INFO"
-
-    # ──────────────────────────────────────────────────────────────
-    # INPUT
-    # ──────────────────────────────────────────────────────────────
-    if (-not $CsvPath) { $CsvPath = Read-Host "📂  Pfad zur Master-CSV" }
-    $CsvPath = $CsvPath.Trim().Trim('"')
-    if (-not (Test-Path $CsvPath)) {
-        Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERR"; return
-    }
-    Write-Log "Master-CSV: $CsvPath" "DBG"
-
-    # ──────────────────────────────────────────────────────────────
-    # 1. BEDARFSLISTE
-    # ──────────────────────────────────────────────────────────────
+function Get-RequiredList {
+    param([string]$RequiredCsvPath)
     Write-Section "📋  BEDARFSLISTE laden"
     $RequiredList = New-Object 'System.Collections.Generic.HashSet[string]'
     if ($RequiredCsvPath -and (Test-Path $RequiredCsvPath)) {
@@ -182,10 +164,11 @@ function Invoke-Main {
     } else {
         Write-Log "Keine Bedarfsliste angegeben oder Datei fehlt -> übersprungen" "WARN"
     }
+    return $RequiredList
+}
 
-    # ──────────────────────────────────────────────────────────────
-    # 2. MASTER-CSV
-    # ──────────────────────────────────────────────────────────────
+function Get-MasterCsvData {
+    param([string]$CsvPath, [System.Diagnostics.Stopwatch]$SW)
     Write-Section "📊  MASTER-CSV laden"
     $t0 = $SW.Elapsed.TotalSeconds
     $MasterCsvData = @{}
@@ -198,10 +181,15 @@ function Invoke-Main {
         }
     }
     Write-Log "Master-CSV: $($MasterCsvData.Count) gueltige L-Kennungen  [+$([math]::Round($SW.Elapsed.TotalSeconds-$t0,2))s]" "OK"
+    return $MasterCsvData
+}
 
-    # ──────────────────────────────────────────────────────────────
-    # 3. AD-DISCOVERY
-    # ──────────────────────────────────────────────────────────────
+function Get-ADDiscovery {
+    param(
+        [bool]$SearchGlobal,
+        [array]$AD_PROPS,
+        [System.Diagnostics.Stopwatch]$SW
+    )
     Write-Section "🔎  AD-DISCOVERY"
     $t0           = $SW.Elapsed.TotalSeconds
     $ADCache      = @{}
@@ -256,20 +244,22 @@ function Invoke-Main {
     $SortedGroups = @($UniqueGroups | Sort-Object)
     Write-Log "AD-Discovery abgeschlossen: $($ADCache.Count) AD-Objekte  |  $($SortedGroups.Count) unique Gruppen  [+$([math]::Round($SW.Elapsed.TotalSeconds-$t0,2))s]" "PERF"
 
-    # Arbeitsliste aufbauen
-    $AllSAMs     = @(@($ADCache.Keys) + @($MasterCsvData.Keys) | Select-Object -Unique | Sort-Object)
-    Write-Log "Gesamt unique SAMs (AD + CSV): $($AllSAMs.Count)" "DBG"
+    return @{
+        ADCache = $ADCache
+        SortedGroups = $SortedGroups
+    }
+}
 
-    $ProcessList = if ($TestCount -gt 0) {
-        Write-Log "⚠️  TESTMODUS: nur erste $TestCount Eintraege" "WARN"
-        @($AllSAMs | Select-Object -First $TestCount)
-    } else { $AllSAMs }
-
-    Write-Log "Zu verarbeitende Eintraege: $($ProcessList.Count)" "OK"
-
-    # ──────────────────────────────────────────────────────────────
-    # 4. SEQUENZIELLE VERARBEITUNG
-    # ──────────────────────────────────────────────────────────────
+function Process-Entries {
+    param(
+        [array]$ProcessList,
+        [hashtable]$MasterCsvData,
+        [hashtable]$ADCache,
+        [array]$SortedGroups,
+        [System.Collections.Generic.HashSet[string]]$RequiredList,
+        [bool]$DebugMode,
+        [System.Diagnostics.Stopwatch]$SW
+    )
     Write-Section "⚙️   VERARBEITUNG  ($($ProcessList.Count) Eintraege · sequenziell)"
     $t0      = $SW.Elapsed.TotalSeconds
     $Results = New-Object 'System.Collections.Generic.List[PSObject]'
@@ -443,13 +433,21 @@ function Invoke-Main {
     $procTime = [math]::Round($SW.Elapsed.TotalSeconds - $t0, 2)
     Write-Log "Verarbeitung abgeschlossen: $($Results.Count) Datensaetze in ${procTime}s  (~$([math]::Round($procTime/$Total*1000,1))ms/Eintrag)" "PERF"
 
-    # ──────────────────────────────────────────────────────────────
-    # 5. EXPORT  (StreamWriter — O(1) RAM statt O(n*m))
-    # ──────────────────────────────────────────────────────────────
+    return ,$Results
+}
+
+function Export-Results {
+    param(
+        [System.Collections.Generic.List[PSObject]]$Results,
+        [array]$SortedGroups,
+        [string]$ScriptDir,
+        [string]$Version,
+        [System.Diagnostics.Stopwatch]$SW
+    )
     Write-Section "💾  EXPORT  ($($Results.Count) Zeilen · $($SortedGroups.Count) Gruppenspalten)"
 
     if ($Results.Count -eq 0) {
-        Write-Log "Keine Ergebnisse — Export uebersprungen" "ERR"; return
+        Write-Log "Keine Ergebnisse — Export uebersprungen" "ERR"; return $null
     }
 
     # --- Tabelle 1: Gruppen-Uebersicht ---
@@ -502,27 +500,95 @@ function Invoke-Main {
     Write-Host ""
     Write-Log "Tab2 fertig: $Path2  [+$([math]::Round($SW.Elapsed.TotalSeconds-$t0,2))s]" "OK"
 
-    # ──────────────────────────────────────────────────────────────
-    # ABSCHLUSS
-    # ──────────────────────────────────────────────────────────────
-    $SW.Stop()
-    $totalMB = [math]::Round([System.GC]::GetTotalMemory($false) / 1MB, 1)
+    return @{ Path1 = $Path1; Path2 = $Path2 }
+}
 
-    Write-Host ""
-    Write-Host "  ╔══════════════════════════════════════════════════════════╗" -ForegroundColor Green
-    Write-Host "  ║  ✅  ABGESCHLOSSEN                                        ║" -ForegroundColor Green
-    Write-Host ("  ║  📦  {0,-52}║" -f "Datensaetze  : $($Results.Count)") -ForegroundColor Green
-    Write-Host ("  ║  🗂️   {0,-51}║" -f "Gruppen      : $($SortedGroups.Count)") -ForegroundColor Green
-    Write-Host ("  ║  ⏱️   {0,-52}║" -f "Gesamtdauer  : $($SW.Elapsed.ToString('mm\:ss\.ff')) min") -ForegroundColor Green
-    Write-Host ("  ║  🧠  {0,-52}║" -f "RAM (managed): ${totalMB} MB") -ForegroundColor Green
-    Write-Host "  ║                                                          ║" -ForegroundColor DarkGreen
-    Write-Host ("  ║  📄  Tab1 : {0,-47}║" -f (Split-Path $Path1 -Leaf)) -ForegroundColor DarkGreen
-    Write-Host ("  ║  📄  Tab2 : {0,-47}║" -f (Split-Path $Path2 -Leaf)) -ForegroundColor DarkGreen
-    Write-Host ("  ║  📋  Log  : {0,-47}║" -f (Split-Path $LogFile -Leaf)) -ForegroundColor DarkGreen
-    Write-Host "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Green
-    Write-Host ""
+# ══════════════════════════════════════════════════════════════════
+#  MAIN
+# ══════════════════════════════════════════════════════════════════
+function Invoke-Main {
+    Show-Banner
+    Import-Module ActiveDirectory -Verbose:$false
 
-    Write-Log "Fertig. Dauer: $($SW.Elapsed.ToString('mm\:ss\.ff'))  RAM: ${totalMB}MB  Zeilen: $($Results.Count)" "PERF"
+    Write-Log "PowerShell v$($PSVersionTable.PSVersion)  |  PID $PID  |  Host: $env:COMPUTERNAME" "DBG"
+    Write-Log "Logfile: $LogFile" "INFO"
+
+    # ──────────────────────────────────────────────────────────────
+    # INPUT
+    # ──────────────────────────────────────────────────────────────
+    if (-not $CsvPath) { $CsvPath = Read-Host "📂  Pfad zur Master-CSV" }
+    $CsvPath = $CsvPath.Trim().Trim('"')
+    if (-not (Test-Path $CsvPath)) {
+        Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERR"; return
+    }
+    Write-Log "Master-CSV: $CsvPath" "DBG"
+
+    # 1. BEDARFSLISTE
+    $RequiredList = Get-RequiredList -RequiredCsvPath $RequiredCsvPath
+
+    # 2. MASTER-CSV
+    $MasterCsvData = Get-MasterCsvData -CsvPath $CsvPath -SW $SW
+
+    # 3. AD-DISCOVERY
+    $AdData = Get-ADDiscovery -SearchGlobal $SearchGlobal -AD_PROPS $AD_PROPS -SW $SW
+    $ADCache = $AdData.ADCache
+    $SortedGroups = $AdData.SortedGroups
+
+    # Arbeitsliste aufbauen
+    $AllSAMs = @(@($ADCache.Keys) + @($MasterCsvData.Keys) | Select-Object -Unique | Sort-Object)
+    Write-Log "Gesamt unique SAMs (AD + CSV): $($AllSAMs.Count)" "DBG"
+
+    $ProcessList = if ($TestCount -gt 0) {
+        Write-Log "⚠️  TESTMODUS: nur erste $TestCount Eintraege" "WARN"
+        @($AllSAMs | Select-Object -First $TestCount)
+    } else { $AllSAMs }
+
+    Write-Log "Zu verarbeitende Eintraege: $($ProcessList.Count)" "OK"
+
+    # 4. SEQUENZIELLE VERARBEITUNG
+    $Results = Process-Entries `
+        -ProcessList $ProcessList `
+        -MasterCsvData $MasterCsvData `
+        -ADCache $ADCache `
+        -SortedGroups $SortedGroups `
+        -RequiredList $RequiredList `
+        -DebugMode $DebugMode `
+        -SW $SW
+
+    # 5. EXPORT
+    $exportPaths = Export-Results `
+        -Results $Results `
+        -SortedGroups $SortedGroups `
+        -ScriptDir $ScriptDir `
+        -Version $Version `
+        -SW $SW
+
+    if ($null -ne $exportPaths) {
+        $Path1 = $exportPaths.Path1
+        $Path2 = $exportPaths.Path2
+
+        # ──────────────────────────────────────────────────────────────
+        # ABSCHLUSS
+        # ──────────────────────────────────────────────────────────────
+        $SW.Stop()
+        $totalMB = [math]::Round([System.GC]::GetTotalMemory($false) / 1MB, 1)
+
+        Write-Host ""
+        Write-Host "  ╔══════════════════════════════════════════════════════════╗" -ForegroundColor Green
+        Write-Host "  ║  ✅  ABGESCHLOSSEN                                        ║" -ForegroundColor Green
+        Write-Host ("  ║  📦  {0,-52}║" -f "Datensaetze  : $($Results.Count)") -ForegroundColor Green
+        Write-Host ("  ║  🗂️   {0,-51}║" -f "Gruppen      : $($SortedGroups.Count)") -ForegroundColor Green
+        Write-Host ("  ║  ⏱️   {0,-52}║" -f "Gesamtdauer  : $($SW.Elapsed.ToString('mm\:ss\.ff')) min") -ForegroundColor Green
+        Write-Host ("  ║  🧠  {0,-52}║" -f "RAM (managed): ${totalMB} MB") -ForegroundColor Green
+        Write-Host "  ║                                                          ║" -ForegroundColor DarkGreen
+        Write-Host ("  ║  📄  Tab1 : {0,-47}║" -f (Split-Path $Path1 -Leaf)) -ForegroundColor DarkGreen
+        Write-Host ("  ║  📄  Tab2 : {0,-47}║" -f (Split-Path $Path2 -Leaf)) -ForegroundColor DarkGreen
+        Write-Host ("  ║  📋  Log  : {0,-47}║" -f (Split-Path $LogFile -Leaf)) -ForegroundColor DarkGreen
+        Write-Host "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Green
+        Write-Host ""
+
+        Write-Log "Fertig. Dauer: $($SW.Elapsed.ToString('mm\:ss\.ff'))  RAM: ${totalMB}MB  Zeilen: $($Results.Count)" "PERF"
+    }
 }
 
 Invoke-Main
