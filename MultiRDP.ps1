@@ -121,13 +121,12 @@ function Test-RDPConnection {
     Write-Verbose "Starte parallelen Konnektivitätstest für $($Computers.Count) Computer..."
     
     $results = @()
-    $jobs = @()
     $counter = 0
     $total = $Computers.Count
     $jobCounter = 0
 
-    foreach ($computer in $Computers) {
-        $job = Start-Job -ScriptBlock {
+    $jobs = @(foreach ($computer in $Computers) {
+        Start-Job -ScriptBlock {
             param($computer)
             
             $pingStatus = "Unbekannt"
@@ -184,8 +183,7 @@ function Test-RDPConnection {
                 RDPPortStatus = $rdpPortStatus
             }
         } -ArgumentList $computer
-        $jobs += $job
-    }
+    })
 
     Write-Host "---"
     Write-Host "Warte auf Testergebnisse. Bitte warten..."
