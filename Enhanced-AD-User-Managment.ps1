@@ -637,6 +637,136 @@ begin {
         return $newUser
     }
 
+    # Hilfsfunktion zum Bestimmen und Prüfen der Ziel-OU
+    function Get-TargetOUFromData {
+        param(
+            [string]$SamAccountName,
+            [hashtable]$UserData,
+            [string]$GlobalTargetOU,
+            [Microsoft.ActiveDirectory.Management.ADUser]$TemplateUser
+        )
+
+        $finalOU = $null
+        if ($GlobalTargetOU) {
+            $finalOU = $GlobalTargetOU
+            Write-Verbose "Verwende globale Ziel-OU '$finalOU' für '$SamAccountName'."
+        } elseif ($UserData.ContainsKey('TargetOU') -and $UserData.TargetOU) {
+            $finalOU = $UserData.TargetOU
+            Write-Verbose "Verwende Ziel-OU aus Datenquelle '$finalOU' für '$SamAccountName'."
+        } elseif ($TemplateUser) {
+            $finalOU = ($TemplateUser.DistinguishedName -split ',', 2)[1]
+            Write-Verbose "Verwende Ziel-OU vom Template-Benutzer '$finalOU' für '$SamAccountName'."
+        } else {
+            $msg = "Keine Ziel-OU für Benutzer '$SamAccountName' gefunden (weder in CSV, noch als Parameter, noch durch Template). Überspringe Eintrag."
+            Write-Log -Level Error -Message $msg
+            Add-UserReportEntry -SamAccountName $SamAccountName -Status "Fehler" -Detail $msg
+            return $null
+        }
+
+        # --- Prüfen ob Ziel-OU existiert ---
+        try {
+            if (-not (Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$finalOU'" -ErrorAction Stop)) {
+                $msg = "Die Ziel-OU '$finalOU' für '$SamAccountName' existiert nicht. Überspringe Eintrag."
+                Write-Log -Level Error -Message $msg
+                Add-UserReportEntry -SamAccountName $SamAccountName -Status "Fehler" -Detail $msg
+                return $null
+            }
+            Write-Verbose "Ziel-OU '$finalOU' für '$SamAccountName' ist gültig."
+        } catch {
+            $msg = "Fehler beim Überprüfen der Ziel-OU '$finalOU' für '$SamAccountName': $_. Überspringe Eintrag."
+            Write-Log -Level Error -Message $msg
+            Add-UserReportEntry -SamAccountName $SamAccountName -Status "Fehler" -Detail $msg
+            return $null
+        }
+
+        return $finalOU
+    }
+
+    # Hilfsfunktion zum Bestimmen des Passworts
+    function Get-PasswordFromData {
+        param(
+            [string]$SamAccountName,
+            [hashtable]$UserData,
+            [System.Security.SecureString]$GlobalDefaultPassword
+        )
+
+        $finalPassword = $null
+        if ($UserData.ContainsKey('Password') -and $UserData.Password) {
+            Write-Log -Level Warning -Message "Verwende Passwort aus Datenquelle für '$SamAccountName'. ACHTUNG: Klartextpasswörter sind ein Sicherheitsrisiko!"
+            try {
+                $finalPassword = ConvertTo-SecureString $UserData.Password -AsPlainText -Force -ErrorAction Stop
+            } catch {
+                $msg = "Fehler beim Konvertieren des Passworts aus der Datenquelle für '$SamAccountName': $_. Überspringe Eintrag."
+                Write-Log -Level Error -Message $msg
+                Add-UserReportEntry -SamAccountName $SamAccountName -Status "Fehler" -Detail $msg
+                return $null
+            }
+        } elseif ($GlobalDefaultPassword) {
+            Write-Verbose "Verwende globales Standardpasswort für '$SamAccountName'."
+            $finalPassword = $GlobalDefaultPassword
+        } else {
+            Write-Log -Level Info -Message "Generiere zufälliges Passwort für '$SamAccountName', da keines angegeben wurde."
+            try {
+                $pwdChars = @()
+                $pwdChars += 65..90 | Get-Random
+                $pwdChars += 97..122 | Get-Random
+                $pwdChars += 48..57 | Get-Random
+                $pwdChars += 33, 35, 36, 37, 38, 42, 64, 95 | Get-Random
+                $allChars = (48..57) + (65..90) + (97..122) + 33, 35, 36, 37, 38, 42, 64, 95
+                $pwdChars += $allChars | Get-Random -Count (14 - $pwdChars.Count)
+                $randomPassword = -join ($pwdChars | Get-Random -Count $pwdChars.Count | % {[char]$_})
+
+                $finalPassword = ConvertTo-SecureString $randomPassword -AsPlainText -Force -ErrorAction Stop
+                Write-Log -Level Info -Message "Zufälliges Passwort für '$SamAccountName' generiert. Benutzer MUSS es bei der ersten Anmeldung ändern."
+            } catch {
+                $msg = "Fehler beim Generieren/Konvertieren des zufälligen Passworts für '$SamAccountName': $_. Überspringe Eintrag."
+                Write-Log -Level Error -Message $msg
+                Add-UserReportEntry -SamAccountName $SamAccountName -Status "Fehler" -Detail $msg
+                return $null
+            }
+        }
+        return $finalPassword
+    }
+
+    # Hilfsfunktion zum Kopieren von Gruppen vom Template-Benutzer
+    function Copy-TemplateGroups {
+        [CmdletBinding(SupportsShouldProcess = $true)]
+        param(
+            [Microsoft.ActiveDirectory.Management.ADUser]$TemplateUser,
+            [Microsoft.ActiveDirectory.Management.ADUser]$NewUser
+        )
+
+        if (-not $TemplateUser -or -not $NewUser) {
+            return
+        }
+
+        try {
+            $templateGroups = Get-ADPrincipalGroupMembership -Identity $TemplateUser -ErrorAction Stop
+            $groupsToCopy = $templateGroups | Where-Object {$_.Name -ne "Domain Users"} # Filter
+
+            if ($groupsToCopy) {
+                $groupNames = $groupsToCopy.Name -join ', '
+                Write-Log -Level Info -Message "Füge Benutzer '$($NewUser.SamAccountName)' zu $($groupsToCopy.Count) Gruppen hinzu (basierend auf Template '$($TemplateUser.SamAccountName)')."
+
+                $shouldProcessTarget = "Benutzer '$($NewUser.SamAccountName)'"
+                $shouldProcessAction = "Hinzufügen zu Gruppen ($($groupsToCopy.Count)): $groupNames"
+
+                if ($PSCmdlet.ShouldProcess($shouldProcessTarget, $shouldProcessAction)) {
+                    Add-ADPrincipalGroupMembership -Identity $NewUser -MemberOf $groupsToCopy -ErrorAction Stop
+                    Write-Log -Level Info -Message "Gruppenmitgliedschaften für '$($NewUser.SamAccountName)' erfolgreich hinzugefügt."
+                } else {
+                    Write-Log -Level Info -Message "Hinzufügen der Gruppenmitgliedschaften übersprungen (ShouldProcess)."
+                }
+            } else {
+                Write-Log -Level Info -Message "Template-Benutzer $($TemplateUser.SamAccountName) hat keine (relevanten) Gruppenmitgliedschaften zum Hinzufügen."
+            }
+        } catch {
+            $msg = "Fehler beim Hinzufügen der Gruppenmitgliedschaften vom Template für '$($NewUser.SamAccountName)': $_. Der Benutzer wurde erstellt, aber Gruppen fehlen möglicherweise."
+            Write-Log -Level Warning -Message $msg
+            Add-UserReportEntry -SamAccountName $NewUser.SamAccountName -Status "Warnung" -Detail "Fehler beim Hinzufügen der Gruppen: $_"
+        }
+    }
+
      # Funktion zum Erstellen eines Benutzers aus Daten (CSV-Zeile/Hashtable)
      function New-ADUserFromData {
          [CmdletBinding(SupportsShouldProcess = $true)]
@@ -657,7 +787,6 @@ begin {
          # Versuche SamAccountName zu bekommen, bevor geloggt wird
          $sam = $UserData.SamAccountName
          if (-not $sam) {
-             # Wenn SamAccountName fehlt, können wir nicht viel tun
              $msg = "Fehlender Wert für 'SamAccountName' in den Daten. Überspringe Eintrag."
              Write-Log -Level Error -Message $msg
              Add-UserReportEntry -SamAccountName "(Unbekannt)" -Status "Fehler" -Detail $msg
@@ -680,137 +809,59 @@ begin {
              return $null
          }
 
-         # --- Ziel-OU bestimmen (Priorität: Global Parameter > CSV > Template > Fehler) ---
-         $finalOU = $null
-         if ($GlobalTargetOU) {
-             $finalOU = $GlobalTargetOU
-             Write-Verbose "Verwende globale Ziel-OU '$finalOU' für '$sam'."
-         } elseif ($UserData.ContainsKey('TargetOU') -and $UserData.TargetOU) {
-             $finalOU = $UserData.TargetOU
-             Write-Verbose "Verwende Ziel-OU aus Datenquelle '$finalOU' für '$sam'."
-         } elseif ($TemplateUser) {
-             $finalOU = ($TemplateUser.DistinguishedName -split ',', 2)[1]
-             Write-Verbose "Verwende Ziel-OU vom Template-Benutzer '$finalOU' für '$sam'."
-         } else {
-             $msg = "Keine Ziel-OU für Benutzer '$sam' gefunden (weder in CSV, noch als Parameter, noch durch Template). Überspringe Eintrag."
-             Write-Log -Level Error -Message $msg
-             Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
-             return $null
-         }
-
-         # --- Passwort bestimmen (Priorität: CSV > Global Parameter > Generieren) ---
-         $finalPassword = $null
-         $changePwdAtLogon = $true
-         if ($UserData.ContainsKey('Password') -and $UserData.Password) {
-             Write-Log -Level Warning -Message "Verwende Passwort aus Datenquelle für '$sam'. ACHTUNG: Klartextpasswörter sind ein Sicherheitsrisiko!"
-             try {
-                 $finalPassword = ConvertTo-SecureString $UserData.Password -AsPlainText -Force -ErrorAction Stop
-             } catch {
-                 $msg = "Fehler beim Konvertieren des Passworts aus der Datenquelle für '$sam': $_. Überspringe Eintrag."
-                 Write-Log -Level Error -Message $msg
-                 Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
-                 return $null
-             }
-         } elseif ($GlobalDefaultPassword) {
-             Write-Verbose "Verwende globales Standardpasswort für '$sam'."
-             $finalPassword = $GlobalDefaultPassword
-         } else {
-             Write-Log -Level Info -Message "Generiere zufälliges Passwort für '$sam', da keines angegeben wurde."
-             # Generiere sicheres, zufälliges Passwort
-             try {
-                 # Komplexeres Beispiel: Mind. 1 Groß, 1 Klein, 1 Zahl, 1 Sonderzeichen, Länge 14
-                 $pwdChars = @()
-                 $pwdChars += 65..90 | Get-Random # Großbuchstabe
-                 $pwdChars += 97..122 | Get-Random # Kleinbuchstabe
-                 $pwdChars += 48..57 | Get-Random # Zahl
-                 $pwdChars += 33, 35, 36, 37, 38, 42, 64, 95 | Get-Random # Sonderzeichen !#$%&*@_
-                 # Restliche Zeichen auffüllen (insgesamt 14)
-                 $allChars = (48..57) + (65..90) + (97..122) + 33, 35, 36, 37, 38, 42, 64, 95
-                 $pwdChars += $allChars | Get-Random -Count (14 - $pwdChars.Count)
-                 # Mischen
-                 $randomPassword = -join ($pwdChars | Get-Random -Count $pwdChars.Count | % {[char]$_})
-
-                 $finalPassword = ConvertTo-SecureString $randomPassword -AsPlainText -Force -ErrorAction Stop
-                 Write-Log -Level Info -Message "Zufälliges Passwort für '$sam' generiert. Benutzer MUSS es bei der ersten Anmeldung ändern."
-             } catch {
-                 $msg = "Fehler beim Generieren/Konvertieren des zufälligen Passworts für '$sam': $_. Überspringe Eintrag."
-                 Write-Log -Level Error -Message $msg
-                 Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
-                 return $null
-             }
-         }
-
          # --- Prüfen ob Zielbenutzer existiert ---
          try {
              if (Get-ADUser -Filter "SamAccountName -eq '$sam'" -ErrorAction SilentlyContinue) {
                  $msg = "Benutzer '$sam' existiert bereits im AD. Überspringe Eintrag."
                  Write-Log -Level Error -Message $msg
                  Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
-                 # KORREKTUR v6.7: Sofort abbrechen, wenn Benutzer existiert
                  return $null
              }
          } catch {
-             # Fehler beim Suchen ist unwahrscheinlich, aber sicherheitshalber loggen und abbrechen
              $msg = "Fehler beim Prüfen, ob Benutzer '$sam' existiert: $_."
              Write-Log -Level Warning -Message $msg
              Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
              return $null
          }
 
+         # --- Ziel-OU bestimmen ---
+         $finalOU = Get-TargetOUFromData -SamAccountName $sam -UserData $UserData -GlobalTargetOU $GlobalTargetOU -TemplateUser $TemplateUser
+         if (-not $finalOU) { return $null }
 
-        # --- Prüfen ob Ziel-OU existiert ---
-        try {
-            if (-not (Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$finalOU'" -ErrorAction Stop)) {
-                 $msg = "Die Ziel-OU '$finalOU' für '$sam' existiert nicht. Überspringe Eintrag."
-                 Write-Log -Level Error -Message $msg
-                 Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
-                 return $null
-            }
-            Write-Verbose "Ziel-OU '$finalOU' für '$sam' ist gültig."
-        } catch {
-            $msg = "Fehler beim Überprüfen der Ziel-OU '$finalOU' für '$sam': $_. Überspringe Eintrag."
-            Write-Log -Level Error -Message $msg
-            Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
-            return $null
-        }
+         # --- Passwort bestimmen ---
+         $finalPassword = Get-PasswordFromData -SamAccountName $sam -UserData $UserData -GlobalDefaultPassword $GlobalDefaultPassword
+         if (-not $finalPassword) { return $null }
+         $changePwdAtLogon = $true
 
          # --- Benutzerparameter zusammenstellen ---
          $newUserParams = @{
              SamAccountName        = $sam
-             Name                  = "$($UserData.GivenName) $($UserData.Surname)" # Standard Name
+             Name                  = "$($UserData.GivenName) $($UserData.Surname)"
              GivenName             = $UserData.GivenName
              Surname               = $UserData.Surname
-             DisplayName           = "$($UserData.GivenName) $($UserData.Surname)" # Standard DisplayName
-             UserPrincipalName     = "$sam@$($env:USERDNSDOMAIN)" # Anpassen falls nötig
+             DisplayName           = "$($UserData.GivenName) $($UserData.Surname)"
+             UserPrincipalName     = "$sam@$($env:USERDNSDOMAIN)"
              Path                  = $finalOU
              AccountPassword       = $finalPassword
              ChangePasswordAtLogon = $changePwdAtLogon
-             Enabled               = $true # Standardmäßig aktivieren
+             Enabled               = $true
          }
 
-         # Enabled-Status aus Datenquelle übernehmen, falls vorhanden
          if ($UserData.ContainsKey('Enabled')) {
              try {
-                 $newUserParams.Enabled = [bool]::Parse($UserData.Enabled) # Sicherere Konvertierung
+                 $newUserParams.Enabled = [bool]::Parse($UserData.Enabled)
                  Write-Verbose "Setze 'Enabled' für '$sam' auf '$($newUserParams.Enabled)' basierend auf Datenquelle."
              } catch {
                  Write-Log -Level Warning -Message "Konnte 'Enabled'-Wert '$($UserData.Enabled)' für '$sam' nicht in Boolean konvertieren. Verwende Standard ($true)."
              }
          }
 
-         # Weitere Attribute aus Datenquelle oder Template übernehmen
-         $attributesToCheck = @(
-             'Description', 'Office', 'Department', 'Title', 'Company',
-             'EmailAddress', 'StreetAddress', 'City', 'State', 'PostalCode', 'Country', 'OfficePhone'
-             # Fügen Sie hier weitere AD-Attribute hinzu, die unterstützt werden sollen
-         )
-
+         $attributesToCheck = @('Description', 'Office', 'Department', 'Title', 'Company', 'EmailAddress', 'StreetAddress', 'City', 'State', 'PostalCode', 'Country', 'OfficePhone')
          foreach ($attr in $attributesToCheck) {
              if ($UserData.ContainsKey($attr) -and $UserData.$attr) {
                  $newUserParams[$attr] = $UserData.$attr
                  Write-Verbose "Setze Attribut '$attr' für '$sam' aus Datenquelle."
              } elseif ($TemplateUser) {
-                 # Nur übernehmen, wenn Attribut im Template existiert und nicht leer ist
                  if ($TemplateUser.PSObject.Properties.Match($attr).Count -gt 0 -and $TemplateUser.$attr -ne $null -and $TemplateUser.$attr -ne '') {
                     $newUserParams[$attr] = $TemplateUser.$attr
                     Write-Verbose "Setze Attribut '$attr' für '$sam' vom Template-Benutzer."
@@ -818,9 +869,8 @@ begin {
              }
          }
 
-         # --- Benutzer erstellen (Jetzt NACH Prüfung auf Existenz) ---
+         # --- Benutzer erstellen ---
          $newUser = $null
-         # Detailliertere ShouldProcess-Meldung
          $shouldProcessTarget = "Benutzer '$sam' ($($newUserParams.Name))"
          $shouldProcessAction = "Erstellen in OU '$finalOU'"
          if ($PSCmdlet.ShouldProcess($shouldProcessTarget, $shouldProcessAction)) {
@@ -833,44 +883,17 @@ begin {
                  $msg = "Fehler beim Erstellen des Benutzers '$sam': $_"
                  Write-Log -Level Error -Message $msg
                  Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
-                 return $null # Abbruch für diesen Benutzer
+                 return $null
              }
          } else {
              $msg = "Erstellung von '$sam' übersprungen (ShouldProcess)."
              Write-Log -Level Info -Message $msg
              Add-UserReportEntry -SamAccountName $sam -Status "Übersprungen" -Detail $msg
-             return $null # Abbruch für diesen Benutzer
+             return $null
          }
 
          # --- Gruppen vom Template übernehmen ---
-         if ($TemplateUser -and $newUser) { # Nur wenn Template vorhanden UND Benutzer erfolgreich erstellt wurde
-             try {
-                 $templateGroups = Get-ADPrincipalGroupMembership -Identity $TemplateUser -ErrorAction Stop
-                 $groupsToCopy = $templateGroups | Where-Object {$_.Name -ne "Domain Users"} # Filter
-
-                 if ($groupsToCopy) {
-                     $groupNames = $groupsToCopy.Name -join ', '
-                     Write-Log -Level Info -Message "Füge Benutzer '$($newUser.SamAccountName)' zu $($groupsToCopy.Count) Gruppen hinzu (basierend auf Template '$($TemplateUser.SamAccountName)')."
-                     # Detailliertere ShouldProcess-Meldung
-                     $shouldProcessTarget = "Benutzer '$($newUser.SamAccountName)'"
-                     $shouldProcessAction = "Hinzufügen zu Gruppen ($($groupsToCopy.Count)): $groupNames"
-                     if ($PSCmdlet.ShouldProcess($shouldProcessTarget, $shouldProcessAction)) {
-                         Add-ADPrincipalGroupMembership -Identity $newUser -MemberOf $groupsToCopy -ErrorAction Stop
-                         Write-Log -Level Info -Message "Gruppenmitgliedschaften für '$($newUser.SamAccountName)' erfolgreich hinzugefügt."
-                         # Optional: Update Report
-                         # Add-UserReportEntry -SamAccountName $newUser.SamAccountName -Status "Gruppen hinzugefügt" -Detail "$($groupsToCopy.Count) Gruppen von $($TemplateUser.SamAccountName)"
-                     } else {
-                         Write-Log -Level Info -Message "Hinzufügen der Gruppenmitgliedschaften übersprungen (ShouldProcess)."
-                     }
-                 } else {
-                     Write-Log -Level Info -Message "Template-Benutzer $($TemplateUser.SamAccountName) hat keine (relevanten) Gruppenmitgliedschaften zum Hinzufügen."
-                 }
-             } catch {
-                 $msg = "Fehler beim Hinzufügen der Gruppenmitgliedschaften vom Template für '$($newUser.SamAccountName)': $_. Der Benutzer wurde erstellt, aber Gruppen fehlen möglicherweise."
-                 Write-Log -Level Warning -Message $msg
-                 Add-UserReportEntry -SamAccountName $newUser.SamAccountName -Status "Warnung" -Detail "Fehler beim Hinzufügen der Gruppen: $_"
-             }
-         }
+         Copy-TemplateGroups -TemplateUser $TemplateUser -NewUser $newUser
 
          Write-Log -Level Info -Message "Verarbeitung für Benutzer '$sam' abgeschlossen."
          return $newUser
