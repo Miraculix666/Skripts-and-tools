@@ -1,5 +1,6 @@
 # Aktiven Energiesparplan ermitteln
-$activeScheme = (powercfg /getactivescheme) -match '{.*}' | Out-Null
+$output = powercfg /getactivescheme
+$output -match '{.*}' | Out-Null
 $activeScheme = $matches[0]
 
 # Funktion zum Setzen der Werte
