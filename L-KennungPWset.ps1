@@ -77,9 +77,8 @@ if ($allUsers.Count -gt 0) {
     $results | Format-Table -AutoSize | Out-File -FilePath $outputFilePath
 }
 
-# Define the new password
-$passwordString = "P2f7aL4!01"
-$newPassword = ConvertTo-SecureString -String $passwordString -AsPlainText -Force
+# Define the new password securely
+$newPassword = Read-Host "Bitte geben Sie das neue Passwort ein" -AsSecureString
 
 # Read SamAccountNames from the file
 $samAccountNames = Get-Content -Path $inputFilePath
