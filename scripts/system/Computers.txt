@@ -1,0 +1,5 @@
+# Fuegen Sie hier die Namen oder IP-Adressen der Netzwerk-Computer ein (einer pro Zeile)
+# Zeilen, die mit '#' beginnen, werden ignoriert
+
+localhost
+127.0.0.1

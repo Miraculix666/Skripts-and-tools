@@ -1,4 +1,4 @@
-# Sync-GitHubRepos.ps1 - Synchronises all GitHub repos to C:\GitHub and manages VS Code workspaces
+﻿# Sync-GitHubRepos.ps1 - Synchronises all GitHub repos to C:\GitHub and manages VS Code workspaces
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
@@ -201,10 +201,10 @@ $newWorkspace = [ordered]@{
 $fCount = $folderEntries.Count
 if (-not $DryRun) {
     $newWorkspace | ConvertTo-Json -Depth 10 | Set-Content $allWorkspaceFile -Encoding UTF8
-    Write-OK -M "all.code-workspace aktualisiert ($fCount Ordner)"
+    Write-OK "all.code-workspace aktualisiert ($fCount Ordner)"
 }
 else {
-    Write-OK -M "[DRY] all.code-workspace würde $fCount Ordner enthalten"
+    Write-OK "[DRY] all.code-workspace würde $fCount Ordner enthalten"
 }
 
 # ── Step 5 – Create per-repo .code-workspace files ───────────────────────────
