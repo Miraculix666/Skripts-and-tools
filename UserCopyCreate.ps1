@@ -112,13 +112,12 @@ function Get-TemplateUserOUs {
             $ouPath = ($user.DistinguishedName -split ',', 2)[1]
             Write-Verbose "Base OU path: $ouPath"
 
-            # Get all OUs from the path
-            $ous = @()
-            $ous += Get-ADOrganizationalUnit -Filter * -SearchBase $ouPath -SearchScope Subtree |
-                   Select-Object -ExpandProperty DistinguishedName
-
-            # Add the template user's direct OU
-            $ous += $ouPath
+            # Get all OUs from the path and add the template user's direct OU
+            $ous = @(
+                Get-ADOrganizationalUnit -Filter * -SearchBase $ouPath -SearchScope Subtree |
+                    Select-Object -ExpandProperty DistinguishedName
+                $ouPath
+            )
 
             $uniqueOUs = $ous | Select-Object -Unique
             Write-Verbose "Gefundene OUs: $($uniqueOUs.Count)"
@@ -172,10 +171,10 @@ function Export-ADUsers {
         }
 
         Write-Verbose "Suche Benutzer in allen relevanten OUs"
-        $allUsers = @()
+        $allUsers = [System.Collections.Generic.List[psobject]]::new()
         if ($ExportTemplateOnly) {
             # Export only the template user
-            $allUsers += $Template
+            $allUsers.Add($Template)
         } else {
             foreach ($ou in $templateOUs) {
                 Write-Verbose "Durchsuche OU: $ou"
@@ -187,7 +186,7 @@ function Export-ADUsers {
 
                     foreach ($user in $usersInOU) {
                         if (Compare-GroupMembership -TemplateGroups $templateGroups -UserGroups $user.MemberOf) {
-                            $allUsers += $user
+                            $allUsers.Add($user)
                         }
                     }
                 } catch {
