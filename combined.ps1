@@ -253,7 +253,7 @@ Write-Host "LastLogonDate update completed for expired users."
 $inputFilePath = "C:\Daten\Deaktivierte_L_Kennung_SAM.txt"
 
 # Set the new password
-$newPassword = ConvertTo-SecureString -String "P2f7aL4!01" -AsPlainText -Force
+$newPassword = Read-Host "Bitte neues Passwort eingeben" -AsSecureString
 
 # Read SamAccountNames from the file
 $samAccountNames = Get-Content -Path $inputFilePath
