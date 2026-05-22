@@ -68,17 +68,8 @@ function Write-Log {
     $Msg | Out-File -FilePath $LogFile -Append
 }
 
-function Invoke-Main {
-    Show-Header
-    Import-Module ActiveDirectory
-
-    if (-not $CsvPath) { $CsvPath = Read-Host "Pfad zur Master-CSV eingeben" }
-    $CsvPath = $CsvPath.Trim().Trim('"')
-    if (-not (Test-Path $CsvPath)) {
-        Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERROR"; return
-    }
-
-    # 1. BEDARFSLISTE
+function Get-RequiredList {
+    param ([string]$RequiredCsvPath)
     $RequiredList = New-Object System.Collections.Generic.HashSet[string]
     if ($RequiredCsvPath -and (Test-Path $RequiredCsvPath)) {
         Write-Log "Lade Bedarfsliste..." "DEBUG"
@@ -87,78 +78,11 @@ function Invoke-Main {
         }
         Write-Log "Bedarfsliste: $($RequiredList.Count) Eintraege." "SUCCESS"
     }
+    return $RequiredList
+}
 
-    # 2. MASTER-CSV
-    Write-Log "Lese Master-CSV..." "DEBUG"
-    $MasterCsvData = @{}
-    foreach ($line in (Import-Csv -Path $CsvPath -Delimiter ';' -Encoding Default)) {
-        $key = if ($line."L-Kennung") { $line."L-Kennung".ToString().Trim().ToUpper() } else { "" }
-        if ($key) { $MasterCsvData[$key] = $line }
-    }
-    Write-Log "Master-CSV: $($MasterCsvData.Count) Zeilen." "SUCCESS"
-
-    # 3. AD-DISCOVERY
-    Write-Log "Schritt 1: AD-Discovery (OUs 81/82)..." "INFO"
-    $ADCache      = @{}
-    $UniqueGroups = New-Object System.Collections.Generic.HashSet[string]
-
-    $TargetOUs = Get-ADOrganizationalUnit -Filter "Name -eq '81' -or Name -eq '82'" `
-                     -ErrorAction SilentlyContinue
-    foreach ($ou in $TargetOUs) {
-        Write-Log "Scanne OU: $($ou.DistinguishedName)" "DEBUG"
-        $users = Get-ADUser -Filter * -SearchBase $ou.DistinguishedName `
-                     -Properties DisplayName,Description,GivenName,Surname,l,
-                                  physicalDeliveryOfficeName,department,info,MemberOf
-        foreach ($u in $users) {
-            $ADCache[$u.SamAccountName.ToUpper()] = $u
-            foreach ($g in $u.MemberOf) {
-                # FIX-8: Komma in -replace 'x','y' wird als 2. Methodenargument geparst.
-                # Loesung: Ausdruck vorab in Variable berechnen.
-                $gn = ($g -split ',')[0] -replace 'CN=',''
-                [void]$UniqueGroups.Add($gn)
-            }
-        }
-    }
-
-    if ($SearchGlobal) {
-        Write-Log "Schritt 2: Globaler AD-Check..." "INFO"
-        $GlobalUsers = Get-ADUser -Filter "SamAccountName -like 'L*'" `
-                           -Properties DisplayName,Description,GivenName,Surname,l,
-                                        physicalDeliveryOfficeName,department,info,MemberOf
-        foreach ($gu in $GlobalUsers) {
-            $sam = $gu.SamAccountName.ToUpper()
-            if (-not $ADCache.ContainsKey($sam)) {
-                $ADCache[$sam] = $gu
-                foreach ($g in $gu.MemberOf) {
-                    $gn = ($g -split ',')[0] -replace 'CN=',''
-                    [void]$UniqueGroups.Add($gn)
-                }
-            }
-        }
-    }
-
-    $SortedGroups   = $UniqueGroups | Sort-Object
-    $AllUniqueSAMs  = $ADCache.Keys + $MasterCsvData.Keys | Select-Object -Unique | Sort-Object
-    $ProcessList    = if ($TestCount -gt 0) {
-        Write-Log "TESTMODUS: Begrenze auf $TestCount Eintraege." "WARN"
-        $AllUniqueSAMs | Select-Object -First $TestCount
-    } else { $AllUniqueSAMs }
-
-    Write-Log ("Discovery beendet ({0}s). Starte Verarbeitung von {1} Eintraegen..." `
-               -f $Stopwatch.Elapsed.TotalSeconds.ToString('F2'), $ProcessList.Count) "SUCCESS"
-
-    # 4. RUNSPACE-POOL
-    $Pool = [runspacefactory]::CreateRunspacePool(
-        1, $MaxThreads,
-        [system.management.automation.runspaces.initialsessionstate]::CreateDefault(),
-        $Host)
-    $Pool.Open()
-
-    # -----------------------------------------------------------------------
-    # SCRIPTBLOCK: Alle bedingten Werte werden VOR dem Hashtable in Variablen
-    # berechnet. KEINE inline-if-Ausdruecke im Hashtable. (FIX-7)
-    # -----------------------------------------------------------------------
-    $ScriptBlock = {
+function Get-ProcessingScriptBlock {
+    return {
         param($LID, $CsvRow, $ADObj, $RequiredList, $SortedGroups)
 
         # --- Hilfsfunktionen ---
@@ -318,7 +242,92 @@ function Invoke-Main {
 
         return [PSCustomObject]$Props
     }
-    # -----------------------------------------------------------------------
+}
+
+function Export-AccountResults {
+    param(
+        [array]$Results,
+        [array]$SortedGroups,
+        [string]$ScriptDir,
+        [string]$Version
+    )
+
+    if ($Results.Count -eq 0) {
+        Write-Log "FEHLER: Keine Ergebnisse generiert." "ERROR"
+        return @{ Path1 = $null; Path2 = $null }
+    }
+
+    Write-Log "Erzeuge Ausgabedateien ($($Results.Count) Datensaetze)..." "INFO"
+
+    # Tabelle 1: Gruppen-Uebersicht
+    $Path1    = Join-Path $ScriptDir "L-Kennungen_Full_Analysis_v$Version.csv"
+    $baseCols = @("L-Kennung","andere OU","GELOESCHT","Benoetigt","Geaendert","LOESCHEN",
+                  "AD_Vorname","AD_Nachname")
+    $grpCols  = $SortedGroups | ForEach-Object { "GRP_$_" }
+    $Results | Select-Object ($baseCols + $grpCols) |
+        Export-Csv -Path $Path1 -Delimiter ';' -NoTypeInformation -Encoding UTF8
+
+    # Tabelle 2: Properties (alle Spalten ausser LOESCHEN, mit RFC-4180-Escaping)
+    $Path2    = Join-Path $ScriptDir "L-Kennungen_Properties_v$Version.csv"
+    $allCols  = $Results[0].psobject.Properties.Name | Where-Object { $_ -ne "LOESCHEN" }
+    $lines    = [System.Collections.Generic.List[string]]::new()
+    $lines.Add($allCols -join ';')
+    foreach ($r in $Results) {
+        $row = foreach ($col in $allCols) {
+            $val = $r.$col
+            $str = if ($null -ne $val) { $val.ToString() } else { "" }
+            if ($str -match '[;\r\n"]') { '"' + $str.Replace('"','""') + '"' } else { $str }
+        }
+        $lines.Add($row -join ';')
+    }
+    $lines | Out-File -FilePath $Path2 -Encoding UTF8 -Force
+
+    return @{ Path1 = $Path1; Path2 = $Path2 }
+}
+
+function Show-ExecutionSummary {
+    param(
+        [string]$Version,
+        [int]$ResultsCount,
+        [int]$ErrCount,
+        [double]$TotalSeconds,
+        [string]$Path1,
+        [string]$Path2,
+        [string]$LogFile
+    )
+
+    Write-Host "`n====================================================" -ForegroundColor Cyan
+    Write-Host "ERGEBNISSE:" -ForegroundColor Yellow
+    Write-Host "VERSION : $Version"
+    Write-Host "DATUM   : $(Get-Date -Format 'dd.MM.yyyy HH:mm:ss')"
+    Write-Host "ZEILEN  : $ResultsCount"
+    Write-Host "FEHLER  : $ErrCount"
+    Write-Host "DAUER   : $($TotalSeconds.ToString('F2'))s"
+    Write-Host "TAB 1   : $Path1"
+    Write-Host "TAB 2   : $Path2"
+    Write-Host "LOG     : $LogFile"
+    Write-Host "====================================================`n" -ForegroundColor Cyan
+}
+
+function Invoke-ProcessingJobs {
+    param (
+        [array]$ProcessList,
+        [hashtable]$MasterCsvData,
+        [hashtable]$ADCache,
+        $RequiredList,
+        $SortedGroups,
+        [int]$MaxThreads,
+        $HostObj,
+        [string]$LogFile
+    )
+
+    $Pool = [runspacefactory]::CreateRunspacePool(
+        1, $MaxThreads,
+        [system.management.automation.runspaces.initialsessionstate]::CreateDefault(),
+        $HostObj)
+    $Pool.Open()
+
+    $ScriptBlock = Get-ProcessingScriptBlock
 
     # Jobs starten
     $Jobs = [System.Collections.Generic.List[PSObject]]::new()
@@ -386,50 +395,120 @@ function Invoke-Main {
     Write-Progress -Activity "Verarbeite L-Kennungen" -Completed
     $Pool.Close(); $Pool.Dispose()
 
-    # 5. EXPORT
-    # FIX-6: Bounds-Check
-    if ($Results.Count -eq 0) {
-        Write-Log "FEHLER: Keine Ergebnisse generiert." "ERROR"; return
+    return @{
+        Results = $Results
+        ErrCount = $ErrCount
     }
+}
 
-    Write-Log "Erzeuge Ausgabedateien ($($Results.Count) Datensaetze)..." "INFO"
+function Invoke-ADDiscovery {
+    param (
+        [switch]$SearchGlobal,
+        [int]$TestCount,
+        [hashtable]$MasterCsvData,
+        [System.Diagnostics.Stopwatch]$Stopwatch
+    )
 
-    # Tabelle 1: Gruppen-Uebersicht
-    $Path1    = Join-Path $ScriptDir "L-Kennungen_Full_Analysis_v$Version.csv"
-    $baseCols = @("L-Kennung","andere OU","GELOESCHT","Benoetigt","Geaendert","LOESCHEN",
-                  "AD_Vorname","AD_Nachname")
-    $grpCols  = $SortedGroups | ForEach-Object { "GRP_$_" }
-    $Results | Select-Object ($baseCols + $grpCols) |
-        Export-Csv -Path $Path1 -Delimiter ';' -NoTypeInformation -Encoding UTF8
+    Write-Log "Schritt 1: AD-Discovery (OUs 81/82)..." "INFO"
+    $ADCache      = @{}
+    $UniqueGroups = New-Object System.Collections.Generic.HashSet[string]
 
-    # Tabelle 2: Properties (alle Spalten ausser LOESCHEN, mit RFC-4180-Escaping)
-    $Path2    = Join-Path $ScriptDir "L-Kennungen_Properties_v$Version.csv"
-    $allCols  = $Results[0].psobject.Properties.Name | Where-Object { $_ -ne "LOESCHEN" }
-    $lines    = [System.Collections.Generic.List[string]]::new()
-    $lines.Add($allCols -join ';')
-    foreach ($r in $Results) {
-        $row = foreach ($col in $allCols) {
-            $val = $r.$col
-            $str = if ($null -ne $val) { $val.ToString() } else { "" }
-            if ($str -match '[;\r\n"]') { '"' + $str.Replace('"','""') + '"' } else { $str }
+    $TargetOUs = Get-ADOrganizationalUnit -Filter "Name -eq '81' -or Name -eq '82'" `
+                     -ErrorAction SilentlyContinue
+    foreach ($ou in $TargetOUs) {
+        Write-Log "Scanne OU: $($ou.DistinguishedName)" "DEBUG"
+        $users = Get-ADUser -Filter * -SearchBase $ou.DistinguishedName `
+                     -Properties DisplayName,Description,GivenName,Surname,l,
+                                  physicalDeliveryOfficeName,department,info,MemberOf
+        foreach ($u in $users) {
+            $ADCache[$u.SamAccountName.ToUpper()] = $u
+            foreach ($g in $u.MemberOf) {
+                # FIX-8: Komma in -replace 'x','y' wird als 2. Methodenargument geparst.
+                # Loesung: Ausdruck vorab in Variable berechnen.
+                $gn = ($g -split ',')[0] -replace 'CN=',''
+                [void]$UniqueGroups.Add($gn)
+            }
         }
-        $lines.Add($row -join ';')
     }
-    $lines | Out-File -FilePath $Path2 -Encoding UTF8 -Force
+
+    if ($SearchGlobal) {
+        Write-Log "Schritt 2: Globaler AD-Check..." "INFO"
+        $GlobalUsers = Get-ADUser -Filter "SamAccountName -like 'L*'" `
+                           -Properties DisplayName,Description,GivenName,Surname,l,
+                                        physicalDeliveryOfficeName,department,info,MemberOf
+        foreach ($gu in $GlobalUsers) {
+            $sam = $gu.SamAccountName.ToUpper()
+            if (-not $ADCache.ContainsKey($sam)) {
+                $ADCache[$sam] = $gu
+                foreach ($g in $gu.MemberOf) {
+                    $gn = ($g -split ',')[0] -replace 'CN=',''
+                    [void]$UniqueGroups.Add($gn)
+                }
+            }
+        }
+    }
+
+    $SortedGroups   = $UniqueGroups | Sort-Object
+    $AllUniqueSAMs  = $ADCache.Keys + $MasterCsvData.Keys | Select-Object -Unique | Sort-Object
+    $ProcessList    = if ($TestCount -gt 0) {
+        Write-Log "TESTMODUS: Begrenze auf $TestCount Eintraege." "WARN"
+        $AllUniqueSAMs | Select-Object -First $TestCount
+    } else { $AllUniqueSAMs }
+
+    Write-Log ("Discovery beendet ({0}s). Starte Verarbeitung von {1} Eintraegen..." `
+               -f $Stopwatch.Elapsed.TotalSeconds.ToString('F2'), $ProcessList.Count) "SUCCESS"
+
+    return @{
+        ADCache      = $ADCache
+        SortedGroups = $SortedGroups
+        ProcessList  = $ProcessList
+    }
+}
+
+function Get-MasterCsvData {
+    param ([string]$CsvPath)
+    Write-Log "Lese Master-CSV..." "DEBUG"
+    $MasterCsvData = @{}
+    foreach ($line in (Import-Csv -Path $CsvPath -Delimiter ';' -Encoding Default)) {
+        $key = if ($line."L-Kennung") { $line."L-Kennung".ToString().Trim().ToUpper() } else { "" }
+        if ($key) { $MasterCsvData[$key] = $line }
+    }
+    Write-Log "Master-CSV: $($MasterCsvData.Count) Zeilen." "SUCCESS"
+    return $MasterCsvData
+}
+
+function Invoke-Main {
+    Show-Header
+    Import-Module ActiveDirectory
+
+    if (-not $CsvPath) { $CsvPath = Read-Host "Pfad zur Master-CSV eingeben" }
+    $CsvPath = $CsvPath.Trim().Trim('"')
+    if (-not (Test-Path $CsvPath)) {
+        Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERROR"; return
+    }
+
+    # 1. BEDARFSLISTE
+    $RequiredList = Get-RequiredList -RequiredCsvPath $RequiredCsvPath
+
+    # 2. MASTER-CSV
+    $MasterCsvData = Get-MasterCsvData -CsvPath $CsvPath
+
+    # 3. AD-DISCOVERY
+    $AdData = Invoke-ADDiscovery -SearchGlobal:$SearchGlobal -TestCount $TestCount -MasterCsvData $MasterCsvData -Stopwatch $Stopwatch
+    $ADCache = $AdData.ADCache
+    $SortedGroups = $AdData.SortedGroups
+    $ProcessList = $AdData.ProcessList
+
+    # 4. RUNSPACE-POOL
+    $RunspaceData = Invoke-ProcessingJobs -ProcessList $ProcessList -MasterCsvData $MasterCsvData -ADCache $ADCache -RequiredList $RequiredList -SortedGroups $SortedGroups -MaxThreads $MaxThreads -HostObj $Host -LogFile $LogFile
+    $Results = $RunspaceData.Results
+    $ErrCount = $RunspaceData.ErrCount
+
+    # 5. EXPORT
+    $ExportPaths = Export-AccountResults -Results $Results -SortedGroups $SortedGroups -ScriptDir $ScriptDir -Version $Version
 
     $Stopwatch.Stop()
-
-    Write-Host "`n====================================================" -ForegroundColor Cyan
-    Write-Host "ERGEBNISSE:" -ForegroundColor Yellow
-    Write-Host "VERSION : $Version"
-    Write-Host "DATUM   : $(Get-Date -Format 'dd.MM.yyyy HH:mm:ss')"
-    Write-Host "ZEILEN  : $($Results.Count)"
-    Write-Host "FEHLER  : $ErrCount"
-    Write-Host "DAUER   : $($Stopwatch.Elapsed.TotalSeconds.ToString('F2'))s"
-    Write-Host "TAB 1   : $Path1"
-    Write-Host "TAB 2   : $Path2"
-    Write-Host "LOG     : $LogFile"
-    Write-Host "====================================================`n" -ForegroundColor Cyan
+    Show-ExecutionSummary -Version $Version -ResultsCount $Results.Count -ErrCount $ErrCount -TotalSeconds $Stopwatch.Elapsed.TotalSeconds -Path1 $ExportPaths.Path1 -Path2 $ExportPaths.Path2 -LogFile $LogFile
 }
 
 Invoke-Main
