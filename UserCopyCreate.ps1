@@ -112,13 +112,12 @@ function Get-TemplateUserOUs {
             $ouPath = ($user.DistinguishedName -split ',', 2)[1]
             Write-Verbose "Base OU path: $ouPath"
 
-            # Get all OUs from the path
-            $ous = @()
-            $ous += Get-ADOrganizationalUnit -Filter * -SearchBase $ouPath -SearchScope Subtree |
+            # Get all OUs from the path and add the template user's direct OU
+            $ous = @(
+                Get-ADOrganizationalUnit -Filter * -SearchBase $ouPath -SearchScope Subtree |
                    Select-Object -ExpandProperty DistinguishedName
-
-            # Add the template user's direct OU
-            $ous += $ouPath
+                $ouPath
+            )
 
             $uniqueOUs = $ous | Select-Object -Unique
             Write-Verbose "Gefundene OUs: $($uniqueOUs.Count)"
@@ -172,30 +171,31 @@ function Export-ADUsers {
         }
 
         Write-Verbose "Suche Benutzer in allen relevanten OUs"
-        $allUsers = @()
-        if ($ExportTemplateOnly) {
-            # Export only the template user
-            $allUsers += $Template
-        } else {
-            foreach ($ou in $templateOUs) {
-                Write-Verbose "Durchsuche OU: $ou"
-                try {
-                    $usersInOU = Get-ADUser -Filter * -SearchBase $ou -SearchScope OneLevel `
-                                -Properties SamAccountName, UserPrincipalName, Name, GivenName, Surname, `
-                                          Department, Title, Manager, Office, OfficePhone, EmailAddress, `
-                                          Company, Description, MemberOf, DistinguishedName
+        $allUsers = @(
+            if ($ExportTemplateOnly) {
+                # Export only the template user
+                $Template
+            } else {
+                foreach ($ou in $templateOUs) {
+                    Write-Verbose "Durchsuche OU: $ou"
+                    try {
+                        $usersInOU = Get-ADUser -Filter * -SearchBase $ou -SearchScope OneLevel `
+                                    -Properties SamAccountName, UserPrincipalName, Name, GivenName, Surname, `
+                                              Department, Title, Manager, Office, OfficePhone, EmailAddress, `
+                                              Company, Description, MemberOf, DistinguishedName
 
-                    foreach ($user in $usersInOU) {
-                        if (Compare-GroupMembership -TemplateGroups $templateGroups -UserGroups $user.MemberOf) {
-                            $allUsers += $user
+                        foreach ($user in $usersInOU) {
+                            if (Compare-GroupMembership -TemplateGroups $templateGroups -UserGroups $user.MemberOf) {
+                                $user
+                            }
                         }
+                    } catch {
+                        Write-CustomLog "Fehler beim Durchsuchen von OU '$ou': $_" -Level "WARNUNG"
+                        continue
                     }
-                } catch {
-                    Write-CustomLog "Fehler beim Durchsuchen von OU '$ou': $_" -Level "WARNUNG"
-                    continue
                 }
             }
-        }
+        )
 
         Write-Verbose "Gefundene Benutzer: $($allUsers.Count)"
 
