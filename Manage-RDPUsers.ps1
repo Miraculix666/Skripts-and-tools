@@ -96,42 +96,77 @@ Function Get-DynamicADDomain {
     }
 }
 
-Function Invoke-RemoteGroupMembership {
-    param($ComputerName, $UserName, $Domain, $Action, $LocalGroupName = "Remotedesktopbenutzer")
+Function Invoke-RemoteGroupMembershipBatch {
+    param($ComputerName, $Users, $Domain, $LocalGroupName = "Remotedesktopbenutzer")
 
     Write-Verbose ("Verbinde zu {0}..." -f $ComputerName)
-    $status = 'Failed' 
+    $results = @()
+    $group = $null
 
     try {
         $group = [ADSI]"WinNT://$ComputerName/$LocalGroupName,group"
-        $userPath = "WinNT://$Domain/$UserName,user"
-        
-        if ($Action -eq 'Add') {
-            $group.Add($userPath) | Out-Null
-            $group.RefreshCache()
-            # Echte Prüfung
-            $members = @($group.Invoke("Members")) | ForEach-Object { $_.GetType().InvokeMember("Name", "GetProperty", $null, $_, $null) }
-            if ($members -contains $UserName) { $status = 'Success' } else { $status = 'VerificationFailed' }
-        }
-        elseif ($Action -eq 'Remove') {
-            $group.Remove($userPath) | Out-Null
-            $group.RefreshCache()
-            $members = @($group.Invoke("Members")) | ForEach-Object { $_.GetType().InvokeMember("Name", "GetProperty", $null, $_, $null) }
-            if (-not ($members -contains $UserName)) { $status = 'Success' } else { $status = 'VerificationFailed' }
-        }
+        $group.RefreshCache()
     }
     catch {
         $err = $_.Exception.Message.Trim()
-        if ($err -like "*bereits Mitglied*") { $status = 'AlreadyExists' }
-        elseif ($err -like "*nicht Mitglied*") { $status = 'NotMember' }
-        else {
-            $msg = "ADSI-Fehler ($ComputerName): $err"
-            Write-Warning $msg
-            $GlobalErrorLog.Add($msg) | Out-Null
-            $status = 'Failed'
+        $msg = "ADSI-Verbindungsfehler ($ComputerName): $err"
+        Write-Warning $msg
+        $GlobalErrorLog.Add($msg) | Out-Null
+        foreach ($u in $Users) {
+            $results += [PSCustomObject]@{ Client=$ComputerName; User=$u.User; Action=$u.Action; Status='Failed' }
         }
+        return $results
     }
-    return $status
+
+    foreach ($u in $Users) {
+        $status = 'Failed'
+        $UserName = $u.User
+        $Action = $u.Action
+
+        try {
+            $userPath = "WinNT://$Domain/$UserName,user"
+
+            if ($Action -eq 'Add') {
+                $group.Add($userPath) | Out-Null
+                $status = 'Success'
+            }
+            elseif ($Action -eq 'Remove') {
+                $group.Remove($userPath) | Out-Null
+                $status = 'Success'
+            }
+        }
+        catch {
+            $err = $_.Exception.Message.Trim()
+            if ($err -like "*bereits Mitglied*") { $status = 'AlreadyExists' }
+            elseif ($err -like "*nicht Mitglied*") { $status = 'NotMember' }
+            else {
+                $msg = "ADSI-Fehler ($ComputerName - $UserName): $err"
+                Write-Warning $msg
+                $GlobalErrorLog.Add($msg) | Out-Null
+                $status = 'Failed'
+            }
+        }
+        $results += [PSCustomObject]@{ Client=$ComputerName; User=$UserName; Action=$Action; Status=$status }
+    }
+
+    try {
+        $group.RefreshCache()
+        $members = @($group.Invoke("Members")) | ForEach-Object { $_.GetType().InvokeMember("Name", "GetProperty", $null, $_, $null) }
+
+        foreach ($r in $results) {
+            if ($r.Status -eq 'Success') {
+                if ($r.Action -eq 'Add') {
+                    if (-not ($members -contains $r.User)) { $r.Status = 'VerificationFailed' }
+                } elseif ($r.Action -eq 'Remove') {
+                    if ($members -contains $r.User) { $r.Status = 'VerificationFailed' }
+                }
+            }
+        }
+    } catch {
+        Write-Warning "Verifizierung fehlgeschlagen auf ${ComputerName}: $($_.Exception.Message)"
+    }
+
+    return $results
 }
 
 Function Create-RDPFile {
@@ -401,13 +436,16 @@ Function Start-RightsWorkflow {
         # 3. Ausführung
         Write-Host " [3/3] Ausführung..." -ForegroundColor Cyan
         $Rep = @()
-        foreach ($p in $Plan) {
-            $s = Invoke-RemoteGroupMembership -ComputerName $p.Client -UserName $p.User -Domain $AD.NetBIOS -Action $p.Action
+        $groupedPlan = $Plan | Group-Object -Property Client
+        foreach ($g in $groupedPlan) {
+            $batchResults = Invoke-RemoteGroupMembershipBatch -ComputerName $g.Name -Users $g.Group -Domain $AD.NetBIOS
             
-            $c = "Red"; if ($s -eq 'Success') { $c="Green" } elseif ($s -match 'Already|NotMember') { $c="Gray" }
-            Write-Host (" {0}: {1} -> {2}" -f $s, $p.User, $p.Client) -ForegroundColor $c
-            
-            $Rep += [PSCustomObject]@{ Client=$p.Client; User=$p.User; Action=$p.Action; Status=$s; Time=Get-Date }
+            foreach ($res in $batchResults) {
+                $c = "Red"; if ($res.Status -eq 'Success') { $c="Green" } elseif ($res.Status -match 'Already|NotMember') { $c="Gray" }
+                Write-Host (" {0}: {1} -> {2}" -f $res.Status, $res.User, $res.Client) -ForegroundColor $c
+
+                $Rep += [PSCustomObject]@{ Client=$res.Client; User=$res.User; Action=$res.Action; Status=$res.Status; Time=Get-Date }
+            }
         }
         Write-Log $Rep "Rights"
         Write-ErrorLog $GlobalLogDir
