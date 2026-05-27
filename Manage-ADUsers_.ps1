@@ -131,13 +131,24 @@ process {
         # 2. BENUTZERSUCHE
         Write-Header -Title "SCHRITT 2: BENUTZERSUCHE"
         $userProperties = @('Name', 'SamAccountName', 'Enabled', 'LastLogonDate', 'DistinguishedName', 'Description')
-        $users = foreach ($ou in $targetOUs) {
-            Write-Verbose "Durchsuche OU: $($ou.DistinguishedName)"
-            Get-ADUser -LDAPFilter "(|(sAMAccountName=L110*)(sAMAccountName=L114*))" `
-                -SearchBase $ou.DistinguishedName `
-                -Properties $userProperties `
-                -SearchScope Subtree
-        }
+        $ouDNs = $targetOUs.DistinguishedName
+        Write-Verbose "Führe domänenweite Suche nach Benutzern durch..."
+        $domainUsers = Get-ADUser -LDAPFilter "(|(sAMAccountName=L110*)(sAMAccountName=L114*))" `
+            -Properties $userProperties `
+            -SearchScope Subtree
+
+        Write-Verbose "Filtere gefundene Benutzer anhand der Ziel-OUs..."
+        $users = @($domainUsers | Where-Object {
+            $userDN = $_.DistinguishedName
+            $found = $false
+            foreach ($ouDn in $ouDNs) {
+                if ($userDN -match ([regex]::Escape($ouDn) + '$')) {
+                    $found = $true
+                    break
+                }
+            }
+            $found
+        })
 
         if (-not $users) {
             Write-Host "In den durchsuchten OUs wurden keine passenden Benutzer gefunden." -ForegroundColor Yellow
