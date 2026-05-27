@@ -28,11 +28,11 @@
 2025-11-05 11:08:00, Info                         [SETUPUGC.EXE] Found run command in registry: description = [Passwd Admin Account]
 2025-11-05 11:08:00, Info                         [SETUPUGC.EXE] Found run command in registry: credentials = { domain is not specified, username is not specified, password info not logged }
 2025-11-05 11:08:00, Info                         [SETUPUGC.EXE] Found run command in registry: will continue execution without examining exit code
-2025-11-05 11:08:00, Info                         [SETUPUGC.EXE] Found run command in registry: path = [cmd.exe /c net user Administrator nt123]
-2025-11-05 11:08:00, Info                         [SETUPUGC.EXE] Found RunSynchronous command: [cmd.exe /c net user Administrator nt123]
+2025-11-05 11:08:00, Info                         [SETUPUGC.EXE] Found run command in registry: path = [cmd.exe /c net user Administrator REDACTED]
+2025-11-05 11:08:00, Info                         [SETUPUGC.EXE] Found RunSynchronous command: [cmd.exe /c net user Administrator REDACTED]
 2025-11-05 11:08:00, Info                         [SETUPUGC.EXE] Finished executing [cmd.exe /c net user Administrator /active:yes] synchronously
 2025-11-05 11:08:00, Info                         [SETUPUGC.EXE] Process returned with exit code 0x0
-2025-11-05 11:08:01, Info                         [SETUPUGC.EXE] Finished executing [cmd.exe /c net user Administrator nt123] synchronously
+2025-11-05 11:08:01, Info                         [SETUPUGC.EXE] Finished executing [cmd.exe /c net user Administrator REDACTED] synchronously
 2025-11-05 11:08:01, Info                         [SETUPUGC.EXE] Process returned with exit code 0x0
 2025-11-05 11:08:01, Info       [0x090009] PANTHR CBlackboard::Close: c:\windows\panther\commandexec\commandexec.
 2025-11-05 11:08:01, Info                         [SETUPUGC.EXE] Processing any RunAsynchronous setting...

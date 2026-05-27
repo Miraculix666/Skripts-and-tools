@@ -100,8 +100,8 @@
             <ComputerName>r109c00</ComputerName>
             <UserAccounts>
                 <AdministratorPassword>
-                    <PlainText>true</PlainText>
-                    <Value>nt123</Value>
+                    <PlainText>false</PlainText>
+                    <Value>REDACTED</Value>
                 </AdministratorPassword>
             </UserAccounts>
 
@@ -128,7 +128,7 @@
                 <RunSynchronousCommand wcm:action="add">
                     <Description>Passwd Admin Account</Description>
                     <Order>2</Order>
-                    <Path>cmd.exe /c net user Administrator nt123</Path>
+                    <Path>cmd.exe /c net user Administrator REDACTED</Path>
                 </RunSynchronousCommand>
 
             </RunSynchronous>
@@ -206,8 +206,8 @@
                 <LogonCount>1</LogonCount>
                 <Username>Administrator</Username>
                 <Password>
-                    <PlainText>true</PlainText>
-                    <Value>nt123</Value>
+                    <PlainText>false</PlainText>
+                    <Value>REDACTED</Value>
                 </Password>
             </AutoLogon>
             <FirstLogonCommands>
