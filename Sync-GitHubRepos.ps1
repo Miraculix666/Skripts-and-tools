@@ -1,11 +1,12 @@
-﻿# Sync-GitHubRepos.ps1 - Synchronises all GitHub repos to C:\GitHub and manages VS Code workspaces
+# Sync-GitHubRepos.ps1 - Synchronises all GitHub repos to C:\GitHub and manages VS Code workspaces
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
     [string]$GitHubUser = 'Miraculix666',
     [string]$BaseDir = 'C:\GitHub',
     [switch]$Silent,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$FullSync
 )
 
 Set-StrictMode -Version Latest
@@ -14,17 +15,17 @@ $ErrorActionPreference = 'Stop'
 # ── Helpers ──────────────────────────────────────────────────────────────────
 function Write-Step {
     param([int]$N, [int]$Total, [string]$Msg, [string]$Color = 'Cyan')
-    if (-not $Silent) { Write-Host "[${N}/${Total}] $Msg" -ForegroundColor $Color }
+    if (-not $Silent) { Write-Host "[$N/$Total] $Msg" -ForegroundColor $Color }
 }
-function Write-OK { param([string]$M) if (-not $Silent) { Write-Host "    ✅ $M" -ForegroundColor Green } }
-function Write-Warn { param([string]$M) if (-not $Silent) { Write-Host "    ⚠️  $M" -ForegroundColor Yellow } }
-function Write-Err { param([string]$M) { Write-Host "    ❌ $M" -ForegroundColor Red } }
+function Write-OK { param([string]$M) if (-not $Silent) { Write-Host "    [OK] $M" -ForegroundColor Green } }
+function Write-Warn { param([string]$M) if (-not $Silent) { Write-Host "    [WARN] $M" -ForegroundColor Yellow } }
+function Write-Err { param([string]$M) { Write-Host "    [ERR] $M" -ForegroundColor Red } }
 
-# ── Step 1 – Get API Token ────────────────────────────────────────────────────
-Write-Step 1 5 "GitHub API Token laden …"
+# ── Step 1 - Get API Token ────────────────────────────────────────────────────
+Write-Step 1 6 "GitHub API Token laden ..."
 
 function Get-GitHubToken {
-    # 1. Try gh CLI (preferred – it manages token lifecycle itself)
+    # 1. Try gh CLI (preferred - it manages token lifecycle itself)
     if (Get-Command gh -ErrorAction SilentlyContinue) {
         try {
             $token = (gh auth token 2>$null)
@@ -36,12 +37,11 @@ function Get-GitHubToken {
     if ($env:GITHUB_TOKEN -and $env:GITHUB_TOKEN.Length -gt 10) {
         return $env:GITHUB_TOKEN
     }
-    # 3. Prompt once and store in session env (user already has creds in git credential manager,
-    #    but PowerShell can't read them back — that's by design for security)
+    # 3. Prompt once and store in session env
     if (-not $Silent) {
         Write-Host ""
-        Write-Host "  💡 Für die GitHub API wird ein Personal Access Token benötigt." -ForegroundColor Yellow
-        Write-Host "  ℹ️  Einmalig eingeben – danach: 'gh auth login --with-token' für Dauerspeicherung." -ForegroundColor DarkGray
+        Write-Host "  * Fuer die GitHub API wird ein Personal Access Token benoetigt." -ForegroundColor Yellow
+        Write-Host "  * Einmalig eingeben - danach: 'gh auth login --with-token' fuer Dauerspeicherung." -ForegroundColor DarkGray
         Write-Host ""
         $secure = Read-Host "  GitHub PAT (Scope: repo/public_repo)" -AsSecureString
         $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
@@ -59,8 +59,8 @@ function Get-GitHubToken {
 
 $PAT = Get-GitHubToken
 if (-not $PAT) {
-    Write-Err "Kein GitHub Token verfügbar. Abbruch."
-    Write-Host "  Tipp: 'gh auth login' ausführen um gh dauerhaft zu authenticieren." -ForegroundColor Yellow
+    Write-Err "Kein GitHub Token verfuegbar. Abbruch."
+    Write-Host "  Tipp: 'gh auth login' ausfuehren um gh dauerhaft zu authentifizieren." -ForegroundColor Yellow
     exit 1
 }
 $tokenSource = if ((Get-Command gh -EA SilentlyContinue) -and ((gh auth status 2>&1) -notmatch 'not logged')) { 'gh auth' } else { 'Eingabe' }
@@ -71,8 +71,8 @@ $headers = @{
     Accept        = 'application/vnd.github+json'
 }
 
-# ── Step 2 – Fetch all repos from GitHub API ──────────────────────────────────
-Write-Step 2 5 "Repos von GitHub API abrufen (User: $GitHubUser) …"
+# ── Step 2 - Fetch all repos from GitHub API ──────────────────────────────────
+Write-Step 2 6 "Repos von GitHub API abrufen (User: $GitHubUser) ..."
 
 function Get-AllRepos {
     param([string]$User, [hashtable]$Headers)
@@ -96,77 +96,404 @@ catch {
     exit 1
 }
 
-# ── Step 3 – Clone missing / pull existing ────────────────────────────────────
-Write-Step 3 5 "Repos synchronisieren …"
+# Map GitHub repos for fast lookup
+$githubUrlMap = @{}
+$githubNameMap = @{}
+foreach ($repo in $allRepos) {
+    if ($null -ne $repo.clone_url) { $githubUrlMap[$repo.clone_url.ToLower()] = $repo }
+    if ($null -ne $repo.ssh_url) { $githubUrlMap[$repo.ssh_url.ToLower()] = $repo }
+    if ($null -ne $repo.html_url) { $githubUrlMap[$repo.html_url.ToLower()] = $repo }
+    if ($null -ne $repo.name) { $githubNameMap[$repo.name.ToLower()] = $repo }
+}
 
+# ── Step 3 - Auditing & Synchronising Repos ───────────────────────────────────
+Write-Step 3 6 "Lokale Ordner analysieren und synchronisieren ..."
+
+$subDirs = Get-ChildItem -Path $BaseDir -Directory | Where-Object { $_.Name -notmatch '^\.git$' } | Sort-Object Name
+
+$localRepos = @()
+$processedUrls = @{} # Track processed remote URLs to detect duplicates
+
+# First, audit all local directories
+foreach ($dir in $subDirs) {
+    $localPath = $dir.FullName
+    $repoName = $dir.Name
+    $isGit = Test-Path (Join-Path $localPath '.git')
+    $originUrl = $null
+    $gitStatus = "Clean"
+    $isDirty = $false
+    $ahead = 0
+    $behind = 0
+    $matchedRepo = $null
+    $type = "Non-Git"
+    
+    if ($isGit) {
+        # Get origin URL
+        try {
+            $originUrl = git -C $localPath remote get-url origin 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                $originUrl = $originUrl.Trim()
+            } else {
+                $originUrl = $null
+            }
+        }
+        catch {
+            $originUrl = $null
+        }
+
+        # Resolve remote mapping
+        if ($null -ne $originUrl) {
+            $urlKey = $originUrl.ToLower()
+            if ($githubUrlMap.ContainsKey($urlKey)) {
+                $matchedRepo = $githubUrlMap[$urlKey]
+                $type = "Active"
+                if ($matchedRepo.name -ne $repoName) {
+                    $type = "Moved/Renamed"
+                }
+            } else {
+                $type = "Orphaned"
+            }
+
+            # Check if this remote URL was already claimed by another local directory
+            if ($githubUrlMap.ContainsKey($urlKey)) {
+                if ($processedUrls.ContainsKey($urlKey)) {
+                    $type = "Duplicate"
+                } else {
+                    $processedUrls[$urlKey] = $localPath
+                }
+            }
+        } else {
+            $type = "Local Git Only"
+        }
+
+        # Check git status (dirty, ahead, behind)
+        try {
+            $statusOutput = git -C $localPath status --porcelain 2>&1
+            if ($LASTEXITCODE -eq 0 -and $statusOutput -and $statusOutput.Count -gt 0 -and $statusOutput[0].Trim().Length -gt 0) {
+                $isDirty = $true
+                $gitStatus = "Dirty"
+            }
+        } catch {}
+
+        # Fetch and check ahead/behind
+        if (-not $DryRun -and $null -ne $originUrl) {
+            try {
+                git -C $localPath fetch --prune -q 2>&1 | Out-Null
+            } catch {}
+        }
+        
+        try {
+            $aheadCount = git -C $localPath rev-list --count '@{u}..HEAD' 2>&1
+            if ($LASTEXITCODE -eq 0) { $ahead = [int]$aheadCount.Trim() }
+        } catch {}
+
+        try {
+            $behindCount = git -C $localPath rev-list --count 'HEAD..@{u}' 2>&1
+            if ($LASTEXITCODE -eq 0) { $behind = [int]$behindCount.Trim() }
+        } catch {}
+
+        if ($gitStatus -ne "Dirty") {
+            if ($ahead -gt 0 -and $behind -gt 0) { $gitStatus = "Diverged" }
+            elseif ($ahead -gt 0) { $gitStatus = "Ahead ($ahead)" }
+            elseif ($behind -gt 0) { $gitStatus = "Behind ($behind)" }
+            else { $gitStatus = "Clean" }
+        } else {
+            if ($ahead -gt 0) { $gitStatus += ", Ahead ($ahead)" }
+            if ($behind -gt 0) { $gitStatus += ", Behind ($behind)" }
+        }
+    }
+
+    $localRepos += [PSCustomObject]@{
+        Name        = $repoName
+        Path        = $localPath
+        Type        = $type
+        IsGit       = $isGit
+        OriginUrl   = $originUrl
+        GitStatus   = $gitStatus
+        IsDirty     = $isDirty
+        Ahead       = $ahead
+        Behind      = $behind
+        MatchedRepo = $matchedRepo
+        ActionTaken = "None"
+    }
+}
+
+# Perform synchronization actions (Pull active, Clone missing)
 $cloned = [System.Collections.Generic.List[string]]::new()
 $pulled = [System.Collections.Generic.List[string]]::new()
 $skipped = [System.Collections.Generic.List[string]]::new()
 $failed = [System.Collections.Generic.List[string]]::new()
 
-# Track clone-URLs already processed (avoid duplicate clones like homelab/homelab-repo)
-$processedUrls = @{}
-
-foreach ($repo in $allRepos) {
-    $repoName = $repo.name
-    $cloneUrl = $repo.clone_url
-    $localPath = Join-Path $BaseDir $repoName
-
-    # Skip duplicates (same remote URL already processed)
-    if ($processedUrls.ContainsKey($cloneUrl)) {
-        Write-Warn "Duplikat übersprungen: $repoName → $cloneUrl (bereits als $($processedUrls[$cloneUrl]))"
-        $skipped.Add($repoName)
+# 1. Handle existing local folders
+foreach ($repo in $localRepos) {
+    if (-not $repo.IsGit) {
+        $repo.ActionTaken = "Skipped (Non-Git)"
+        $skipped.Add($repo.Name)
         continue
     }
-    $processedUrls[$cloneUrl] = $repoName
 
-    if (Test-Path $localPath) {
-        # Check if it's a git repo
-        $existingRemote = git -C $localPath remote get-url origin 2>$null
-        if ($existingRemote) {
+    if ($repo.Type -eq "Orphaned") {
+        $repo.ActionTaken = "Skipped (Orphaned/Deleted on GitHub)"
+        $skipped.Add($repo.Name)
+        continue
+    }
+
+    if ($repo.Type -eq "Duplicate") {
+        $repo.ActionTaken = "Skipped (Duplicate remote URL)"
+        $skipped.Add($repo.Name)
+        continue
+    }
+
+    if ($FullSync) {
+        # ── Full Sync Mode: Commit, Pull/Merge, Push ──────────────────────────
+        $actions = [System.Collections.Generic.List[string]]::new()
+        $hasErrors = $false
+
+        # 1. Handle uncommitted changes (Dirty)
+        if ($repo.IsDirty) {
             if (-not $DryRun) {
                 try {
-                    git -C $localPath fetch --all --prune -q 2>&1 | Out-Null
-                    git -C $localPath pull --ff-only -q 2>&1 | Out-Null
-                    $pulled.Add($repoName)
+                    # Stage all changes
+                    git -C $repo.Path add -A 2>&1 | Out-Null
+                    # Commit
+                    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+                    $commitMsg = "Auto-commit: sync on $timestamp"
+                    $commitOutput = git -C $repo.Path commit -m $commitMsg 2>&1
+                    if ($LASTEXITCODE -eq 0) {
+                        $actions.Add("Auto-committed")
+                        $repo.IsDirty = $false
+                        $repo.GitStatus = "Clean"
+                    } else {
+                        $actions.Add("Commit failed")
+                        $hasErrors = $true
+                        $repo.ActionTaken = "Commit failed: $commitOutput"
+                        $failed.Add($repo.Name)
+                    }
                 }
                 catch {
-                    Write-Warn "Pull fehlgeschlagen für ${repoName}: $_"
-                    $failed.Add($repoName)
+                    $actions.Add("Commit error")
+                    $hasErrors = $true
+                    $repo.ActionTaken = "Commit error: $_"
+                    $failed.Add($repo.Name)
+                }
+            } else {
+                $actions.Add("[DRY] Wuerde Aenderungen committen")
+                $repo.IsDirty = $false
+                $repo.GitStatus = "Clean"
+            }
+        }
+
+        # 2. Remote operations (if remote exists and commit succeeded)
+        if (-not $hasErrors -and $null -ne $repo.OriginUrl) {
+            # Fresh fetch in case remote changed while we were running
+            if (-not $DryRun) {
+                try {
+                    git -C $repo.Path fetch --prune -q 2>&1 | Out-Null
+                } catch {}
+            }
+
+            # Recalculate ahead & behind
+            $ahead = 0
+            $behind = 0
+            try {
+                $aheadCount = git -C $repo.Path rev-list --count '@{u}..HEAD' 2>&1
+                if ($LASTEXITCODE -eq 0) { $ahead = [int]$aheadCount.Trim() }
+            } catch {}
+            try {
+                $behindCount = git -C $repo.Path rev-list --count 'HEAD..@{u}' 2>&1
+                if ($LASTEXITCODE -eq 0) { $behind = [int]$behindCount.Trim() }
+            } catch {}
+
+            # Handle pulling/merging remote changes (Behind)
+            if ($behind -gt 0) {
+                if (-not $DryRun) {
+                    try {
+                        # Attempt pull with merge strategy (no rebase, auto merge message)
+                        $pullOutput = git -C $repo.Path pull --no-rebase --no-edit 2>&1
+                        if ($LASTEXITCODE -eq 0) {
+                            $actions.Add("Pulled and Merged")
+                            $pulled.Add($repo.Name)
+                            # Re-fetch ahead/behind after merge
+                            try {
+                                $aheadCount = git -C $repo.Path rev-list --count '@{u}..HEAD' 2>&1
+                                if ($LASTEXITCODE -eq 0) { $ahead = [int]$aheadCount.Trim() }
+                            } catch {}
+                            $behind = 0
+                        } else {
+                            # Pull failed - check if it's a conflict and abort
+                            git -C $repo.Path merge --abort 2>&1 | Out-Null
+                            $actions.Add("Conflict (Aborted)")
+                            $hasErrors = $true
+                            $repo.ActionTaken = "Conflict during merge (Aborted)"
+                            $failed.Add($repo.Name)
+                        }
+                    }
+                    catch {
+                        $actions.Add("Pull failed")
+                        $hasErrors = $true
+                        $repo.ActionTaken = "Pull failed: $_"
+                        $failed.Add($repo.Name)
+                    }
+                } else {
+                    $actions.Add("[DRY] Wuerde pullen and mergen")
+                    $pulled.Add($repo.Name)
+                    $behind = 0
                 }
             }
-            else {
-                Write-OK "[DRY] Würde pullen: $repoName"
+
+            # Handle pushing local changes (Ahead)
+            if (-not $hasErrors -and $ahead -gt 0) {
+                if (-not $DryRun) {
+                    try {
+                        $pushOutput = git -C $repo.Path push origin 2>&1
+                        if ($LASTEXITCODE -eq 0) {
+                            $actions.Add("Pushed successfully")
+                        } else {
+                            $actions.Add("Push failed")
+                            $hasErrors = $true
+                            $repo.ActionTaken = "Push failed: $pushOutput"
+                            $failed.Add($repo.Name)
+                        }
+                    }
+                    catch {
+                        $actions.Add("Push error")
+                        $hasErrors = $true
+                        $repo.ActionTaken = "Push error: $_"
+                        $failed.Add($repo.Name)
+                    }
+                } else {
+                    $actions.Add("[DRY] Wuerde pushen")
+                }
             }
         }
-        else {
-            Write-Warn "Ordner existiert aber kein Git-Remote: $repoName"
-            $skipped.Add($repoName)
+
+        # Set final action status
+        if (-not $hasErrors) {
+            if ($actions.Count -gt 0) {
+                $repo.ActionTaken = $actions -join ", "
+                if ($repo.IsDirty) {
+                    $repo.GitStatus = "Dirty"
+                } else {
+                    $repo.GitStatus = "Clean"
+                }
+            } else {
+                $repo.ActionTaken = "Up to date"
+            }
+        }
+        continue
+    }
+
+    # ── Standard Mode: Pull only if clean & behind ────────────────────────────
+    if ($repo.Type -eq "Local Git Only") {
+        $repo.ActionTaken = "Skipped (Local Git Only)"
+        $skipped.Add($repo.Name)
+        continue
+    }
+
+    # For Active or Moved/Renamed repos:
+    if ($repo.Behind -gt 0) {
+        if ($repo.IsDirty -or $repo.Ahead -gt 0) {
+            $repo.ActionTaken = "Skipped Pull (Local changes or ahead)"
+            $skipped.Add($repo.Name)
+        } else {
+            if (-not $DryRun) {
+                try {
+                    git -C $repo.Path pull --ff-only -q 2>&1 | Out-Null
+                    $repo.ActionTaken = "Pulled successfully"
+                    $repo.GitStatus = "Clean"
+                    $pulled.Add($repo.Name)
+                }
+                catch {
+                    $repo.ActionTaken = "Pull failed: $_"
+                    $failed.Add($repo.Name)
+                }
+            } else {
+                $repo.ActionTaken = "[DRY] Wuerde pullen"
+                $pulled.Add($repo.Name)
+            }
+        }
+    } else {
+        $repo.ActionTaken = "Up to date"
+    }
+}
+
+# 2. Clone missing repositories from GitHub
+foreach ($ghRepo in $allRepos) {
+    $cloneUrl = $ghRepo.clone_url
+    $urlKey = $cloneUrl.ToLower()
+    
+    # Check if we already have a local repo for this clone URL
+    $hasLocal = $false
+    foreach ($repo in $localRepos) {
+        if ($repo.IsGit -and $null -ne $repo.OriginUrl -and $repo.OriginUrl.ToLower() -eq $urlKey) {
+            $hasLocal = $true
+            break
         }
     }
-    else {
+
+    if (-not $hasLocal) {
+        $localPath = Join-Path $BaseDir $ghRepo.name
+        $folderExists = Test-Path $localPath
+        $folderNotEmpty = $false
+        if ($folderExists) {
+            $files = Get-ChildItem -Path $localPath -Force 2>$null
+            if ($null -ne $files -and ($files | Measure-Object).Count -gt 0) {
+                $folderNotEmpty = $true
+            }
+        }
+
+        if ($folderNotEmpty) {
+            Write-Warn "Klonen uebersprungen fuer $($ghRepo.name): Lokaler Ordner existiert bereits und ist nicht leer!"
+            $skipped.Add($ghRepo.name)
+            continue
+        }
+
         if (-not $DryRun) {
             try {
                 git clone $cloneUrl $localPath -q 2>&1 | Out-Null
-                $cloned.Add($repoName)
-                Write-OK "Geklont: $repoName"
+                $cloned.Add($ghRepo.name)
+                
+                # Register new repo in our local tracking
+                $localRepos += [PSCustomObject]@{
+                    Name        = $ghRepo.name
+                    Path        = $localPath
+                    Type        = "Active"
+                    IsGit       = $true
+                    OriginUrl   = $cloneUrl
+                    GitStatus   = "Clean"
+                    IsDirty     = $false
+                    Ahead       = 0
+                    Behind      = 0
+                    MatchedRepo = $ghRepo
+                    ActionTaken = "Cloned successfully"
+                }
+                Write-OK "Geklont: $($ghRepo.name)"
             }
             catch {
-                Write-Err "Klon fehlgeschlagen: ${repoName}: $_"
-                $failed.Add($repoName)
+                Write-Err "Klonen fehlgeschlagen: $($ghRepo.name): $_"
+                $failed.Add($ghRepo.name)
             }
         }
         else {
-            Write-OK "[DRY] Würde klonen: $repoName → $localPath"
-            $cloned.Add($repoName)
+            Write-OK "[DRY] Wuerde klonen: $($ghRepo.name) -> $localPath"
+            $cloned.Add($ghRepo.name)
         }
     }
 }
 
-Write-OK "Sync abgeschlossen — Geklont: $($cloned.Count) | Gepullt: $($pulled.Count) | Übersprungen: $($skipped.Count) | Fehler: $($failed.Count)"
+# Sort local repos list by Name for the output report
+$localRepos = $localRepos | Sort-Object Name
 
-# ── Step 4 – Update all.code-workspace ───────────────────────────────────────
-Write-Step 4 5 "all.code-workspace aktualisieren …"
+# Display audit table
+if (-not $Silent) {
+    Write-Host "`n Repository Audit & Sync Report:" -ForegroundColor Yellow
+    $localRepos | Format-Table -Property Name, Type, GitStatus, ActionTaken -AutoSize
+}
+
+Write-OK "Sync abgeschlossen - Geklont: $($cloned.Count) | Gepullt: $($pulled.Count) | Uebersprungen: $($skipped.Count) | Fehler: $($failed.Count)"
+
+# ── Step 4 - Update all.code-workspace ───────────────────────────────────────
+Write-Step 4 6 "all.code-workspace aktualisieren ..."
 
 $allWorkspaceFile = Join-Path $BaseDir 'all.code-workspace'
 
@@ -175,25 +502,34 @@ $existingWorkspace = if (Test-Path $allWorkspaceFile) {
     Get-Content $allWorkspaceFile -Raw | ConvertFrom-Json
 }
 else {
-    [PSCustomObject]@{ folders = @(); settings = @{}; extensions = @{} }
+    [PSCustomObject]@{ folders = @(); settings = [ordered]@{}; extensions = [ordered]@{ recommendations = @() } }
 }
 
-# Gather all direct subfolders
-$subFolders = Get-ChildItem -Path $BaseDir -Directory |
-Where-Object { $_.Name -notmatch '^\.git$' } |
-Sort-Object Name
+# Ensure settings and extensions properties exist to prevent strict mode errors
+if ($null -eq $existingWorkspace.PSObject.Properties['settings']) {
+    $existingWorkspace | Add-Member -MemberType NoteProperty -Name 'settings' -Value ([ordered]@{})
+}
+if ($null -eq $existingWorkspace.PSObject.Properties['extensions']) {
+    $existingWorkspace | Add-Member -MemberType NoteProperty -Name 'extensions' -Value ([ordered]@{ recommendations = @() })
+}
 
-# Build folder entries (relative paths)
-$folderEntries = foreach ($dir in $subFolders) {
-    [PSCustomObject]@{
-        name = $dir.Name
-        path = $dir.Name
-    }
+# Build folder entries (only include valid, non-duplicate folders)
+# Exclude duplicate folders to keep the workspace clean, or include everything if requested.
+# Here we include all unique folders to match "all workspaces in this all Workspaces workspace".
+$folderEntries = [System.Collections.Generic.List[object]]::new()
+foreach ($repo in $localRepos) {
+    # Skip duplicates or directories starting with .
+    if ($repo.Type -eq "Duplicate" -or $repo.Name -match '^\.') { continue }
+    
+    $folderEntries.Add([PSCustomObject]@{
+        name = $repo.Name
+        path = $repo.Name
+    })
 }
 
 # Rebuild workspace JSON
 $newWorkspace = [ordered]@{
-    folders    = $folderEntries
+    folders    = $folderEntries.ToArray()
     settings   = $existingWorkspace.settings
     extensions = $existingWorkspace.extensions
 }
@@ -204,15 +540,23 @@ if (-not $DryRun) {
     Write-OK "all.code-workspace aktualisiert ($fCount Ordner)"
 }
 else {
-    Write-OK "[DRY] all.code-workspace würde $fCount Ordner enthalten"
+    Write-OK "[DRY] all.code-workspace wuerde $fCount Ordner enthalten"
 }
 
-# ── Step 5 – Create per-repo .code-workspace files ───────────────────────────
-Write-Step 5 5 "Einzelne .code-workspace Dateien erstellen …"
+# ── Step 5 - Create per-repo .code-workspace files ───────────────────────────
+Write-Step 5 6 "Einzelne .code-workspace Dateien erstellen ..."
 
 # Standard settings to embed in every workspace
 $wsSettings = $existingWorkspace.settings
-if (-not $wsSettings) {
+$hasSettings = $null -ne $wsSettings
+if ($hasSettings) {
+    if ($wsSettings -is [System.Collections.IDictionary]) {
+        $hasSettings = $wsSettings.Count -gt 0
+    } else {
+        $hasSettings = ($wsSettings.PSObject.Properties | Measure-Object).Count -gt 0
+    }
+}
+if (-not $hasSettings) {
     $wsSettings = [ordered]@{
         "files.encoding"                             = "utf8"
         "files.eol"                                  = "`n"
@@ -232,7 +576,15 @@ if (-not $wsSettings) {
 }
 
 $wsExtensions = $existingWorkspace.extensions
-if (-not $wsExtensions) {
+$hasExtensions = $null -ne $wsExtensions
+if ($hasExtensions) {
+    if ($wsExtensions -is [System.Collections.IDictionary]) {
+        $hasExtensions = $wsExtensions.Count -gt 0
+    } else {
+        $hasExtensions = ($wsExtensions.PSObject.Properties | Measure-Object).Count -gt 0
+    }
+}
+if (-not $hasExtensions) {
     $wsExtensions = [ordered]@{
         recommendations = @(
             "ms-vscode.powershell",
@@ -249,8 +601,11 @@ if (-not $wsExtensions) {
 $createdWS = 0
 $existingWS = 0
 
-foreach ($dir in $subFolders) {
-    $wsFile = Join-Path $BaseDir "$($dir.Name).code-workspace"
+foreach ($repo in $localRepos) {
+    # Skip duplicates
+    if ($repo.Type -eq "Duplicate" -or $repo.Name -match '^\.') { continue }
+    
+    $wsFile = Join-Path $BaseDir "$($repo.Name).code-workspace"
 
     if (Test-Path $wsFile) {
         $existingWS++
@@ -258,18 +613,17 @@ foreach ($dir in $subFolders) {
     }
 
     $wsContent = [ordered]@{
-        folders    = @([ordered]@{ name = $dir.Name; path = $dir.Name })
+        folders    = @([ordered]@{ name = $repo.Name; path = $repo.Name })
         settings   = $wsSettings
         extensions = $wsExtensions
     }
 
     if (-not $DryRun) {
-        # Write with relative base = BaseDir (workspace is in BaseDir)
         $wsContent | ConvertTo-Json -Depth 10 | Set-Content $wsFile -Encoding UTF8
         $createdWS++
     }
     else {
-        Write-OK "[DRY] Würde erstellen: $($dir.Name).code-workspace"
+        Write-OK "[DRY] Wuerde erstellen: $($repo.Name).code-workspace"
         $createdWS++
     }
 }
@@ -278,14 +632,321 @@ Write-OK "Workspace-Dateien: $createdWS neu erstellt, $existingWS bereits vorhan
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 if (-not $Silent) {
-    Write-Host "`n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor DarkGray
-    Write-Host " ✅ GitHub Sync abgeschlossen" -ForegroundColor Green
-    Write-Host " 📥 Geklont  : $($cloned.Count)  ($($cloned -join ', '))" -ForegroundColor Cyan
-    Write-Host " 🔄 Gepullt  : $($pulled.Count)" -ForegroundColor Cyan
-    Write-Host " ⏭️  Skippped : $($skipped.Count)" -ForegroundColor DarkGray
+    Write-Host "`n=========================================" -ForegroundColor DarkGray
+    Write-Host " [OK] GitHub Sync and Audit abgeschlossen" -ForegroundColor Green
+    Write-Host " [IN] Geklont  : $($cloned.Count)  ($($cloned -join ', '))" -ForegroundColor Cyan
+    Write-Host " [UP] Gepullt  : $($pulled.Count)  ($($pulled -join ', '))" -ForegroundColor Cyan
+    Write-Host " [SK] Uebersprungen : $($skipped.Count)" -ForegroundColor DarkGray
     if ($failed.Count -gt 0) {
-        Write-Host " ❌ Fehler   : $($failed.Count)  ($($failed -join ', '))" -ForegroundColor Red
+        Write-Host " [ERR] Fehler   : $($failed.Count)  ($($failed -join ', '))" -ForegroundColor Red
     }
-    Write-Host " 📁 Workspaces neu: $createdWS" -ForegroundColor Cyan
-    Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`n" -ForegroundColor DarkGray
+    Write-Host " [WS] Workspaces neu: $createdWS" -ForegroundColor Cyan
+    Write-Host "=========================================`n" -ForegroundColor DarkGray
+}
+
+# ── Detailed Failure & Resolution Report ──────────────────────────────────
+if ($failed.Count -gt 0) {
+    Write-Host "=========================================" -ForegroundColor Yellow
+    Write-Host "   [WARN] FEHLERBEHEBUNGS-BERICHT UND EMPFEHLUNGEN" -ForegroundColor Yellow
+    Write-Host "=========================================" -ForegroundColor Yellow
+    
+    foreach ($repo in $localRepos) {
+        if ($failed -contains $repo.Name) {
+            Write-Host "`n    [DIR] Repository: $($repo.Name)" -ForegroundColor Cyan
+            Write-Host "  Pfad: $($repo.Path)" -ForegroundColor DarkGray
+            Write-Host "  Fehler: $($repo.ActionTaken)" -ForegroundColor Red
+            
+            Write-Host "  Empfohlenes Vorgehen:" -ForegroundColor Yellow
+            if ($repo.ActionTaken -like "*Conflict*") {
+                Write-Host "    Ein Merge-Konflikt ist aufgetreten. Bitte loesen Sie die Konflikte manuell:" -ForegroundColor Gray
+                Write-Host "    1. Oeffnen Sie ein Terminal und wechseln Sie in den Ordner:" -ForegroundColor Gray
+                Write-Host "       cd `"$($repo.Path)`"" -ForegroundColor Green
+                Write-Host "    2. Pruefen Sie den Status und loesen Sie die Konflikte:" -ForegroundColor Gray
+                Write-Host "       git status" -ForegroundColor Green
+                Write-Host "    3. Nach dem Loesen markieren und committen Sie die Aenderungen:" -ForegroundColor Gray
+                Write-Host "       git add ." -ForegroundColor Green
+                Write-Host "       git commit -m `"Conflict resolution`"" -ForegroundColor Green
+                Write-Host "       git push origin" -ForegroundColor Green
+            }
+            elseif ($repo.ActionTaken -like "*Push failed*") {
+                Write-Host "    Das Pushen der lokalen Aenderungen ist fehlgeschlagen." -ForegroundColor Gray
+                Write-Host "    Moegliche Ursache: Neue Remote-Aenderungen oder fehlende Rechte." -ForegroundColor Gray
+                Write-Host "    Bitte versuchen Sie:" -ForegroundColor Gray
+                Write-Host "       cd `"$($repo.Path)`"" -ForegroundColor Green
+                Write-Host "       git pull --rebase" -ForegroundColor Green
+                Write-Host "       git push origin" -ForegroundColor Green
+            }
+            elseif ($repo.ActionTaken -like "*Commit failed*") {
+                Write-Host "    Das automatische Committen ist fehlgeschlagen." -ForegroundColor Gray
+                Write-Host "    Bitte pruefen Sie den lokalen Git-Status auf Dateisperren oder ungueltige Zeichen:" -ForegroundColor Gray
+                Write-Host "       cd `"$($repo.Path)`"" -ForegroundColor Green
+                Write-Host "       git status" -ForegroundColor Green
+            }
+            else {
+                Write-Host "    Pruefen Sie den Status manuell im Repository-Verzeichnis:" -ForegroundColor Gray
+                Write-Host "       cd `"$($repo.Path)`"" -ForegroundColor Green
+                Write-Host "       git status" -ForegroundColor Green
+            }
+        }
+    }
+    Write-Host "`n=========================================`n" -ForegroundColor Yellow
+}
+
+# ── Generate HTML Report Page and Open in Browser ─────────────────────────────
+if ($failed.Count -gt 0 -and -not $DryRun) {
+    try {
+        $reportPath = "C:\Users\nw0b4746\.gemini\antigravity-ide\sync_issue_report.html"
+        
+        $htmlContent = @"
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Antigravity Sync - Fehlerbehebungs-Bericht</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+        .header {
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #ff7b72;
+            margin: 0 0 10px 0;
+            display: flex;
+            align-items: center;
+            font-size: 28px;
+        }
+        .header p {
+            color: #8b949e;
+            margin: 0;
+        }
+        .card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .repo-title {
+            color: #58a6ff;
+            font-size: 20px;
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+        .repo-path {
+            font-size: 13px;
+            color: #8b949e;
+            font-family: monospace;
+            margin-bottom: 16px;
+        }
+        .error-message {
+            background-color: rgba(248, 81, 73, 0.1);
+            border-left: 4px solid #f85149;
+            color: #ff7b72;
+            padding: 12px;
+            border-radius: 0 4px 4px 0;
+            font-family: monospace;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .recommendation-title {
+            color: #d29922;
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+        .code-block {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'Consolas', 'Courier New', Courier, monospace;
+            font-size: 13px;
+            color: #e6edf3;
+            overflow-x: auto;
+            margin-bottom: 12px;
+            white-space: pre;
+        }
+        .code-comment {
+            color: #8b949e;
+        }
+        .copy-btn {
+            background-color: #21262d;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .copy-btn:hover {
+            background-color: #30363d;
+            border-color: #8b949e;
+        }
+    </style>
+    <script>
+        function copyCode(id) {
+            const code = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(code);
+            const btn = document.querySelector('[data-id="' + id + '"]');
+            const originalText = btn.innerText;
+            btn.innerText = "Kopiert!";
+            setTimeout(() => { btn.innerText = originalText; }, 2000);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>[WARN] Antigravity Sync Konflikte &amp; Fehler</h1>
+            <p>Einige Repositories konnten nicht vollautomatisch synchronisiert werden. Bitte loesen Sie die Probleme manuell.</p>
+        </div>
+"@
+        
+        $counter = 1
+        foreach ($repo in $localRepos) {
+            if ($failed -contains $repo.Name) {
+                $codeId = "code-$counter"
+                
+                $htmlContent += @"
+        <div class="card">
+            <h2 class="repo-title">[DIR] $($repo.Name)</h2>
+            <div class="repo-path">Pfad: $($repo.Path)</div>
+            <div class="error-message">Fehler: $($repo.ActionTaken)</div>
+            <div class="recommendation-title">Empfohlenes Vorgehen:</div>
+"@
+                
+                if ($repo.ActionTaken -like "*Conflict*") {
+                    $htmlContent += @"
+            <p>Ein Merge-Konflikt ist aufgetreten. Bitte loesen Sie die Konflikte manuell:</p>
+            <div class="code-block" id="$codeId"><span class="code-comment"># 1. In den Ordner wechseln:</span>
+cd "$($repo.Path)"
+<span class="code-comment"># 2. Konflikte prüfen:</span>
+git status
+<span class="code-comment"># 3. Konfliktdateien bearbeiten, dann markieren und committen:</span>
+git add .
+git commit -m "Conflict resolution"
+git push origin</div>
+            <button class="copy-btn" data-id="$codeId" onclick="copyCode('$codeId')">Befehle kopieren</button>
+"@
+                }
+                elseif ($repo.ActionTaken -like "*Push failed*") {
+                    $htmlContent += @"
+            <p>Das Pushen ist fehlgeschlagen (evtl. neue Remote-Aenderungen oder fehlende Rechte):</p>
+            <div class="code-block" id="$codeId"><span class="code-comment"># 1. In den Ordner wechseln:</span>
+cd "$($repo.Path)"
+<span class="code-comment"># 2. Aenderungen rebasen und erneut pushen:</span>
+git pull --rebase
+git push origin</div>
+            <button class="copy-btn" data-id="$codeId" onclick="copyCode('$codeId')">Befehle kopieren</button>
+"@
+                }
+                else {
+                    $htmlContent += @"
+            <p>Pruefen Sie den Status manuell im Repository-Verzeichnis:</p>
+            <div class="code-block" id="$codeId">cd "$($repo.Path)"
+git status</div>
+            <button class="copy-btn" data-id="$codeId" onclick="copyCode('$codeId')">Befehle kopieren</button>
+"@
+                }
+                
+                $htmlContent += @"
+        </div>
+"@
+                $counter++
+            }
+        }
+        
+        $htmlContent += @"
+    </div>
+</body>
+</html>
+"@
+        
+        $htmlContent | Set-Content $reportPath -Encoding UTF8 -Force
+        Start-Process $reportPath
+    } catch {
+        Write-Warn "HTML-Bericht konnte nicht geoeffnet werden: $_"
+    }
+}
+
+# ── Step 6 - Antigravity Auto-Update (Once a Day) ─────────────────────────────
+$stateDir = "C:\Users\nw0b4746\.gemini\antigravity-ide"
+if (Test-Path $stateDir) {
+    Write-Step 6 6 "Antigravity Auto-Update pruefen ..."
+    
+    $updateLogFile = Join-Path $stateDir "last_update_check.txt"
+    $todayDate = Get-Date -Format "yyyy-MM-dd"
+    $needsUpdateCheck = $true
+    
+    if (Test-Path $updateLogFile) {
+        $lastCheck = Get-Content $updateLogFile -Raw
+        if ($lastCheck.Trim() -eq $todayDate) {
+            $needsUpdateCheck = $false
+        }
+    }
+    
+    if ($needsUpdateCheck) {
+        Write-OK "Fuehre taeglichen Update-Check aus..."
+        $todayDate | Set-Content $updateLogFile -Encoding UTF8 -Force
+        
+        # 1. Update agy CLI
+        if (Get-Command agy -ErrorAction SilentlyContinue) {
+            try {
+                Write-OK "Pruefe agy CLI Updates..."
+                if (-not $DryRun) {
+                    agy update | Out-Null
+                    Write-OK "agy CLI Update-Pruefung abgeschlossen."
+                } else {
+                    Write-OK "[DRY] Wuerde agy update ausfuehren"
+                }
+            } catch {
+                Write-Warn "Fehler beim agy CLI Update: $_"
+            }
+        }
+        
+        # 2. Update Antigravity IDE
+        $installerPath = "C:\Users\nw0b4746\AppData\Local\antigravity-updater\installer.exe"
+        $appPath = "C:\Users\nw0b4746\AppData\Local\Programs\Antigravity IDE\Antigravity IDE.exe"
+        
+        if (Test-Path $installerPath) {
+            Write-Warn "Neues Update fuer Antigravity IDE gefunden! Installiere..."
+            if (-not $DryRun) {
+                try {
+                    # Relaunch installer silently and wait for completion
+                    Write-OK "Beende Antigravity IDE und installiere Update im Hintergrund..."
+                    Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait
+                    
+                    # Relaunch IDE after update, restoring all open windows and workspaces automatically
+                    if (Test-Path $appPath) {
+                        Write-OK "Starte Antigravity IDE neu..."
+                        Start-Process -FilePath $appPath
+                    }
+                }
+                catch {
+                    Write-Warn "Fehler beim Installieren des IDE-Updates: $_"
+                }
+            } else {
+                Write-OK "[DRY] Wuerde IDE Update silent ausfuehren (/S) und neu starten"
+            }
+        } else {
+            Write-OK "Antigravity IDE ist auf dem neuesten Stand (keine pending Updates)."
+        }
+    } else {
+        Write-OK "Update-Pruefung fuer heute bereits abgeschlossen ($lastCheck)."
+    }
 }
