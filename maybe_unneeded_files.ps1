@@ -176,7 +176,7 @@ function Find-Duplicates {
         
         if ($duplicates) {
             $duplicates | ForEach-Object {
-                "Duplicate set: $($_.Name)" | Set-Content -Path $outputPath -Append
+                "Duplicate set: $($_.Name)" | Add-Content -Path $outputPath
                 $_.Group | ForEach-Object {
                     "  $($_.FullName) ($(Format-FileSize $_.Length), Modified: $($_.LastWriteTime))"
                 } | Add-Content -Path $outputPath
@@ -196,16 +196,9 @@ function Find-Duplicates {
     }
 }
 
-# Function to generate HTML report
-function New-HTMLReport {
-    param(
-        [Parameter(Mandatory=$true)]
-        [string]$Title,
-        [Parameter(Mandatory=$true)]
-        [string[]]$FilePaths
-    )
-    
-    $htmlTemplate = @"
+function Get-HTMLReportHeader {
+    param([string]$Title)
+    return @"
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -326,29 +319,31 @@ function New-HTMLReport {
         
         <div class="file-list">
 "@
-    
-    try {
-        $outputPath = Join-Path $OutputDirectory "$Title.html"
-        
-        $htmlContent = $htmlTemplate
-        
-        foreach ($filePath in $FilePaths) {
-            if (Test-Path $filePath) {
-                $files = Get-Content $filePath
-                foreach ($file in $files) {
-                    $isArchived = $file -match "\\---ARCHIVE---\\"
-                    $class = if ($isArchived) { 'archive' } else { '' }
-                    $htmlContent += @"
+}
+
+function Get-HTMLReportItems {
+    param([string[]]$FilePaths)
+    $items = @()
+    foreach ($filePath in $FilePaths) {
+        if (Test-Path $filePath) {
+            $files = Get-Content $filePath
+            foreach ($file in $files) {
+                $isArchived = $file -match "\\---ARCHIVE---\\"
+                $class = if ($isArchived) { 'archive' } else { '' }
+                $items += @"
                     <div class="file-item $class">
                         <span class="file-icon">📄</span>
                         <span class="file-path">$([System.Web.HttpUtility]::HtmlEncode($file))</span>
                     </div>
 "@
-                }
             }
         }
-        
-        $htmlContent += @"
+    }
+    return $items -join "`n"
+}
+
+function Get-HTMLReportFooter {
+    return @"
         </div>
     </div>
     <script>
@@ -380,6 +375,23 @@ function New-HTMLReport {
 </body>
 </html>
 "@
+}
+
+# Function to generate HTML report
+function New-HTMLReport {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Title,
+        [Parameter(Mandatory=$true)]
+        [string[]]$FilePaths
+    )
+
+    try {
+        $outputPath = Join-Path $OutputDirectory "$Title.html"
+
+        $htmlContent = Get-HTMLReportHeader -Title $Title
+        $htmlContent += "`n" + (Get-HTMLReportItems -FilePaths $FilePaths)
+        $htmlContent += "`n" + (Get-HTMLReportFooter)
         
         $htmlContent | Out-File -FilePath $outputPath -Encoding UTF8
         Write-Log "Generated HTML report: $outputPath" -Level Info
