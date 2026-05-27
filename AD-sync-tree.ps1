@@ -1,17 +1,3 @@
-
-PS C:\Daten\Scripte\wip> C:\Daten\Scripte\AD-Sync-tree.ps1
-In C:\Daten\Scripte\AD-Sync-tree.ps1:27 Zeichen:81
-+ ... er beim Abrufen der Domänencontroller für Domäne $DomainName: $errorM ...
-+                                                      ~~~~~~~~~~~~
-Ungültiger Variablenverweis. Nach ":" folgte kein Zeichen, das für einen Variablennamen gültig ist. Verwenden Sie ggf. "${}", 
-um den Namen zu begrenzen.
-    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
-    + FullyQualifiedErrorId : InvalidVariableReferenceWithDrive
- 
-
-
-
-
 Import-Module ActiveDirectory
 
 try {
@@ -62,18 +48,12 @@ try {
         Write-Host "--------------------------------------------------"
         Write-Host "Stoße Replikation für $DCHostname an..."
         try {
-            $Command = "repadmin /syncall $DCHostname /A /e /d"
-            Write-Host "Führe aus: $Command"
+            Write-Host "Führe aus: repadmin /syncall $DCHostname /A /e /d"
             
             # Direkter Aufruf von repadmin.exe ist oft besser als Invoke-Expression für externe Befehle
             # und ermöglicht eine einfachere Prüfung von $LASTEXITCODE.
-            # Für dieses Beispiel belassen wir Invoke-Expression, um den ursprünglichen Fehler zu beheben.
-            Invoke-Expression $Command 
-            
-            # Hinweis: Invoke-Expression fängt möglicherweise nicht alle Fehler von repadmin ab.
-            # Eine robustere Fehlerbehandlung würde 'repadmin.exe' direkt aufrufen und $LASTEXITCODE prüfen.
-            # z.B.: & repadmin /syncall $DCHostname /A /e /d
-            # if ($LASTEXITCODE -ne 0) { throw "repadmin failed for $DCHostname with exit code $LASTEXITCODE" }
+            & repadmin /syncall $DCHostname /A /e /d
+            if ($LASTEXITCODE -ne 0) { throw "repadmin failed for $DCHostname with exit code $LASTEXITCODE" }
 
 
             Write-Host "Replikationsbefehl für $DCHostname gesendet." -ForegroundColor Green
@@ -81,9 +61,7 @@ try {
         } catch {
             # KORREKTUR für Zeile ca. 75: Fehlermeldung zuerst in Variable speichern
             $errorMessage = $_.Exception.Message
-            # Die Fehlermeldung hier kommt von Invoke-Expression oder einem Skript-terminierenden Fehler,
-            # nicht unbedingt direkt von repadmin, wenn repadmin nur einen non-zero Exit-Code zurückgibt.
-            Write-Warning "Fehler beim Anstoßen der Replikation für $DCHostname (während Invoke-Expression): $errorMessage"
+            Write-Warning "Fehler beim Anstoßen der Replikation für $DCHostname: $errorMessage"
             $FailCount++
             $FailedDCs += $DCHostname
         }
