@@ -74,20 +74,8 @@ function Get-GroupName {
     return $name
 }
 
-function Invoke-Main {
-    Show-Header
-    Import-Module ActiveDirectory
-
-    if (-not $CsvPath) { $CsvPath = Read-Host "Pfad zur Master-CSV eingeben" }
-    $CsvPath = $CsvPath.Trim().Trim('"')
-    if (-not (Test-Path $CsvPath)) {
-        Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERROR"
-        return
-    }
-
-    # ----------------------------------------------------------------
-    # 1. BEDARFSLISTE laden
-    # ----------------------------------------------------------------
+function Get-RequiredList {
+    param([string]$RequiredCsvPath)
     $RequiredList = New-Object 'System.Collections.Generic.HashSet[string]'
     if ($RequiredCsvPath -and (Test-Path $RequiredCsvPath)) {
         Write-Log "Lade Bedarfsliste..." "DEBUG"
@@ -99,10 +87,11 @@ function Invoke-Main {
         }
         Write-Log "Bedarfsliste: $($RequiredList.Count) Eintraege." "SUCCESS"
     }
+    return $RequiredList
+}
 
-    # ----------------------------------------------------------------
-    # 2. MASTER-CSV laden
-    # ----------------------------------------------------------------
+function Get-MasterCsvData {
+    param([string]$CsvPath)
     Write-Log "Lese Master-CSV..." "DEBUG"
     $MasterCsvData = @{}
     foreach ($row in (Import-Csv -Path $CsvPath -Delimiter ';' -Encoding Default)) {
@@ -112,10 +101,11 @@ function Invoke-Main {
         }
     }
     Write-Log "Master-CSV: $($MasterCsvData.Count) Zeilen." "SUCCESS"
+    return $MasterCsvData
+}
 
-    # ----------------------------------------------------------------
-    # 3. AD-DISCOVERY
-    # ----------------------------------------------------------------
+function Get-ADDiscovery {
+    param([bool]$SearchGlobal, [int]$TestCount, $MasterCsvData, $Stopwatch)
     Write-Log "Schritt 1: AD-Discovery (OUs 81/82)..." "INFO"
     $ADCache      = @{}
     $UniqueGroups = New-Object 'System.Collections.Generic.HashSet[string]'
@@ -170,6 +160,60 @@ function Invoke-Main {
     Write-Log ("Discovery: {0}s. Verarbeite {1} Eintraege..." -f `
         $Stopwatch.Elapsed.TotalSeconds.ToString('F2'), $ProcessList.Count) "SUCCESS"
 
+    return @{
+        ADCache      = $ADCache
+        SortedGroups = $SortedGroups
+        ProcessList  = $ProcessList
+    }
+}
+
+function Export-Results {
+    param($Results, $ErrCount, $ScriptDir, $SortedGroups, $Version, $LogFile)
+    # FIX-6: Bounds-Check vor $Results[0]
+    if ($Results.Count -eq 0) {
+        Write-Log "FEHLER: Keine Ergebnisse. AD-Verbindung und CSV pruefen." "ERROR"
+        return
+    }
+    if ($ErrCount -gt 0) {
+        Write-Log "$ErrCount Runspace-Fehler aufgetreten. Details: $LogFile" "WARN"
+    }
+
+    Write-Log "Erzeuge Ausgabedateien ($($Results.Count) Datensaetze)..." "INFO"
+
+    # Tabelle 1: Gruppen-Uebersicht
+    $Path1    = Join-Path $ScriptDir "L-Kennungen_Full_Analysis_v$Version.csv"
+    $cols1    = @("L-Kennung","andere_OU","GELOESCHT","Benoetigt","Geaendert","LOESCHEN","AD_Vorname","AD_Nachname")
+    $grpCols  = @($SortedGroups | ForEach-Object { "GRP_$_" })
+    $Results | Select-Object ($cols1 + $grpCols) |
+        Export-Csv -Path $Path1 -Delimiter ';' -NoTypeInformation -Encoding UTF8
+
+    # Tabelle 2: Properties (ohne LOESCHEN-Spalte, mit korrektem CSV-Escaping)
+    $Path2   = Join-Path $ScriptDir "L-Kennungen_Properties_v$Version.csv"
+    $allCols = @($Results[0].psobject.Properties.Name | Where-Object { $_ -ne "LOESCHEN" })
+    $lines   = New-Object 'System.Collections.Generic.List[string]'
+    [void]$lines.Add($allCols -join ';')
+
+    foreach ($r in $Results) {
+        $rowArr = foreach ($col in $allCols) {
+            $val = $r.$col
+            $str = if ($null -ne $val) { $val.ToString() } else { "" }
+            # RFC-4180 Escaping: Semikolon oder Anfuehrungszeichen -> quoten
+            if ($str -match '[;\r\n"]') {
+                '"' + $str.Replace('"', '""') + '"'
+            } else {
+                $str
+            }
+        }
+        [void]$lines.Add($rowArr -join ';')
+    }
+
+    $lines | Out-File -FilePath $Path2 -Encoding UTF8 -Force
+
+    return @{ Path1 = $Path1; Path2 = $Path2 }
+}
+
+function Invoke-ProcessingJobs {
+    param([int]$MaxThreads, $ProcessList, $MasterCsvData, $ADCache, $RequiredList, $SortedGroups, $LogFile)
     # ----------------------------------------------------------------
     # 4. RUNSPACE-POOL + SCRIPTBLOCK
     # ----------------------------------------------------------------
@@ -453,49 +497,50 @@ function Invoke-Main {
     Write-Progress -Activity "L-Kennungen verarbeiten" -Completed
     $Pool.Close()
     $Pool.Dispose()
+    return @{
+        Results  = $Results
+        ErrCount = $ErrCount
+    }
+}
+
+function Invoke-Main {
+    Show-Header
+    Import-Module ActiveDirectory
+
+    if (-not $CsvPath) { $CsvPath = Read-Host "Pfad zur Master-CSV eingeben" }
+    $CsvPath = $CsvPath.Trim().Trim('"')
+    if (-not (Test-Path $CsvPath)) {
+        Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERROR"
+        return
+    }
+
+    # ----------------------------------------------------------------
+    # 1 & 2. CSV-Daten laden
+    # ----------------------------------------------------------------
+    $RequiredList = Get-RequiredList -RequiredCsvPath $RequiredCsvPath
+    $MasterCsvData = Get-MasterCsvData -CsvPath $CsvPath
+
+    # ----------------------------------------------------------------
+    # 3. AD-DISCOVERY
+    # ----------------------------------------------------------------
+    $discovery = Get-ADDiscovery -SearchGlobal $SearchGlobal -TestCount $TestCount -MasterCsvData $MasterCsvData -Stopwatch $Stopwatch
+    $ADCache = $discovery.ADCache
+    $SortedGroups = $discovery.SortedGroups
+    $ProcessList = $discovery.ProcessList
+
+    # ----------------------------------------------------------------
+    # 4. RUNSPACE-POOL + SCRIPTBLOCK
+    # ----------------------------------------------------------------
+    $jobsResult = Invoke-ProcessingJobs -MaxThreads $MaxThreads -ProcessList $ProcessList -MasterCsvData $MasterCsvData -ADCache $ADCache -RequiredList $RequiredList -SortedGroups $SortedGroups -LogFile $LogFile
+    $Results = $jobsResult.Results
+    $ErrCount = $jobsResult.ErrCount
 
     # ----------------------------------------------------------------
     # 5. EXPORT
     # ----------------------------------------------------------------
-    # FIX-6: Bounds-Check vor $Results[0]
-    if ($Results.Count -eq 0) {
-        Write-Log "FEHLER: Keine Ergebnisse. AD-Verbindung und CSV pruefen." "ERROR"
-        return
-    }
-    if ($ErrCount -gt 0) {
-        Write-Log "$ErrCount Runspace-Fehler aufgetreten. Details: $LogFile" "WARN"
-    }
-
-    Write-Log "Erzeuge Ausgabedateien ($($Results.Count) Datensaetze)..." "INFO"
-
-    # Tabelle 1: Gruppen-Uebersicht
-    $Path1    = Join-Path $ScriptDir "L-Kennungen_Full_Analysis_v$Version.csv"
-    $cols1    = @("L-Kennung","andere_OU","GELOESCHT","Benoetigt","Geaendert","LOESCHEN","AD_Vorname","AD_Nachname")
-    $grpCols  = @($SortedGroups | ForEach-Object { "GRP_$_" })
-    $Results | Select-Object ($cols1 + $grpCols) |
-        Export-Csv -Path $Path1 -Delimiter ';' -NoTypeInformation -Encoding UTF8
-
-    # Tabelle 2: Properties (ohne LOESCHEN-Spalte, mit korrektem CSV-Escaping)
-    $Path2   = Join-Path $ScriptDir "L-Kennungen_Properties_v$Version.csv"
-    $allCols = @($Results[0].psobject.Properties.Name | Where-Object { $_ -ne "LOESCHEN" })
-    $lines   = New-Object 'System.Collections.Generic.List[string]'
-    [void]$lines.Add($allCols -join ';')
-
-    foreach ($r in $Results) {
-        $rowArr = foreach ($col in $allCols) {
-            $val = $r.$col
-            $str = if ($null -ne $val) { $val.ToString() } else { "" }
-            # RFC-4180 Escaping: Semikolon oder Anfuehrungszeichen -> quoten
-            if ($str -match '[;\r\n"]') {
-                '"' + $str.Replace('"', '""') + '"'
-            } else {
-                $str
-            }
-        }
-        [void]$lines.Add($rowArr -join ';')
-    }
-
-    $lines | Out-File -FilePath $Path2 -Encoding UTF8 -Force
+    $exportResult = Export-Results -Results $Results -ErrCount $ErrCount -ScriptDir $ScriptDir -SortedGroups $SortedGroups -Version $Version -LogFile $LogFile
+    $Path1 = $exportResult.Path1
+    $Path2 = $exportResult.Path2
 
     $Stopwatch.Stop()
 
