@@ -42,7 +42,7 @@ $previousCulture = [System.Threading.Thread]::CurrentThread.CurrentCulture
 
 # Import required modules with error handling
 try {
-    Import-Module ActiveDirectory -ErrorAction Stop
+    # Import-Module ActiveDirectory -ErrorAction Stop
     Write-Verbose "ActiveDirectory-Modul erfolgreich geladen"
 } catch {
     Write-Error "Fehler beim Laden des ActiveDirectory-Moduls: $_"
@@ -293,3 +293,9 @@ function New-CustomADUser {
 
             $userParams = @{
                 Name = $Name
+            }
+        }
+    } catch {
+        Write-CustomLog "Fehler beim Erstellen des Benutzers `$Name: `$_" -Level "FEHLER"
+    }
+}
