@@ -11,7 +11,7 @@ param(
 "=== opsi WinPE BUILDER v1.4.0 [$(Get-Date -Format 'yyyy-MM-dd HH:mm')] ===" | Write-Host -ForegroundColor Green
 "=== $BootWIM → $opsiwinpepath ===" | Write-Host -ForegroundColor Cyan
 
-# 1. ARBEITSVERZEICHNIS erstellen (FEHLER FIX!)
+# 1. ARBEITSVERZEICHNIS erstellen
 "=== 1/7 WorkDir erstellen ===" | Write-Host -ForegroundColor Yellow
 $WorkDir = Join-Path $PWD "WinPE_work_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
 New-Item -Path $WorkDir -ItemType Directory -Force | Out-Null
