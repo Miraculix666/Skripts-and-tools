@@ -145,29 +145,8 @@ function Write-CsvLine {
     $Writer.WriteLine($escaped -join ';')
 }
 
-# ══════════════════════════════════════════════════════════════════
-#  MAIN
-# ══════════════════════════════════════════════════════════════════
-function Invoke-Main {
-    Show-Banner
-    Import-Module ActiveDirectory -Verbose:$false
-
-    Write-Log "PowerShell v$($PSVersionTable.PSVersion)  |  PID $PID  |  Host: $env:COMPUTERNAME" "DBG"
-    Write-Log "Logfile: $LogFile" "INFO"
-
-    # ──────────────────────────────────────────────────────────────
-    # INPUT
-    # ──────────────────────────────────────────────────────────────
-    if (-not $CsvPath) { $CsvPath = Read-Host "📂  Pfad zur Master-CSV" }
-    $CsvPath = $CsvPath.Trim().Trim('"')
-    if (-not (Test-Path $CsvPath)) {
-        Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERR"; return
-    }
-    Write-Log "Master-CSV: $CsvPath" "DBG"
-
-    # ──────────────────────────────────────────────────────────────
-    # 1. BEDARFSLISTE
-    # ──────────────────────────────────────────────────────────────
+function Get-RequiredList {
+    param([string]$RequiredCsvPath)
     Write-Section "📋  BEDARFSLISTE laden"
     $RequiredList = New-Object 'System.Collections.Generic.HashSet[string]'
     if ($RequiredCsvPath -and (Test-Path $RequiredCsvPath)) {
@@ -182,10 +161,11 @@ function Invoke-Main {
     } else {
         Write-Log "Keine Bedarfsliste angegeben oder Datei fehlt -> übersprungen" "WARN"
     }
+    return $RequiredList
+}
 
-    # ──────────────────────────────────────────────────────────────
-    # 2. MASTER-CSV
-    # ──────────────────────────────────────────────────────────────
+function Get-MasterCsvData {
+    param([string]$CsvPath, [System.Diagnostics.Stopwatch]$SW)
     Write-Section "📊  MASTER-CSV laden"
     $t0 = $SW.Elapsed.TotalSeconds
     $MasterCsvData = @{}
@@ -198,10 +178,11 @@ function Invoke-Main {
         }
     }
     Write-Log "Master-CSV: $($MasterCsvData.Count) gueltige L-Kennungen  [+$([math]::Round($SW.Elapsed.TotalSeconds-$t0,2))s]" "OK"
+    return $MasterCsvData
+}
 
-    # ──────────────────────────────────────────────────────────────
-    # 3. AD-DISCOVERY
-    # ──────────────────────────────────────────────────────────────
+function Get-ADDiscoveryData {
+    param([System.Diagnostics.Stopwatch]$SW, [switch]$SearchGlobal)
     Write-Section "🔎  AD-DISCOVERY"
     $t0           = $SW.Elapsed.TotalSeconds
     $ADCache      = @{}
@@ -256,20 +237,22 @@ function Invoke-Main {
     $SortedGroups = @($UniqueGroups | Sort-Object)
     Write-Log "AD-Discovery abgeschlossen: $($ADCache.Count) AD-Objekte  |  $($SortedGroups.Count) unique Gruppen  [+$([math]::Round($SW.Elapsed.TotalSeconds-$t0,2))s]" "PERF"
 
-    # Arbeitsliste aufbauen
-    $AllSAMs     = @(@($ADCache.Keys) + @($MasterCsvData.Keys) | Select-Object -Unique | Sort-Object)
-    Write-Log "Gesamt unique SAMs (AD + CSV): $($AllSAMs.Count)" "DBG"
+    return @{
+        ADCache = $ADCache
+        SortedGroups = $SortedGroups
+    }
+}
 
-    $ProcessList = if ($TestCount -gt 0) {
-        Write-Log "⚠️  TESTMODUS: nur erste $TestCount Eintraege" "WARN"
-        @($AllSAMs | Select-Object -First $TestCount)
-    } else { $AllSAMs }
-
-    Write-Log "Zu verarbeitende Eintraege: $($ProcessList.Count)" "OK"
-
-    # ──────────────────────────────────────────────────────────────
-    # 4. SEQUENZIELLE VERARBEITUNG
-    # ──────────────────────────────────────────────────────────────
+function Process-ADAndCsvData {
+    param(
+        [array]$ProcessList,
+        [hashtable]$MasterCsvData,
+        [hashtable]$ADCache,
+        [System.Collections.Generic.HashSet[string]]$RequiredList,
+        [array]$SortedGroups,
+        [System.Diagnostics.Stopwatch]$SW,
+        [switch]$DebugMode
+    )
     Write-Section "⚙️   VERARBEITUNG  ($($ProcessList.Count) Eintraege · sequenziell)"
     $t0      = $SW.Elapsed.TotalSeconds
     $Results = New-Object 'System.Collections.Generic.List[PSObject]'
@@ -443,9 +426,17 @@ function Invoke-Main {
     $procTime = [math]::Round($SW.Elapsed.TotalSeconds - $t0, 2)
     Write-Log "Verarbeitung abgeschlossen: $($Results.Count) Datensaetze in ${procTime}s  (~$([math]::Round($procTime/$Total*1000,1))ms/Eintrag)" "PERF"
 
-    # ──────────────────────────────────────────────────────────────
-    # 5. EXPORT  (StreamWriter — O(1) RAM statt O(n*m))
-    # ──────────────────────────────────────────────────────────────
+    return $Results
+}
+
+function Export-Results {
+    param(
+        [System.Collections.Generic.List[PSObject]]$Results,
+        [array]$SortedGroups,
+        [string]$ScriptDir,
+        [string]$Version,
+        [System.Diagnostics.Stopwatch]$SW
+    )
     Write-Section "💾  EXPORT  ($($Results.Count) Zeilen · $($SortedGroups.Count) Gruppenspalten)"
 
     if ($Results.Count -eq 0) {
@@ -502,17 +493,26 @@ function Invoke-Main {
     Write-Host ""
     Write-Log "Tab2 fertig: $Path2  [+$([math]::Round($SW.Elapsed.TotalSeconds-$t0,2))s]" "OK"
 
-    # ──────────────────────────────────────────────────────────────
-    # ABSCHLUSS
-    # ──────────────────────────────────────────────────────────────
+    return @{ Path1 = $Path1; Path2 = $Path2 }
+}
+
+function Write-Summary {
+    param(
+        [int]$ResultsCount,
+        [int]$SortedGroupsCount,
+        [string]$Path1,
+        [string]$Path2,
+        [string]$LogFile,
+        [System.Diagnostics.Stopwatch]$SW
+    )
     $SW.Stop()
     $totalMB = [math]::Round([System.GC]::GetTotalMemory($false) / 1MB, 1)
 
     Write-Host ""
     Write-Host "  ╔══════════════════════════════════════════════════════════╗" -ForegroundColor Green
     Write-Host "  ║  ✅  ABGESCHLOSSEN                                        ║" -ForegroundColor Green
-    Write-Host ("  ║  📦  {0,-52}║" -f "Datensaetze  : $($Results.Count)") -ForegroundColor Green
-    Write-Host ("  ║  🗂️   {0,-51}║" -f "Gruppen      : $($SortedGroups.Count)") -ForegroundColor Green
+    Write-Host ("  ║  📦  {0,-52}║" -f "Datensaetze  : $ResultsCount") -ForegroundColor Green
+    Write-Host ("  ║  🗂️   {0,-51}║" -f "Gruppen      : $SortedGroupsCount") -ForegroundColor Green
     Write-Host ("  ║  ⏱️   {0,-52}║" -f "Gesamtdauer  : $($SW.Elapsed.ToString('mm\:ss\.ff')) min") -ForegroundColor Green
     Write-Host ("  ║  🧠  {0,-52}║" -f "RAM (managed): ${totalMB} MB") -ForegroundColor Green
     Write-Host "  ║                                                          ║" -ForegroundColor DarkGreen
@@ -522,7 +522,62 @@ function Invoke-Main {
     Write-Host "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Green
     Write-Host ""
 
-    Write-Log "Fertig. Dauer: $($SW.Elapsed.ToString('mm\:ss\.ff'))  RAM: ${totalMB}MB  Zeilen: $($Results.Count)" "PERF"
+    Write-Log "Fertig. Dauer: $($SW.Elapsed.ToString('mm\:ss\.ff'))  RAM: ${totalMB}MB  Zeilen: $ResultsCount" "PERF"
+}
+
+# ══════════════════════════════════════════════════════════════════
+#  MAIN
+# ══════════════════════════════════════════════════════════════════
+function Invoke-Main {
+    Show-Banner
+    Import-Module ActiveDirectory -Verbose:$false
+
+    Write-Log "PowerShell v$($PSVersionTable.PSVersion)  |  PID $PID  |  Host: $env:COMPUTERNAME" "DBG"
+    Write-Log "Logfile: $LogFile" "INFO"
+
+    # ──────────────────────────────────────────────────────────────
+    # INPUT
+    # ──────────────────────────────────────────────────────────────
+    $localCsvPath = $CsvPath
+    if (-not $localCsvPath) { $localCsvPath = Read-Host "📂  Pfad zur Master-CSV" }
+    $localCsvPath = $localCsvPath.Trim().Trim('"')
+    if (-not (Test-Path $localCsvPath)) {
+        Write-Log "Master-CSV nicht gefunden: '$localCsvPath'" "ERR"; return
+    }
+    Write-Log "Master-CSV: $localCsvPath" "DBG"
+
+    $RequiredList = Get-RequiredList -RequiredCsvPath $RequiredCsvPath
+    $MasterCsvData = Get-MasterCsvData -CsvPath $localCsvPath -SW $SW
+
+    $ADData = Get-ADDiscoveryData -SW $SW -SearchGlobal:$SearchGlobal
+    $ADCache = $ADData.ADCache
+    $SortedGroups = $ADData.SortedGroups
+
+    $AllSAMs = @(@($ADCache.Keys) + @($MasterCsvData.Keys) | Select-Object -Unique | Sort-Object)
+    Write-Log "Gesamt unique SAMs (AD + CSV): $($AllSAMs.Count)" "DBG"
+
+    $ProcessList = if ($TestCount -gt 0) {
+        Write-Log "⚠️  TESTMODUS: nur erste $TestCount Eintraege" "WARN"
+        @($AllSAMs | Select-Object -First $TestCount)
+    } else { $AllSAMs }
+    Write-Log "Zu verarbeitende Eintraege: $($ProcessList.Count)" "OK"
+
+    $Results = Process-ADAndCsvData -ProcessList $ProcessList `
+        -MasterCsvData $MasterCsvData -ADCache $ADCache `
+        -RequiredList $RequiredList -SortedGroups $SortedGroups `
+        -SW $SW -DebugMode:$DebugMode
+
+    if ($Results.Count -gt 0) {
+        $ExportPaths = Export-Results -Results $Results -SortedGroups $SortedGroups -ScriptDir $ScriptDir -Version $Version -SW $SW
+        $Path1 = $ExportPaths.Path1
+        $Path2 = $ExportPaths.Path2
+    } else {
+        $Path1 = ""
+        $Path2 = ""
+    }
+
+    Write-Summary -ResultsCount $Results.Count -SortedGroupsCount $SortedGroups.Count `
+        -Path1 $Path1 -Path2 $Path2 -LogFile $LogFile -SW $SW
 }
 
 Invoke-Main
