@@ -48,9 +48,10 @@ Import-Module ActiveDirectory
 
 # Funktion zum Erstellen des Log-Verzeichnisses
 function Create-LogDirectory {
-    $logDir = "C:\ADUserCreationLogs"
+    param([string]$logDir = "C:\ADUserCreationLogs")
+
     if (!(Test-Path $logDir)) {
-        New-Item -ItemType Directory -Force -Path $logDir
+        [void](New-Item -ItemType Directory -Force -Path $logDir)
     }
     return $logDir
 }
