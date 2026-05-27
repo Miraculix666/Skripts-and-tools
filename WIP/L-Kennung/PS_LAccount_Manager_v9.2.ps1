@@ -87,15 +87,21 @@ function Write-Log {
 # [FIX-1] Umbenannt von 'Start-Process' -> 'Invoke-Main'
 # Grund: 'Start-Process' ist ein eingebautes PowerShell-Cmdlet.
 # Eine gleichnamige Funktion führt zu Namenskonflikt und unerwartetem Verhalten.
-function Invoke-Main {
-    Show-Header
-    Import-Module ActiveDirectory
+function Get-MasterCsvData {
+    param([string]$CsvPath)
+    Write-Log "Lese Master-CSV..." "DEBUG"
+    $MasterCsvData = @{}
+    $RawCsv = Import-Csv -Path $CsvPath -Delimiter ';' -Encoding Default
+    foreach ($line in $RawCsv) {
+        $key = if ($line."L-Kennung") { $line."L-Kennung".ToString().Trim().ToUpper() } else { "" }
+        if ($key) { $MasterCsvData[$key] = $line }
+    }
+    Write-Log "Master-CSV geladen ($($MasterCsvData.Count) Zeilen)." "SUCCESS"
+    return $MasterCsvData
+}
 
-    if (-not $CsvPath) { $CsvPath = Read-Host "Pfad zur Master-CSV eingeben" }
-    $CsvPath = $CsvPath.Trim().Trim('"')
-    if (-not (Test-Path $CsvPath)) { Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERROR"; return }
-
-    # 1. BEDARFSLISTE
+function Get-RequiredList {
+    param([string]$RequiredCsvPath)
     $RequiredList = New-Object System.Collections.Generic.HashSet[string]
     if ($RequiredCsvPath -and (Test-Path $RequiredCsvPath)) {
         Write-Log "Lade Bedarfsliste..." "DEBUG"
@@ -105,16 +111,22 @@ function Invoke-Main {
         }
         Write-Log "Bedarfsliste geladen ($($RequiredList.Count) Einträge)." "SUCCESS"
     }
+    return $RequiredList
+}
+
+function Invoke-Main {
+    Show-Header
+    Import-Module ActiveDirectory
+
+    if (-not $CsvPath) { $CsvPath = Read-Host "Pfad zur Master-CSV eingeben" }
+    $CsvPath = $CsvPath.Trim().Trim('"')
+    if (-not (Test-Path $CsvPath)) { Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERROR"; return }
+
+    # 1. BEDARFSLISTE
+    $RequiredList = Get-RequiredList -RequiredCsvPath $RequiredCsvPath
 
     # 2. MASTER-CSV
-    Write-Log "Lese Master-CSV..." "DEBUG"
-    $MasterCsvData = @{}
-    $RawCsv = Import-Csv -Path $CsvPath -Delimiter ';' -Encoding Default
-    foreach ($line in $RawCsv) {
-        $key = if ($line."L-Kennung") { $line."L-Kennung".ToString().Trim().ToUpper() } else { "" }
-        if ($key) { $MasterCsvData[$key] = $line }
-    }
-    Write-Log "Master-CSV geladen ($($MasterCsvData.Count) Zeilen)." "SUCCESS"
+    $MasterCsvData = Get-MasterCsvData -CsvPath $CsvPath
 
     # 3. AD-DISCOVERY
     Write-Log "Schritt 1: AD-Discovery (OUs 81/82)..." "INFO"
