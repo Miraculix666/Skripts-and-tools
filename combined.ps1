@@ -72,7 +72,7 @@ if ($allUsers.Count -gt 0) {
 
 Write-Host "All SAMAccountNames have been written to: $samAccountNamesFilePath"
 Write-Host "Expired SAMAccountNames have been written to: $expiredUsersFilePath"
-----------------------------------------------
+# ----------------------------------------------
 ### This script looksup after deactiveted L-Kennungen in "Deponie" 
 
 # Set the distinguished names of the Organizational Units (OU)
@@ -106,7 +106,7 @@ if ($allDeactivatedUsers.Count -gt 0) {
 $allDeactivatedUsers | ForEach-Object { $_.SamAccountName | Out-File -Append -FilePath $outputFilePathSAM }
 # Display message about the file
 Write-Host "SamAccountNames have been written to: $outputFilePathSAM"
-----------------------------------------------------------
+# ----------------------------------------------------------
 
 ### This script looksup after deactiveted L-Kennungen in "Deponie" 
 
@@ -139,7 +139,7 @@ Write-Host "SamAccountNames have been written to: $outputFilePathSAM"
 
 
 $allDeactivatedUsers | Select-Object SamAccountName | .\Get-ADUserLockouts.ps1
------------------------------------------------------------
+# -----------------------------------------------------------
 Function Get-ADUserLockouts {
     [CmdletBinding(
         DefaultParameterSetName = 'All'
@@ -188,7 +188,7 @@ Function Get-ADUserLockouts {
     }
     End{}
 }
-------------------------------------------------------
+# ------------------------------------------------------
 "dsquery.exe user ""ou=Benutzer,ou=82,ou=Polizei-NRW-PB-PE-2012,dc=polizei,dc=nrw,dc=de"" -name L110* | DSMOD user -pwdneverexpires no -canchpwd no -mustchpwd no -pwd P2f2aL4!10"
 
 
@@ -225,7 +225,7 @@ dsquery.exe user "ou=Benutzer,ou=81,ou=Polizei-NRW-PB-PE-2012,dc=polizei,dc=nrw,
 dsquery.exe user "ou=Benutzer,ou=82,ou=Polizei-NRW-PB-PE-2012,dc=polizei,dc=nrw,dc=de" -name L114* -inactive 39 -limit 700 >"c:\daten\inactiveuser.txt"
 
 dsquery.exe user "ou=Benutzer,ou=81,ou=Polizei-NRW-PB-PE-2012,dc=polizei,dc=nrw,dc=de" -name L114* -inactive 39 -limit 700 >"c:\daten\inactiveuser.txt"
---------------------------------------------------------------------
+# --------------------------------------------------------------------
 
 # Define the path to the file containing SAMAccountNames of expired users
 $expiredUsersFilePath = "C:\Daten\test.txt"
@@ -242,7 +242,7 @@ $newLastLogonDate = Get-Date
     Write-Host "LastLogonDate updated for user: $expiredUser"
 
 Write-Host "LastLogonDate update completed for expired users."
-------------------------------------------------------------------------
+# ------------------------------------------------------------------------
 
 #####ACHUTNG, funzt nicht!! erwischt falsche kennungen.
 ##### neuer Ansatztz mit Filter OU 81 & 82
@@ -252,8 +252,8 @@ Write-Host "LastLogonDate update completed for expired users."
 # Input file path containing the list of affected users
 $inputFilePath = "C:\Daten\Deaktivierte_L_Kennung_SAM.txt"
 
-# Set the new password
-$newPassword = ConvertTo-SecureString -String "P2f7aL4!01" -AsPlainText -Force
+# Set the new password securely via prompt
+$newPassword = Read-Host -Prompt "Enter the new password for the users" -AsSecureString
 
 # Read SamAccountNames from the file
 $samAccountNames = Get-Content -Path $inputFilePath
@@ -261,7 +261,7 @@ $samAccountNames = Get-Content -Path $inputFilePath
 # Reset password for each user
 foreach ($samAccountName in $samAccountNames) {
     try {
-        Set-ADAccountPassword -Identity $samAccountName -Reset -NewPassword (ConvertTo-SecureString -AsPlainText $newPassword -Force) -ErrorAction Stop
+        Set-ADAccountPassword -Identity $samAccountName -Reset -NewPassword $newPassword -ErrorAction Stop
         Write-Host "Password reset successful for user: $samAccountName" -ForegroundColor Green
     } catch {
         Write-Host "Failed to reset password for user: $samAccountName" -ForegroundColor Red
