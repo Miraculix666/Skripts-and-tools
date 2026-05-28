@@ -109,6 +109,18 @@ foreach ($repo in $allRepos) {
 # ── Step 3 - Auditing & Synchronising Repos ───────────────────────────────────
 Write-Step 3 6 "Lokale Ordner analysieren und synchronisieren ..."
 
+# Backup local settings for VS Code and Antigravity IDE before repo scan/commit
+$settingsSyncScript = Join-Path $PSScriptRoot "Sync-VSCodeSettings.ps1"
+if (Test-Path $settingsSyncScript) {
+    Write-Step 3 6 "Backup fuer VS Code & Antigravity IDE Einstellungen ausfuehren..."
+    try {
+        & $settingsSyncScript -Backup
+    }
+    catch {
+        Write-Warn "Fehler beim Sichern der Einstellungen: $_"
+    }
+}
+
 $subDirs = Get-ChildItem -Path $BaseDir -Directory | Where-Object { $_.Name -notmatch '^\.git$' } | Sort-Object Name
 
 $localRepos = @()
@@ -253,21 +265,30 @@ foreach ($repo in $localRepos) {
         if ($repo.IsDirty) {
             if (-not $DryRun) {
                 try {
-                    # Stage all changes
-                    git -C $repo.Path add -A 2>&1 | Out-Null
-                    # Commit
-                    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-                    $commitMsg = "Auto-commit: sync on $timestamp"
-                    $commitOutput = git -C $repo.Path commit -m $commitMsg 2>&1
-                    if ($LASTEXITCODE -eq 0) {
-                        $actions.Add("Auto-committed")
+                    # Stage all changes with safecrlf disabled to ignore line-ending warnings
+                    git -C $repo.Path -c core.safecrlf=false add -A 2>&1 | Out-Null
+                    
+                    # Check if there are actual changes staged for commit
+                    $staged = git -C $repo.Path diff --cached --name-only 2>&1
+                    if ($staged -and $staged.Count -gt 0 -and $staged[0].Trim().Length -gt 0) {
+                        # Commit with safecrlf disabled
+                        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+                        $commitMsg = "Auto-commit: sync on $timestamp"
+                        $commitOutput = git -C $repo.Path -c core.safecrlf=false commit -m $commitMsg 2>&1
+                        if ($LASTEXITCODE -eq 0) {
+                            $actions.Add("Auto-committed")
+                            $repo.IsDirty = $false
+                            $repo.GitStatus = "Clean"
+                        } else {
+                            $actions.Add("Commit failed")
+                            $hasErrors = $true
+                            $repo.ActionTaken = "Commit failed: $commitOutput"
+                            $failed.Add($repo.Name)
+                        }
+                    } else {
+                        # No actual staged changes (e.g. only line-ending warning files that are ignored/already matched)
                         $repo.IsDirty = $false
                         $repo.GitStatus = "Clean"
-                    } else {
-                        $actions.Add("Commit failed")
-                        $hasErrors = $true
-                        $repo.ActionTaken = "Commit failed: $commitOutput"
-                        $failed.Add($repo.Name)
                     }
                 }
                 catch {
@@ -491,6 +512,17 @@ if (-not $Silent) {
 }
 
 Write-OK "Sync abgeschlossen - Geklont: $($cloned.Count) | Gepullt: $($pulled.Count) | Uebersprungen: $($skipped.Count) | Fehler: $($failed.Count)"
+
+# Restore/Apply newly pulled settings for VS Code and Antigravity IDE
+if (Test-Path $settingsSyncScript) {
+    Write-Step 3 6 "Wiederherstellen/Uebernehmen der synchronisierten VS Code & Antigravity IDE Einstellungen..."
+    try {
+        & $settingsSyncScript -Restore
+    }
+    catch {
+        Write-Warn "Fehler beim Uebernehmen der Einstellungen: $_"
+    }
+}
 
 # ── Step 4 - Update all.code-workspace ───────────────────────────────────────
 Write-Step 4 6 "all.code-workspace aktualisieren ..."
