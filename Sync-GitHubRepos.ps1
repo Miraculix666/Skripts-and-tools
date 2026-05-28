@@ -180,7 +180,7 @@ foreach ($dir in $subDirs) {
 
         # Check git status (dirty, ahead, behind)
         try {
-            $statusOutput = git -C $localPath status --porcelain 2>&1
+            $statusOutput = @(git -C $localPath status --porcelain 2>&1)
             if ($LASTEXITCODE -eq 0 -and $statusOutput -and $statusOutput.Count -gt 0 -and $statusOutput[0].Trim().Length -gt 0) {
                 $isDirty = $true
                 $gitStatus = "Dirty"
@@ -193,7 +193,7 @@ foreach ($dir in $subDirs) {
                 git -C $localPath fetch --prune -q 2>&1 | Out-Null
             } catch {}
         }
-        
+
         try {
             $aheadCount = git -C $localPath rev-list --count '@{u}..HEAD' 2>&1
             if ($LASTEXITCODE -eq 0) { $ahead = [int]$aheadCount.Trim() }
@@ -258,6 +258,8 @@ foreach ($repo in $localRepos) {
 
     if ($FullSync) {
         # ── Full Sync Mode: Commit, Pull/Merge, Push ──────────────────────────
+        $oldEAP = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
         $actions = [System.Collections.Generic.List[string]]::new()
         $hasErrors = $false
 
@@ -267,9 +269,9 @@ foreach ($repo in $localRepos) {
                 try {
                     # Stage all changes with safecrlf disabled to ignore line-ending warnings
                     git -C $repo.Path -c core.safecrlf=false add -A 2>&1 | Out-Null
-                    
+
                     # Check if there are actual changes staged for commit
-                    $staged = git -C $repo.Path diff --cached --name-only 2>&1
+                    $staged = @(git -C $repo.Path diff --cached --name-only 2>&1)
                     if ($staged -and $staged.Count -gt 0 -and $staged[0].Trim().Length -gt 0) {
                         # Commit with safecrlf disabled
                         $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
@@ -401,6 +403,7 @@ foreach ($repo in $localRepos) {
                 $repo.ActionTaken = "Up to date"
             }
         }
+        $ErrorActionPreference = $oldEAP
         continue
     }
 
