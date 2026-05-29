@@ -1,3 +1,98 @@
+function Add-VisioUserShapes {
+    param (
+        [Parameter(Mandatory)]$Page,
+        [Parameter(Mandatory)]$UserShape,
+        [Parameter(Mandatory)][object[]]$Data,
+        [Parameter(Mandatory)][hashtable]$Shapes,
+        [Parameter(Mandatory)][int]$XPos,
+        [Parameter(Mandatory)][int]$YPos
+    )
+
+    $Data | Sort-Object OU, UserName -Unique | ForEach-Object {
+        if (-not $Shapes.ContainsKey($_.SamAccountName)) {
+            $shape = $Page.Drop($UserShape, $XPos * 2, 10 - $YPos)
+            $shape.Text = "$($_.UserName)`n($($_.SamAccountName))"
+
+            # Add shape data
+            [void]$shape.AddRow("User_Data", 0)
+            $shape.Cells("User_Data.UserName").Formula = """$($_.UserName)"""
+            $shape.Cells("User_Data.SamAccountName").Formula = """$($_.SamAccountName)"""
+
+            $Shapes[$_.SamAccountName] = $shape
+            $YPos++
+            if ($YPos -gt 8) {
+                $YPos = 1
+                $XPos++
+            }
+        }
+    }
+
+    return @{ Shapes = $Shapes; XPos = $XPos; YPos = $YPos }
+}
+
+function Add-VisioGroupShapes {
+    param (
+        [Parameter(Mandatory)]$Page,
+        [Parameter(Mandatory)]$GroupShape,
+        [Parameter(Mandatory)][object[]]$Data,
+        [Parameter(Mandatory)][hashtable]$Shapes,
+        [Parameter(Mandatory)][int]$XPos,
+        [Parameter(Mandatory)][int]$YPos
+    )
+
+    $Data | Sort-Object Group -Unique | ForEach-Object {
+        if (-not $Shapes.ContainsKey($_.Group)) {
+            $shape = $Page.Drop($GroupShape, $XPos * 2, 10 - $YPos)
+            $shape.Text = $_.Group
+
+            # Add shape data
+            [void]$shape.AddRow("Group_Data", 0)
+            $shape.Cells("Group_Data.GroupName").Formula = """$($_.Group)"""
+
+            $Shapes[$_.Group] = $shape
+            $YPos++
+            if ($YPos -gt 8) {
+                $YPos = 1
+                $XPos++
+            }
+        }
+    }
+
+    return $Shapes
+}
+
+function Add-VisioConnections {
+    param (
+        [Parameter(Mandatory)]$Page,
+        [Parameter(Mandatory)][object[]]$Data,
+        [Parameter(Mandatory)][hashtable]$Shapes
+    )
+
+    $Data | ForEach-Object {
+        $connector = $Page.Shapes.AddConnector(1, $Shapes[$_.SamAccountName], $Shapes[$_.Group])
+        [void]$connector.AddRow("Connection_Data", 0)
+        $connector.Cells("Connection_Data.FromUser").Formula = """$($_.SamAccountName)"""
+        $connector.Cells("Connection_Data.ToGroup").Formula = """$($_.Group)"""
+    }
+}
+
+function Add-VisioDataRecordset {
+    param (
+        [Parameter(Mandatory)]$Document
+    )
+
+    # Create data recordset for shape data
+    $dataRecordset = $Document.DataRecordsets.Add()
+    $dataRecordset.Name = "ADUserGroups"
+
+    # Add data columns, suppressing pipeline output
+    [void]$dataRecordset.DataColumns.Add("UserName", "UserName")
+    [void]$dataRecordset.DataColumns.Add("SamAccountName", "SamAccountName")
+    [void]$dataRecordset.DataColumns.Add("Group", "Group")
+
+    return $dataRecordset
+}
+
 function Export-ToVisio {
     param (
         [Parameter(Mandatory)][object[]]$Data,
@@ -25,13 +120,7 @@ function Export-ToVisio {
         $groupShape = $stencil.Masters.Item("Decision")
         
         # Create data recordset for shape data
-        $dataRecordset = $doc.DataRecordsets.Add()
-        $dataRecordset.Name = "ADUserGroups"
-        
-        # Add data columns
-        $dataRecordset.DataColumns.Add("UserName", "UserName")
-        $dataRecordset.DataColumns.Add("SamAccountName", "SamAccountName")
-        $dataRecordset.DataColumns.Add("Group", "Group")
+        $dataRecordset = Add-VisioDataRecordset -Document $doc
         
         # Store shapes with their identifiers
         $shapes = @{}
@@ -39,53 +128,17 @@ function Export-ToVisio {
         $xPos = 1
         
         # Create user shapes with data links
-        $Data | Sort-Object OU, UserName -Unique | ForEach-Object {
-            if (-not $shapes.ContainsKey($_.SamAccountName)) {
-                $shape = $page.Drop($userShape, $xPos * 2, 10 - $yPos)
-                $shape.Text = "$($_.UserName)`n($($_.SamAccountName))"
-                
-                # Add shape data
-                $shape.AddRow("User_Data", 0)
-                $shape.Cells("User_Data.UserName").Formula = """$($_.UserName)"""
-                $shape.Cells("User_Data.SamAccountName").Formula = """$($_.SamAccountName)"""
-                
-                $shapes[$_.SamAccountName] = $shape
-                $yPos++
-                if ($yPos -gt 8) {
-                    $yPos = 1
-                    $xPos++
-                }
-            }
-        }
+        $userShapesResult = Add-VisioUserShapes -Page $page -UserShape $userShape -Data $Data -Shapes $shapes -XPos $xPos -YPos $yPos
+        $shapes = $userShapesResult.Shapes
+        $xPos = $userShapesResult.XPos
         
         # Create group shapes with data links
         $yPos = 1
         $xPos += 2
-        $Data | Sort-Object Group -Unique | ForEach-Object {
-            if (-not $shapes.ContainsKey($_.Group)) {
-                $shape = $page.Drop($groupShape, $xPos * 2, 10 - $yPos)
-                $shape.Text = $_.Group
-                
-                # Add shape data
-                $shape.AddRow("Group_Data", 0)
-                $shape.Cells("Group_Data.GroupName").Formula = """$($_.Group)"""
-                
-                $shapes[$_.Group] = $shape
-                $yPos++
-                if ($yPos -gt 8) {
-                    $yPos = 1
-                    $xPos++
-                }
-            }
-        }
+        $shapes = Add-VisioGroupShapes -Page $page -GroupShape $groupShape -Data $Data -Shapes $shapes -XPos $xPos -YPos $yPos
         
         # Add connections with data links
-        $Data | ForEach-Object {
-            $connector = $page.Shapes.AddConnector(1, $shapes[$_.SamAccountName], $shapes[$_.Group])
-            $connector.AddRow("Connection_Data", 0)
-            $connector.Cells("Connection_Data.FromUser").Formula = """$($_.SamAccountName)"""
-            $connector.Cells("Connection_Data.ToGroup").Formula = """$($_.Group)"""
-        }
+        Add-VisioConnections -Page $page -Data $Data -Shapes $shapes
         
         # Save with data links
         $doc.SaveAs($Path)
