@@ -98,10 +98,8 @@ function Export-TemplateUserData {
     $userProperties = $user | Select-Object SamAccountName, GivenName, Surname, Name, DisplayName, Description, Office, Department, Title, Company, EmailAddress, StreetAddress, City, State, PostalCode, Country, OfficePhone
     $userProperties | Export-Csv -Path $CsvPath -NoTypeInformation -Delimiter ";"
     Write-Log "Vorlagenbenutzerdaten wurden in $CsvPath exportiert."
-    param([string]$TemplateUser)
     
     try {
-        $user = Get-ADUser -Identity $TemplateUser -Properties *
         $exportProperties = @(
             'GivenName','Surname','Department','Title',
             'City','Country','Company','Office'
@@ -113,7 +111,6 @@ function Export-TemplateUserData {
     }
     catch {
         Write-LogMessage "Fehler beim Exportieren der Template-Daten: $_" -Type Error
-        exit
     }
 }
 
