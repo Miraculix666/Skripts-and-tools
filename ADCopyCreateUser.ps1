@@ -160,6 +160,20 @@ process {
 
             'CSV' {
                 $users = Import-Csv -Path $CSVPath -Delimiter ';' -Encoding UTF8
+
+                $sourceUserNames = $users | Select-Object -ExpandProperty SourceSamAccountName | Select-Object -Unique
+
+                $sourceUsersCache = @{}
+                $sourceUserNames | Get-ADUser -Properties MemberOf, DistinguishedName -ErrorAction SilentlyContinue -ErrorVariable adErrors | ForEach-Object {
+                    $sourceUsersCache[$_.SamAccountName] = $_
+                }
+
+                if ($adErrors) {
+                    foreach ($err in $adErrors) {
+                        Write-Log -Level Warning -Message "Fehler bei der Abfrage von Quellbenutzer: $($err.Exception.Message)"
+                    }
+                }
+
                 foreach ($user in $users) {
                     # CSV-Verarbeitung (Beispielstruktur)
                     $userParams = @{
@@ -168,8 +182,12 @@ process {
                         Enabled = [bool]$user.Enabled
                     }
                     
-                    $sourceUser = Get-ADUser -Identity $user.SourceSamAccountName -Properties MemberOf, DistinguishedName
-                    Copy-ADUserWithGroups -SourceUser $sourceUser -TargetUserParams $userParams
+                    $sourceUser = $sourceUsersCache[$user.SourceSamAccountName]
+                    if ($null -ne $sourceUser) {
+                        Copy-ADUserWithGroups -SourceUser $sourceUser -TargetUserParams $userParams
+                    } else {
+                        Write-Log -Level Error -Message "Quellbenutzer $($user.SourceSamAccountName) konnte nicht gefunden werden (übersprungen)."
+                    }
                 }
                 return
             }
