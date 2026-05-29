@@ -2,7 +2,7 @@
 $preFilledUserName = ""
 $preFilledWildcard = "DWR45*"
 $preFilledOU = "OU=47678"
-$preFilledPassword = "P2f7aL4!01"
+$preFilledPassword = Read-Host -Prompt "Enter the new password" -AsSecureString
 $skipConfirmation = $false
 
 # Run the primary script with pre-filled options
