@@ -1280,10 +1280,11 @@ process {
              # 4. Daten für den Export aufbereiten
              $exportData = [System.Collections.Generic.List[PSObject]]::new()
              Write-Log -Level Info -Message "Bereite Daten für den Export vor..."
-             foreach ($userDN in ($uniqueFoundUsers | Select-Object -ExpandProperty DistinguishedName)) { # Iteriere über DNs
+
+             # Hole alle vollständigen Benutzerobjekte per Pipeline
+             $pipelineUsers = $uniqueFoundUsers | Select-Object -ExpandProperty DistinguishedName | Get-ADUser -Properties $allPropertiesToGet -ErrorAction SilentlyContinue -ErrorVariable adErrors
+             foreach ($user in $pipelineUsers) {
                  try {
-                     # Hole das vollständige Benutzerobjekt erneut
-                     $user = Get-ADUser -Identity $userDN -Properties $allPropertiesToGet -ErrorAction Stop
                      Write-Verbose "Verarbeite Benutzer für Export: $($user.SamAccountName)"
 
                      $userExportObject = [ordered]@{
@@ -1307,9 +1308,15 @@ process {
                      $userExportObject['GroupNames'] = $groupNames -join ','
                      $exportData.Add([PSCustomObject]$userExportObject)
                  } catch {
-                      Write-Log -Level Warning -Message "Fehler beim erneuten Abrufen oder Verarbeiten des Benutzers mit DN '$userDN': $_"
+                      Write-Log -Level Warning -Message "Fehler beim Verarbeiten des Benutzers '$($user.SamAccountName)': $_"
                  }
-             } # End foreach userDN
+             } # End foreach user
+
+             if ($adErrors) {
+                 foreach ($err in $adErrors) {
+                     Write-Log -Level Warning -Message "Fehler beim Abrufen eines Benutzers: $err"
+                 }
+             }
 
              # 5. Nach CSV exportieren
              if($exportData.Count -eq 0){
@@ -1414,10 +1421,10 @@ process {
              # 4. Daten für den Export aufbereiten (JETZT mit vollständigen Objekten)
              $exportData = [System.Collections.Generic.List[PSObject]]::new()
              Write-Log -Level Info -Message "Bereite Daten für den L-Kennung Export vor..."
-             foreach ($dn in $uniqueUserDNs) {
+
+             $pipelineUsersL = $uniqueUserDNs | Get-ADUser -Properties $allPropertiesToGet -ErrorAction SilentlyContinue -ErrorVariable adErrorsL
+             foreach ($user in $pipelineUsersL) {
                  try {
-                     # Hole das vollständige Benutzerobjekt erneut
-                     $user = Get-ADUser -Identity $dn -Properties $allPropertiesToGet -ErrorAction Stop
                      Write-Verbose "Verarbeite Benutzer für Export: $($user.SamAccountName)"
 
                      $userExportObject = [ordered]@{
@@ -1441,9 +1448,15 @@ process {
                      $userExportObject['GroupNames'] = $groupNames -join ','
                      $exportData.Add([PSCustomObject]$userExportObject)
                  } catch {
-                      Write-Log -Level Warning -Message "Fehler beim erneuten Abrufen oder Verarbeiten des Benutzers mit DN '$dn': $_"
+                      Write-Log -Level Warning -Message "Fehler beim Verarbeiten des Benutzers '$($user.SamAccountName)': $_"
                  }
-             } # End foreach dn
+             } # End foreach user
+
+             if ($adErrorsL) {
+                 foreach ($err in $adErrorsL) {
+                     Write-Log -Level Warning -Message "Fehler beim Abrufen eines Benutzers (L-Kennung): $err"
+                 }
+             }
 
              # 5. Nach CSV exportieren
              if($exportData.Count -eq 0){
