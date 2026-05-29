@@ -325,6 +325,10 @@ process {
 
         #region 6. Benutzerverarbeitung (Passwort-Reset und Attribut-Update)
         Write-Header -Title "BENUTZERVERARBEITUNG: PASSWORT-RESET & ATTRBUIEREN"
+
+        $usersToUpdate = [System.Collections.Generic.List[object]]::new()
+        $userResults = @{}
+
         foreach ($user in $users) {
             # Template für das OperationResult-Objekt für jeden Benutzer
             $resultTemplate = [PSCustomObject]@{
@@ -340,13 +344,13 @@ process {
                 FehlerMeldung       = $null
                 PasswortDatum       = $null
             }
+            $userResults[$user.SamAccountName] = $resultTemplate
+
             Write-UserVerbose "Verarbeite Benutzer: $($user.SamAccountName)."
 
             try {
                 if ($PSCmdlet.ShouldProcess($user.SamAccountName, "Passwort zurücksetzen und Attribute aktualisieren")) {
-                    # --- Passwort-Reset und Attribut-Updates ---
                     if ($UseNetUser) {
-                        # Option A: Passwort-Reset über 'net user'
                         Write-Host "`nVerarbeite Benutzer: $($user.SamAccountName) (mittels 'net user')" -ForegroundColor Cyan
                         Write-UserVerbose "Versuche Passwort-Reset für $($user.SamAccountName) mittels 'net user'."
                         $output = & net user $user.SamAccountName $plainPass /DOMAIN /ACTIVE:YES 2>&1
@@ -354,57 +358,80 @@ process {
                             throw "NetUser-Fehler ($LASTEXITCODE): $output"
                         }
                         Write-UserVerbose "Passwort für $($user.SamAccountName) mittels 'net user' erfolgreich zurückgesetzt."
-
-                        # AD-Einstellungen über Set-ADUser aktualisieren (Passwort-Attribute und LastLogonTimestamp)
-                        Write-UserVerbose "Aktualisiere AD-Attribute für $($user.SamAccountName) mittels Set-ADUser."
-                        Set-ADUser -Identity $user.DistinguishedName `
-                                   -PasswordNeverExpires $true `
-                                   -CannotChangePassword $true `
-                                   -PasswordChangeRequired $false ` # Sicherstellen, dass dieses Flag nicht gesetzt ist
-                                   -Replace @{lastLogonTimestamp = (Get-Date).ToFileTime()} ` # lastLogonTimestamp setzen
-                                   -ErrorAction Stop
-                        Write-UserVerbose "AD-Attribute für $($user.SamAccountName) erfolgreich aktualisiert."
-
+                        $usersToUpdate.Add($user)
                     } else {
-                        # Option B: Passwort-Reset und Attribut-Update über 'Set-ADUser' (bevorzugt)
-                        Write-Host "`nVerarbeite Benutzer: $($user.SamAccountName) (mittels 'Set-ADUser')" -ForegroundColor Cyan
-                        Write-UserVerbose "Versuche Passwort-Reset und Attribut-Update für $($user.SamAccountName) mittels 'Set-ADUser'."
-                        Set-ADUser -Identity $user.DistinguishedName `
-                                   -NewPassword $securePass `
-                                   -PasswordNeverExpires $true `
-                                   -CannotChangePassword $true `
-                                   -PasswordChangeRequired $false ` # Sicherstellen, dass dieses Flag nicht gesetzt ist
-                                   -Replace @{lastLogonTimestamp = (Get-Date).ToFileTime()} ` # lastLogonTimestamp setzen
-                                   -ErrorAction Stop
-                        Write-UserVerbose "Passwort und AD-Attribute für $($user.SamAccountName) mittels 'Set-ADUser' erfolgreich aktualisiert."
+                        Write-Host "`nVerarbeite Benutzer: $($user.SamAccountName) (Vorbereitung für 'Set-ADUser' Batch)" -ForegroundColor Cyan
+                        $usersToUpdate.Add($user)
                     }
-
-                    # Erfolgsmeldung im Ergebnisobjekt aktualisieren
-                    $resultTemplate.OperationStatus = "Erfolgreich"
-                    $resultTemplate.PasswortDatum = (Get-Date).ToString('dd.MM.yyyy HH:mm:ss', $culture)
-                    Write-Host "Benutzer '$($user.SamAccountName)' erfolgreich aktualisiert." -ForegroundColor Green
-                    Write-UserVerbose "Benutzer '$($user.SamAccountName)' erfolgreich verarbeitet. Status: '$($resultTemplate.OperationStatus)'."
                 } else {
                     $resultTemplate.OperationStatus = "Übersprungen (ShouldProcess)"
                     Write-Host "Verarbeitung von Benutzer '$($user.SamAccountName)' übersprungen (WhatIf/Confirm)." -ForegroundColor Yellow
                     Write-UserVerbose "Verarbeitung von Benutzer '$($user.SamAccountName)' übersprungen."
+                    $global:OperationResults.Add($resultTemplate)
                 }
             }
             catch {
-                # Fehlerbehandlung für individuelle Benutzeroperationen
                 $resultTemplate.OperationStatus = "Fehlgeschlagen"
-                $resultTemplate.FehlerCode = $_.Exception.HResult # HResult kann spezifischere Fehlercodes liefern
+                $resultTemplate.FehlerCode = $_.Exception.HResult
                 $resultTemplate.FehlerMeldung = $_.Exception.Message
                 $resultTemplate.PasswortDatum = $null
                 
                 Write-Host "Fehler bei der Verarbeitung von Benutzer '$($user.SamAccountName)': $($_.Exception.Message)" -ForegroundColor Red
                 Write-Warning "Fehler bei Benutzer '$($user.SamAccountName)': $($_.Exception.Message)"
                 Write-UserVerbose "Fehler bei Benutzer '$($user.SamAccountName)'. Fehlermeldung: '$($_.Exception.Message)'."
-            }
-            finally {
-                # Ergebnis des Benutzers zur globalen Liste hinzufügen
                 $global:OperationResults.Add($resultTemplate)
-                Write-UserVerbose "Ergebnis für Benutzer '$($user.SamAccountName)' zur Liste hinzugefügt."
+            }
+        }
+
+        # AD-Einstellungen als Batch (Pipeline) aktualisieren
+        if ($usersToUpdate.Count -gt 0) {
+            Write-Host "`nAktualisiere AD-Attribute für $($usersToUpdate.Count) Benutzer im Batch-Verfahren..." -ForegroundColor Cyan
+            Write-UserVerbose "Führe Set-ADUser für $($usersToUpdate.Count) Benutzer per Pipeline aus."
+
+            $adErrors = $null
+            if ($UseNetUser) {
+                $usersToUpdate | Set-ADUser -PasswordNeverExpires:$true `
+                                            -CannotChangePassword:$true `
+                                            -PasswordChangeRequired:$false `
+                                            -Replace @{lastLogonTimestamp = (Get-Date).ToFileTime()} `
+                                            -ErrorAction SilentlyContinue -ErrorVariable adErrors
+            } else {
+                $usersToUpdate | Set-ADUser -NewPassword $securePass `
+                                            -PasswordNeverExpires:$true `
+                                            -CannotChangePassword:$true `
+                                            -PasswordChangeRequired:$false `
+                                            -Replace @{lastLogonTimestamp = (Get-Date).ToFileTime()} `
+                                            -ErrorAction SilentlyContinue -ErrorVariable adErrors
+            }
+
+            # Errors verarbeiten und Ergebnisse speichern
+            $errorDict = @{}
+            if ($adErrors) {
+                foreach ($err in $adErrors) {
+                    $target = $err.TargetObject
+                    $sam = if ($target -and $target.SamAccountName) { $target.SamAccountName } elseif ($target -and $target.DistinguishedName) { $target.DistinguishedName } else { "$target" }
+                    $errorDict[$sam] = $err
+                }
+            }
+
+            foreach ($user in $usersToUpdate) {
+                $resultTemplate = $userResults[$user.SamAccountName]
+                if ($errorDict.ContainsKey($user.SamAccountName) -or $errorDict.ContainsKey($user.DistinguishedName)) {
+                    $err = if ($errorDict.ContainsKey($user.SamAccountName)) { $errorDict[$user.SamAccountName] } else { $errorDict[$user.DistinguishedName] }
+                    $resultTemplate.OperationStatus = "Fehlgeschlagen"
+                    $resultTemplate.FehlerCode = $err.Exception.HResult
+                    $resultTemplate.FehlerMeldung = $err.Exception.Message
+                    $resultTemplate.PasswortDatum = $null
+
+                    Write-Host "Fehler bei AD-Attributen für '$($user.SamAccountName)': $($err.Exception.Message)" -ForegroundColor Red
+                    Write-UserVerbose "Fehler bei Set-ADUser für '$($user.SamAccountName)'. Fehlermeldung: '$($err.Exception.Message)'."
+                } else {
+                    $resultTemplate.OperationStatus = "Erfolgreich"
+                    $resultTemplate.PasswortDatum = (Get-Date).ToString('dd.MM.yyyy HH:mm:ss', $culture)
+                    Write-Host "Benutzer '$($user.SamAccountName)' erfolgreich aktualisiert." -ForegroundColor Green
+                    Write-UserVerbose "Benutzer '$($user.SamAccountName)' erfolgreich verarbeitet. Status: '$($resultTemplate.OperationStatus)'."
+                }
+                $global:OperationResults.Add($resultTemplate)
             }
         }
         #endregion
