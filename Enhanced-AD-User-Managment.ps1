@@ -637,7 +637,90 @@ begin {
         return $newUser
     }
 
-     # Funktion zum Erstellen eines Benutzers aus Daten (CSV-Zeile/Hashtable)
+    # Hilfsfunktion zur Bestimmung der Ziel-OU
+    function Get-ADUserTargetOUFromData {
+        param(
+            [string]$SamAccountName,
+            [hashtable]$UserData,
+            [Microsoft.ActiveDirectory.Management.ADUser]$TemplateUser,
+            [string]$GlobalTargetOU
+        )
+
+        if ($GlobalTargetOU) {
+            Write-Verbose "Verwende globale Ziel-OU '$GlobalTargetOU' für '$SamAccountName'."
+            return $GlobalTargetOU
+        } elseif ($UserData.ContainsKey('TargetOU') -and $UserData.TargetOU) {
+            Write-Verbose "Verwende Ziel-OU aus Datenquelle '$($UserData.TargetOU)' für '$SamAccountName'."
+            return $UserData.TargetOU
+        } elseif ($TemplateUser) {
+            $ou = ($TemplateUser.DistinguishedName -split ',', 2)[1]
+            Write-Verbose "Verwende Ziel-OU vom Template-Benutzer '$ou' für '$SamAccountName'."
+            return $ou
+        } else {
+            return $null
+        }
+    }
+
+    # Hilfsfunktion zur Bestimmung des Passworts
+    function Get-ADUserPasswordFromData {
+        param(
+            [string]$SamAccountName,
+            [hashtable]$UserData,
+            [System.Security.SecureString]$GlobalDefaultPassword
+        )
+
+        if ($UserData.ContainsKey('Password') -and $UserData.Password) {
+            Write-Log -Level Warning -Message "Verwende Passwort aus Datenquelle für '$SamAccountName'. ACHTUNG: Klartextpasswörter sind ein Sicherheitsrisiko!"
+            return ConvertTo-SecureString $UserData.Password -AsPlainText -Force -ErrorAction Stop
+        } elseif ($GlobalDefaultPassword) {
+            Write-Verbose "Verwende globales Standardpasswort für '$SamAccountName'."
+            return $GlobalDefaultPassword
+        } else {
+            Write-Log -Level Info -Message "Generiere zufälliges Passwort für '$SamAccountName', da keines angegeben wurde."
+            $pwdChars = @()
+            $pwdChars += 65..90 | Get-Random
+            $pwdChars += 97..122 | Get-Random
+            $pwdChars += 48..57 | Get-Random
+            $pwdChars += 33, 35, 36, 37, 38, 42, 64, 95 | Get-Random
+            $allChars = (48..57) + (65..90) + (97..122) + (33, 35, 36, 37, 38, 42, 64, 95)
+            $pwdChars += $allChars | Get-Random -Count (14 - $pwdChars.Count)
+            $randomPassword = -join ($pwdChars | Get-Random -Count $pwdChars.Count | % {[char]$_})
+
+            $securePwd = ConvertTo-SecureString $randomPassword -AsPlainText -Force -ErrorAction Stop
+            Write-Log -Level Info -Message "Zufälliges Passwort für '$SamAccountName' generiert. Benutzer MUSS es bei der ersten Anmeldung ändern."
+            return $securePwd
+        }
+    }
+
+    # Hilfsfunktion zum Kopieren der Gruppen vom Template
+    function Copy-ADUserGroupsFromTemplate {
+        param(
+            [Microsoft.ActiveDirectory.Management.ADUser]$TemplateUser,
+            [Microsoft.ActiveDirectory.Management.ADUser]$NewUser,
+            [System.Management.Automation.PSCmdlet]$Cmdlet
+        )
+
+        $templateGroups = Get-ADPrincipalGroupMembership -Identity $TemplateUser -ErrorAction Stop
+        $groupsToCopy = $templateGroups | Where-Object {$_.Name -ne "Domain Users"}
+
+        if ($groupsToCopy) {
+            $groupNames = $groupsToCopy.Name -join ', '
+            Write-Log -Level Info -Message "Füge Benutzer '$($NewUser.SamAccountName)' zu $($groupsToCopy.Count) Gruppen hinzu (basierend auf Template '$($TemplateUser.SamAccountName)')."
+            $shouldProcessTarget = "Benutzer '$($NewUser.SamAccountName)'"
+            $shouldProcessAction = "Hinzufügen zu Gruppen ($($groupsToCopy.Count)): $groupNames"
+
+            if ($Cmdlet.ShouldProcess($shouldProcessTarget, $shouldProcessAction)) {
+                Add-ADPrincipalGroupMembership -Identity $NewUser -MemberOf $groupsToCopy -ErrorAction Stop
+                Write-Log -Level Info -Message "Gruppenmitgliedschaften für '$($NewUser.SamAccountName)' erfolgreich hinzugefügt."
+            } else {
+                Write-Log -Level Info -Message "Hinzufügen der Gruppenmitgliedschaften übersprungen (ShouldProcess)."
+            }
+        } else {
+            Write-Log -Level Info -Message "Template-Benutzer $($TemplateUser.SamAccountName) hat keine (relevanten) Gruppenmitgliedschaften zum Hinzufügen."
+        }
+    }
+
+    # Funktion zum Erstellen eines Benutzers aus Daten (CSV-Zeile/Hashtable)
      function New-ADUserFromData {
          [CmdletBinding(SupportsShouldProcess = $true)]
          param(
@@ -681,17 +764,9 @@ begin {
          }
 
          # --- Ziel-OU bestimmen (Priorität: Global Parameter > CSV > Template > Fehler) ---
-         $finalOU = $null
-         if ($GlobalTargetOU) {
-             $finalOU = $GlobalTargetOU
-             Write-Verbose "Verwende globale Ziel-OU '$finalOU' für '$sam'."
-         } elseif ($UserData.ContainsKey('TargetOU') -and $UserData.TargetOU) {
-             $finalOU = $UserData.TargetOU
-             Write-Verbose "Verwende Ziel-OU aus Datenquelle '$finalOU' für '$sam'."
-         } elseif ($TemplateUser) {
-             $finalOU = ($TemplateUser.DistinguishedName -split ',', 2)[1]
-             Write-Verbose "Verwende Ziel-OU vom Template-Benutzer '$finalOU' für '$sam'."
-         } else {
+         $finalOU = Get-ADUserTargetOUFromData -SamAccountName $sam -UserData $UserData -TemplateUser $TemplateUser -GlobalTargetOU $GlobalTargetOU
+
+         if (-not $finalOU) {
              $msg = "Keine Ziel-OU für Benutzer '$sam' gefunden (weder in CSV, noch als Parameter, noch durch Template). Überspringe Eintrag."
              Write-Log -Level Error -Message $msg
              Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
@@ -701,43 +776,13 @@ begin {
          # --- Passwort bestimmen (Priorität: CSV > Global Parameter > Generieren) ---
          $finalPassword = $null
          $changePwdAtLogon = $true
-         if ($UserData.ContainsKey('Password') -and $UserData.Password) {
-             Write-Log -Level Warning -Message "Verwende Passwort aus Datenquelle für '$sam'. ACHTUNG: Klartextpasswörter sind ein Sicherheitsrisiko!"
-             try {
-                 $finalPassword = ConvertTo-SecureString $UserData.Password -AsPlainText -Force -ErrorAction Stop
-             } catch {
-                 $msg = "Fehler beim Konvertieren des Passworts aus der Datenquelle für '$sam': $_. Überspringe Eintrag."
-                 Write-Log -Level Error -Message $msg
-                 Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
-                 return $null
-             }
-         } elseif ($GlobalDefaultPassword) {
-             Write-Verbose "Verwende globales Standardpasswort für '$sam'."
-             $finalPassword = $GlobalDefaultPassword
-         } else {
-             Write-Log -Level Info -Message "Generiere zufälliges Passwort für '$sam', da keines angegeben wurde."
-             # Generiere sicheres, zufälliges Passwort
-             try {
-                 # Komplexeres Beispiel: Mind. 1 Groß, 1 Klein, 1 Zahl, 1 Sonderzeichen, Länge 14
-                 $pwdChars = @()
-                 $pwdChars += 65..90 | Get-Random # Großbuchstabe
-                 $pwdChars += 97..122 | Get-Random # Kleinbuchstabe
-                 $pwdChars += 48..57 | Get-Random # Zahl
-                 $pwdChars += 33, 35, 36, 37, 38, 42, 64, 95 | Get-Random # Sonderzeichen !#$%&*@_
-                 # Restliche Zeichen auffüllen (insgesamt 14)
-                 $allChars = (48..57) + (65..90) + (97..122) + 33, 35, 36, 37, 38, 42, 64, 95
-                 $pwdChars += $allChars | Get-Random -Count (14 - $pwdChars.Count)
-                 # Mischen
-                 $randomPassword = -join ($pwdChars | Get-Random -Count $pwdChars.Count | % {[char]$_})
-
-                 $finalPassword = ConvertTo-SecureString $randomPassword -AsPlainText -Force -ErrorAction Stop
-                 Write-Log -Level Info -Message "Zufälliges Passwort für '$sam' generiert. Benutzer MUSS es bei der ersten Anmeldung ändern."
-             } catch {
-                 $msg = "Fehler beim Generieren/Konvertieren des zufälligen Passworts für '$sam': $_. Überspringe Eintrag."
-                 Write-Log -Level Error -Message $msg
-                 Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
-                 return $null
-             }
+         try {
+             $finalPassword = Get-ADUserPasswordFromData -SamAccountName $sam -UserData $UserData -GlobalDefaultPassword $GlobalDefaultPassword
+         } catch {
+             $msg = "Fehler beim Bestimmen/Generieren des Passworts für '$sam': $_. Überspringe Eintrag."
+             Write-Log -Level Error -Message $msg
+             Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
+             return $null
          }
 
          # --- Prüfen ob Zielbenutzer existiert ---
@@ -756,7 +801,6 @@ begin {
              Add-UserReportEntry -SamAccountName $sam -Status "Fehler" -Detail $msg
              return $null
          }
-
 
         # --- Prüfen ob Ziel-OU existiert ---
         try {
@@ -845,26 +889,7 @@ begin {
          # --- Gruppen vom Template übernehmen ---
          if ($TemplateUser -and $newUser) { # Nur wenn Template vorhanden UND Benutzer erfolgreich erstellt wurde
              try {
-                 $templateGroups = Get-ADPrincipalGroupMembership -Identity $TemplateUser -ErrorAction Stop
-                 $groupsToCopy = $templateGroups | Where-Object {$_.Name -ne "Domain Users"} # Filter
-
-                 if ($groupsToCopy) {
-                     $groupNames = $groupsToCopy.Name -join ', '
-                     Write-Log -Level Info -Message "Füge Benutzer '$($newUser.SamAccountName)' zu $($groupsToCopy.Count) Gruppen hinzu (basierend auf Template '$($TemplateUser.SamAccountName)')."
-                     # Detailliertere ShouldProcess-Meldung
-                     $shouldProcessTarget = "Benutzer '$($newUser.SamAccountName)'"
-                     $shouldProcessAction = "Hinzufügen zu Gruppen ($($groupsToCopy.Count)): $groupNames"
-                     if ($PSCmdlet.ShouldProcess($shouldProcessTarget, $shouldProcessAction)) {
-                         Add-ADPrincipalGroupMembership -Identity $newUser -MemberOf $groupsToCopy -ErrorAction Stop
-                         Write-Log -Level Info -Message "Gruppenmitgliedschaften für '$($newUser.SamAccountName)' erfolgreich hinzugefügt."
-                         # Optional: Update Report
-                         # Add-UserReportEntry -SamAccountName $newUser.SamAccountName -Status "Gruppen hinzugefügt" -Detail "$($groupsToCopy.Count) Gruppen von $($TemplateUser.SamAccountName)"
-                     } else {
-                         Write-Log -Level Info -Message "Hinzufügen der Gruppenmitgliedschaften übersprungen (ShouldProcess)."
-                     }
-                 } else {
-                     Write-Log -Level Info -Message "Template-Benutzer $($TemplateUser.SamAccountName) hat keine (relevanten) Gruppenmitgliedschaften zum Hinzufügen."
-                 }
+                 Copy-ADUserGroupsFromTemplate -TemplateUser $TemplateUser -NewUser $newUser -Cmdlet $PSCmdlet
              } catch {
                  $msg = "Fehler beim Hinzufügen der Gruppenmitgliedschaften vom Template für '$($newUser.SamAccountName)': $_. Der Benutzer wurde erstellt, aber Gruppen fehlen möglicherweise."
                  Write-Log -Level Warning -Message $msg
