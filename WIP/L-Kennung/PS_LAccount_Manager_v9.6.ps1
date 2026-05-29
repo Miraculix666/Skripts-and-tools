@@ -336,22 +336,8 @@ $CalcScriptBlock = {
     return [PSCustomObject]$Props
 }
 
-# ══════════════════════════════════════════════════════════════════
-#  MAIN
-# ══════════════════════════════════════════════════════════════════
-function Invoke-Main {
-    Show-Banner
-
-    Import-Module ActiveDirectory -Verbose:$false
-
-    Write-Log "PS v$($PSVersionTable.PSVersion)  PID=$PID  Host=$env:COMPUTERNAME" "DBG"
-    Write-Log "Modus: $(if($Parallel){"Parallel (Threads=$MaxThreads)"}else{"Sequenziell"})  GroupMode=$GroupMode" "INFO"
-
-    if (-not $CsvPath) { $CsvPath = (Read-Host "Pfad zur Master-CSV").Trim().Trim('"') }
-    $CsvPath = $CsvPath.Trim().Trim('"')
-    if (-not (Test-Path $CsvPath)) { Write-Log "CSV nicht gefunden: $CsvPath" "ERR"; return }
-
-    # ── 1. BEDARFSLISTE ──────────────────────────────────────────
+function Get-RequiredList {
+    param([string]$RequiredCsvPath)
     Write-Section "BEDARFSLISTE laden"
     $RequiredList = New-Object 'System.Collections.Generic.HashSet[string]'
     if ($RequiredCsvPath -and (Test-Path $RequiredCsvPath)) {
@@ -365,8 +351,11 @@ function Invoke-Main {
     } else {
         Write-Log "Keine Bedarfsliste -> uebersprungen" "WARN"
     }
+    return $RequiredList
+}
 
-    # ── 2. MASTER-CSV ────────────────────────────────────────────
+function Get-MasterCsvData {
+    param([string]$CsvPath)
     Write-Section "MASTER-CSV laden"
     $t0 = $SW.Elapsed.TotalSeconds
     $MasterCsvData = @{}
@@ -378,8 +367,15 @@ function Invoke-Main {
     }
     Write-Log "Master-CSV: $($MasterCsvData.Count) Zeilen  [{0:F2}s]" -f ($SW.Elapsed.TotalSeconds-$t0) | Out-Null
     Write-Log ("Master-CSV: {0} Zeilen  [{1:F2}s]" -f $MasterCsvData.Count, ($SW.Elapsed.TotalSeconds-$t0)) "OK"
+    return $MasterCsvData
+}
 
-    # ── 3. AD-DISCOVERY ──────────────────────────────────────────
+function Invoke-ADDiscovery {
+    param(
+        [switch]$SearchGlobal,
+        [string]$GroupMode,
+        [array]$AD_PROPS
+    )
     Write-Section "AD-DISCOVERY"
     $t0           = $SW.Elapsed.TotalSeconds
     $ADCache      = @{}
@@ -438,14 +434,38 @@ function Invoke-Main {
         Write-Log "GroupMode=Single: alle Gruppen in Spalte 'Gruppen' (semikolonsepariert)" "INFO"
     }
 
-    $AllSAMs     = @(@($ADCache.Keys) + @($MasterCsvData.Keys) | Select-Object -Unique | Sort-Object)
+    return @{ ADCache = $ADCache; SortedGroups = $SortedGroups }
+}
+
+function Get-ProcessList {
+    param(
+        $ADCache,
+        $MasterCsvData,
+        [int]$TestCount
+    )
+    $AllSAMs = @(@($ADCache.Keys) + @($MasterCsvData.Keys) | Select-Object -Unique | Sort-Object)
     $ProcessList = if ($TestCount -gt 0) {
         Write-Log "TESTMODUS: erste $TestCount Eintraege" "WARN"
         @($AllSAMs | Select-Object -First $TestCount)
     } else { $AllSAMs }
     Write-Log "Zu verarbeitende SAMs: $($ProcessList.Count)" "OK"
+    return $ProcessList
+}
 
-    # ── 4. VERARBEITUNG ──────────────────────────────────────────
+function Invoke-Processing {
+    param(
+        $ProcessList,
+        [switch]$Parallel,
+        [int]$MaxThreads,
+        $CalcScriptBlock,
+        $MasterCsvData,
+        $ADCache,
+        $RequiredList,
+        $SortedGroups,
+        [string]$GroupMode,
+        [switch]$DebugMode,
+        $LogFile
+    )
     $modeLabel = if ($Parallel) { "PARALLEL ($MaxThreads Threads)" } else { "SEQUENZIELL" }
     Write-Section "VERARBEITUNG  ($($ProcessList.Count) Eintraege  ·  $modeLabel)"
     $t0 = $SW.Elapsed.TotalSeconds
@@ -588,7 +608,20 @@ function Invoke-Main {
     Write-Log ("Verarbeitung: {0} Eintraege in {1}s  ({2}ms/Eintrag)" -f `
         $Results.Count, $procSec, $msPerEntry) "PERF"
 
-    # ── 5. EXPORT ────────────────────────────────────────────────
+    return $Results
+}
+
+function Export-Results {
+    param(
+        $Results,
+        [string]$GroupMode,
+        $SortedGroups,
+        $ScriptDir,
+        $Version,
+        $LogFile,
+        $SW,
+        [switch]$Parallel
+    )
     Write-Section "EXPORT"
 
     if ($Results.Count -eq 0) { Write-Log "Keine Ergebnisse -> Abbruch" "ERR"; return }
@@ -633,6 +666,45 @@ function Invoke-Main {
 
     Write-Log ("Fertig. Dauer={0}  RAM={1}MB  Zeilen={2}  Gruppen={3}  Modus={4}" -f `
         $dur, $mb, $Results.Count, $SortedGroups.Count, $(if($Parallel){"Parallel"}else{"Seq"})) "PERF"
+}
+
+# ══════════════════════════════════════════════════════════════════
+#  MAIN
+# ══════════════════════════════════════════════════════════════════
+function Invoke-Main {
+    Show-Banner
+
+    Import-Module ActiveDirectory -Verbose:$false
+
+    Write-Log "PS v$($PSVersionTable.PSVersion)  PID=$PID  Host=$env:COMPUTERNAME" "DBG"
+    Write-Log "Modus: $(if($Parallel){"Parallel (Threads=$MaxThreads)"}else{"Sequenziell"})  GroupMode=$GroupMode" "INFO"
+
+    if (-not $CsvPath) { $CsvPath = (Read-Host "Pfad zur Master-CSV").Trim().Trim('"') }
+    $CsvPath = $CsvPath.Trim().Trim('"')
+    if (-not (Test-Path $CsvPath)) { Write-Log "CSV nicht gefunden: $CsvPath" "ERR"; return }
+
+    # ── 1. BEDARFSLISTE ──────────────────────────────────────────
+    $RequiredList = Get-RequiredList -RequiredCsvPath $RequiredCsvPath
+
+    # ── 2. MASTER-CSV ────────────────────────────────────────────
+    $MasterCsvData = Get-MasterCsvData -CsvPath $CsvPath
+
+    # ── 3. AD-DISCOVERY ──────────────────────────────────────────
+    $DiscoveryResult = Invoke-ADDiscovery -SearchGlobal:$SearchGlobal -GroupMode $GroupMode -AD_PROPS $AD_PROPS
+    $ADCache      = $DiscoveryResult.ADCache
+    $SortedGroups = $DiscoveryResult.SortedGroups
+
+    $ProcessList = Get-ProcessList -ADCache $ADCache -MasterCsvData $MasterCsvData -TestCount $TestCount
+
+    # ── 4. VERARBEITUNG ──────────────────────────────────────────
+    $Results = Invoke-Processing -ProcessList $ProcessList -Parallel:$Parallel -MaxThreads $MaxThreads `
+        -CalcScriptBlock $CalcScriptBlock -MasterCsvData $MasterCsvData -ADCache $ADCache `
+        -RequiredList $RequiredList -SortedGroups $SortedGroups -GroupMode $GroupMode `
+        -DebugMode:$DebugMode -LogFile $LogFile
+
+    # ── 5. EXPORT ────────────────────────────────────────────────
+    Export-Results -Results $Results -GroupMode $GroupMode -SortedGroups $SortedGroups `
+        -ScriptDir $ScriptDir -Version $Version -LogFile $LogFile -SW $SW -Parallel:$Parallel
 }
 
 Invoke-Main
