@@ -403,16 +403,14 @@ try {
     }
     
     # Analyze files by age
-    $ageResults = @()
-    foreach ($key in $dateThresholds.Keys) {
-        $ageResults += Get-FilesByAge -Path $TargetPath -Threshold $dateThresholds[$key] -OutputFileName "OlderThan$($AgeThresholds[$key])Years"
-    }
+    $ageResults = @(foreach ($key in $dateThresholds.Keys) {
+        Get-FilesByAge -Path $TargetPath -Threshold $dateThresholds[$key] -OutputFileName "OlderThan$($AgeThresholds[$key])Years"
+    })
     
     # Analyze files by size
-    $sizeResults = @()
-    foreach ($key in $SizeThresholds.Keys) {
-        $sizeResults += Get-FilesBySize -Path $TargetPath -Threshold $SizeThresholds[$key] -OutputFileName "LargerThan$key"
-    }
+    $sizeResults = @(foreach ($key in $SizeThresholds.Keys) {
+        Get-FilesBySize -Path $TargetPath -Threshold $SizeThresholds[$key] -OutputFileName "LargerThan$key"
+    })
     
     # Find duplicates
     $duplicatesPath = Find-Duplicates -Path $TargetPath
