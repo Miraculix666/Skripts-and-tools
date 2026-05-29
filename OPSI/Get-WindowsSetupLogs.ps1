@@ -142,12 +142,11 @@ function Test-UNCPathAccess {
             $UserName = $Cred.UserName
             $Password = $Cred.GetNetworkCredential().Password
             
-            # Verwendung von 'net use' zur temporären Authentifizierung des UNC-Pfades
+            # Verwendung von 'net.exe use' zur temporären Authentifizierung des UNC-Pfades
             # Dies ist robuster in Umgebungen ohne PS-Remoting
-            $command = "net use `"$Path`" `"$Password`" /user:`"$UserName`" /persistent:no"
-            Write-Verbose "Führe 'net use' aus, um Verbindung herzustellen..."
+            Write-Verbose "Führe 'net.exe use' aus, um Verbindung herzustellen..."
             
-            $netUseResult = Invoke-Expression $command 2>&1
+            $netUseResult = net.exe use $Path $Password "/user:$UserName" /persistent:no 2>&1
             
             if ($LASTEXITCODE -ne 0) {
                  Write-Verbose "net use fehlgeschlagen (ExitCode $LASTEXITCODE). Ergebnis: $($netUseResult | Out-String)"
@@ -278,8 +277,8 @@ foreach ($Source in $LogSources) {
 # Wir versuchen die Trennung nur, wenn eine Credential verwendet wurde.
 if ($Credential) {
     Write-Verbose "Trenne temporäre Netzwerkverbindung zu '$UNCPath' (falls eingerichtet)."
-    # Verwende 'net use /delete', falls die Verbindung von net use erstellt wurde
-    Invoke-Expression "net use `"$UNCPath`" /delete" 2>&1 | Out-Null
+    # Verwende 'net.exe use /delete', falls die Verbindung von net use erstellt wurde
+    net.exe use $UNCPath /delete 2>&1 | Out-Null
 }
 
 # --- 5. Abschluss und Erfolgsmeldung ---
