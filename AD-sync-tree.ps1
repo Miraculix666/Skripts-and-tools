@@ -26,14 +26,16 @@ try {
     Write-Host "Aktueller Forest: $($Forest.Name)"
 
     # Alle Domänencontroller im gesamten Forest sammeln
-    $AllDCsInForest = @()
+    $AllDCsInForest = [System.Collections.Generic.List[object]]::new()
     Write-Host "Sammle alle Domänencontroller im Forest..."
     foreach ($DomainName in $Forest.Domains) {
         try {
             Write-Host "Rufe Domänencontroller für Domäne ab: $DomainName"
             $DCsInDomain = Get-ADDomainController -Filter * -Server $DomainName -ErrorAction Stop # -ErrorAction Stop ist gut hier
             if ($DCsInDomain) {
-                $AllDCsInForest += $DCsInDomain
+                foreach ($DC in $DCsInDomain) {
+                    $AllDCsInForest.Add($DC)
+                }
             } else {
                 Write-Warning "Keine Domänencontroller in der Domäne $DomainName gefunden."
             }
