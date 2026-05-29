@@ -101,12 +101,12 @@ Pfad für die CSV-Datei, die einen Bericht über erstellte/kopierte/modifizierte
 
 .EXAMPLE
 # Beispiel 2: Kopiert 'BenutzerA' zu 'BenutzerC', setzt Passwort, legt in spezifischer OU ab und überschreibt Ziel falls vorhanden (mit Bestätigung)
-$password = ConvertTo-SecureString "P@sswOrd123!" -AsPlainText -Force
+$password = Read-Host -Prompt "Geben Sie das Zielbenutzer-Passwort ein" -AsSecureString
 .\Enhanced-ADManagement.ps1 -CopySingleUser -ReferenceUserSamAccountName BenutzerA -TargetUserSamAccountName BenutzerC -TargetUserPassword $password -TargetOU "OU=NeueMitarbeiter,DC=firma,DC=local" -Force
 
 .EXAMPLE
 # Beispiel 3: Erstellt Benutzer aus CSV mit Standardpasswort und Gruppen/Attributen von 'TemplateUser' (mit Bestätigung für jeden Benutzer)
-$defaultPass = ConvertTo-SecureString "Sommer2025!" -AsPlainText -Force
+$defaultPass = Read-Host -Prompt "Geben Sie das Standardpasswort ein" -AsSecureString
 .\Enhanced-ADManagement.ps1 -CreateUsersFromCSV -CsvPath "C:\temp\neue_benutzer.csv" -ReferenceUserSamAccountName TemplateUser -DefaultPassword $defaultPass -LogLevel Info
 
 .EXAMPLE
