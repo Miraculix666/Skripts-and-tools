@@ -353,15 +353,16 @@ elseif ($ComputerName) {
 }
 elseif ($Preset) {
     Write-Verbose "Preset-Parameter angegeben. Kombiniere die Listen: '$($Preset -join ', ')'."
-    $allComputersFromPresets = @()
-    foreach ($p in $Preset) {
-        if ($InternalLists.ContainsKey($p)) {
-            $allComputersFromPresets += $InternalLists[$p]
+    $allComputersFromPresets = @(
+        foreach ($p in $Preset) {
+            if ($InternalLists.ContainsKey($p)) {
+                $InternalLists[$p]
+            }
+            else {
+                Write-Warning "Das angegebene Preset '$p' existiert nicht und wird übersprungen. Verfügbare Presets: $($InternalLists.Keys -join ', ')."
+            }
         }
-        else {
-            Write-Warning "Das angegebene Preset '$p' existiert nicht und wird übersprungen. Verfügbare Presets: $($InternalLists.Keys -join ', ')."
-        }
-    }
+    )
     $ComputersToConnect = $allComputersFromPresets | Sort-Object -Unique
 }
 else {
