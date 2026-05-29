@@ -23,8 +23,8 @@ param (
     [Parameter(Mandatory = $false, HelpMessage = "Log file path")]
     [string]$LogPath = "ADBenutzerVerwaltung.log",
 
-    [Parameter(Mandatory = $false, HelpMessage = "Default password for new users")]
-    [SecureString]$DefaultPassword = (ConvertTo-SecureString "Willkommen2024!" -AsPlainText -Force),
+    [Parameter(Mandatory = $true, HelpMessage = "Default password for new users")]
+    [SecureString]$DefaultPassword,
 
     [Parameter(Mandatory = $false, HelpMessage = "Default OU for new users")]
     [string]$DefaultOU,
