@@ -227,7 +227,7 @@ Write-Verbose "  TestConnection:     '$TestConnection'"
 Write-Verbose "  TestConnectionOnly: '$TestConnectionOnly'"
 Write-Verbose "---"
 
-# Default internal computer lists (as a Hashtable)
+# Define predefined internal computer lists
 $InternalLists = @{
     "Default" = @(
         "Server01",
