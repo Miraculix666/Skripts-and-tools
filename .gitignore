@@ -1,2 +1,6 @@
-
 /.agent/
+
+# Ignore large WSUS offline update CAB files permanently (GitHub 100MB limit)
+*.cab
+wsusscn2.cab
+Universal_Update_and_Fix/OfflineUpdates/
