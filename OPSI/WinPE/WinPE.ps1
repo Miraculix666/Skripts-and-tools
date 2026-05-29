@@ -313,11 +313,10 @@ function Set-GermanLocale {
     }
 }
 
-# --- FUNCTION: New-LauncherMenu ---
-function New-LauncherMenu {
+# --- FUNCTION: New-LaunchMenuScript ---
+function New-LaunchMenuScript {
     param([string]$MountPath)
     
-    Write-Host " [MENU] Erstelle Launcher-Menü..." -ForegroundColor Cyan
     Write-Log "Erstelle LaunchMenu.ps1"
     
     $MenuScript = @'
@@ -416,8 +415,12 @@ do {
     $MenuPath = Join-Path $MountPath "Windows\System32\LaunchMenu.ps1"
     $MenuScript | Out-File $MenuPath -Encoding ASCII -Force
     Write-Log "LaunchMenu.ps1 erstellt: $MenuPath" -Level SUCCESS
+}
+
+# --- FUNCTION: Update-StartnetCmd ---
+function Update-StartnetCmd {
+    param([string]$MountPath)
     
-    # Anpassung startnet.cmd
     $StartnetPath = Join-Path $MountPath "Windows\System32\startnet.cmd"
     $Startnet = @"
 @echo off
@@ -446,6 +449,18 @@ cmd.exe
 "@
     $Startnet | Out-File $StartnetPath -Encoding ASCII -Force
     Write-Log "startnet.cmd erstellt/angepasst: $StartnetPath" -Level SUCCESS
+}
+
+# --- FUNCTION: New-LauncherMenu ---
+function New-LauncherMenu {
+    param([string]$MountPath)
+
+    Write-Host " [MENU] Erstelle Launcher-Menü..." -ForegroundColor Cyan
+
+    New-LaunchMenuScript -MountPath $MountPath
+
+    # Anpassung startnet.cmd
+    Update-StartnetCmd -MountPath $MountPath
     
     Write-Host " [OK] Launcher-Menü erstellt" -ForegroundColor Green
 }
