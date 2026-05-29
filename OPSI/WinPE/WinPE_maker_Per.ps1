@@ -78,7 +78,7 @@ New-Item $BootDir -ItemType Directory -Force | Out-Null
 @("bootmgr", "bootmgr.exe") | % { "WinPE $WinPEVersion`nopsi $ProductId" | Out-File "$BootDir\$_" -Encoding ASCII }
 "BCD WinPE $WinPEVersion" | Out-File "$BootDir\BCD" -Encoding ASCII
 
-# BINARY-Dateien (FIX: Array korrekt!)
+# BINARY-Dateien
 $dummyBytes = New-Object byte[] 2048  # 2KB Dummy
 @("boot.sdi", "bootfont.bin", "etfsboot.com") | % { 
     [IO.File]::WriteAllBytes("$BootDir\$_", $dummyBytes) 
