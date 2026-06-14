@@ -251,7 +251,7 @@ process {
         Write-Host "Suche nach Benutzern mit Namensmustern 'L110*' oder 'L114*'." -ForegroundColor Yellow
         Write-UserVerbose "Beginne Benutzersuche in den gefundenen OUs."
 
-        $users = @()
+        $users = [System.Collections.Generic.List[object]]::new()
         foreach ($ou in $targetOUs) {
             Write-UserVerbose "Suche Benutzer in OU: $($ou.DistinguishedName)."
             try {
@@ -262,8 +262,10 @@ process {
                                 LastLogonTimestamp, UserAccountControl, PasswordChangeRequired `
                     -SearchScope Subtree `
                     -ErrorAction Stop
-                $users += $foundUsers
-                Write-UserVerbose "$($foundUsers.Count) Benutzer in $($ou.Name) gefunden."
+                if ($foundUsers) {
+                    $users.AddRange(@($foundUsers))
+                }
+                Write-UserVerbose "$(@($foundUsers).Count) Benutzer in $($ou.Name) gefunden."
             } catch {
                 Write-Warning "Fehler beim Suchen von Benutzern in OU '$($ou.Name)': $($_.Exception.Message)"
             }
