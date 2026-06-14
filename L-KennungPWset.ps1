@@ -1,3 +1,11 @@
+param (
+    [Parameter(Mandatory=$true)]
+    [SecureString]$NewPassword,
+
+    [Parameter(Mandatory=$true)]
+    [string]$InputFilePath
+)
+
 # Function to rename existing files with a running number
 function Rename-ExistingFile {
     param (
@@ -77,17 +85,13 @@ if ($allUsers.Count -gt 0) {
     $results | Format-Table -AutoSize | Out-File -FilePath $outputFilePath
 }
 
-# Define the new password
-$passwordString = "P2f7aL4!01"
-$newPassword = ConvertTo-SecureString -String $passwordString -AsPlainText -Force
-
 # Read SamAccountNames from the file
-$samAccountNames = Get-Content -Path $inputFilePath
+$samAccountNames = Get-Content -Path $InputFilePath
 
 # Reset password for each user
 foreach ($samAccountName in $samAccountNames) {
     try {
-        Set-ADAccountPassword -Identity $samAccountName -Reset -NewPassword $newPassword -ErrorAction Stop
+        Set-ADAccountPassword -Identity $samAccountName -Reset -NewPassword $NewPassword -ErrorAction Stop
         Write-Host "Password reset successful for user: $samAccountName" -ForegroundColor Green
     } catch {
         Write-Host "Failed to reset password for user: $samAccountName" -ForegroundColor Red
