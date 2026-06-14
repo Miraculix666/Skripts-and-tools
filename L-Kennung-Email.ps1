@@ -24,7 +24,7 @@ if ($allUsers.Count -gt 0) {
     $allUsers | Select-Object Name, SamAccountName, DistinguishedName | Format-Table -AutoSize
 
     # Write all SAMAccountNames in the given scope into a file
-    $allUsers | ForEach-Object { $_.SamAccountName | Out-File -Append -FilePath $samAccountNamesFilePath }
+    $allUsers.SamAccountName | Out-File -Append -FilePath $samAccountNamesFilePath
 
     # Get all users and their last logon date
     $usersLastLogon = $allUsers | Get-ADUser -Properties LastLogonDate, EmailAddress | Select-Object Name, SamAccountName, LastLogonDate, EmailAddress
@@ -53,10 +53,12 @@ if ($allUsers.Count -gt 0) {
     }
 
     # Write all SAMAccountNames with logon older than 39 weeks into a file
-    $expiredUsers = $results | Where-Object { $_.LastLogonDate -like "xxxxx*" } | ForEach-Object {
-        $_.SamAccountName | Out-File -Append -FilePath $expiredUsersFilePath
-        if ($_.EmailAddress -eq $null) {
-            $_.SamAccountName | Out-File -Append -FilePath $expiredUsersNoEmailFilePath
+    $expiredUsers = $results | Where-Object { $_.LastLogonDate -like "xxxxx*" }
+    if ($null -ne $expiredUsers) {
+        $expiredUsers.SamAccountName | Out-File -Append -FilePath $expiredUsersFilePath
+        $expiredUsersNoEmail = $expiredUsers | Where-Object { $_.EmailAddress -eq $null }
+        if ($null -ne $expiredUsersNoEmail) {
+            $expiredUsersNoEmail.SamAccountName | Out-File -Append -FilePath $expiredUsersNoEmailFilePath
         }
     }
 
