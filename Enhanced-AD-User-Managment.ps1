@@ -448,7 +448,7 @@ begin {
             [string]$Detail = ""
         )
         # Nur hinzufügen, wenn der Report für diesen Modus initialisiert wurde
-        if ($global:userReportData -ne $null) {
+        if ($null -ne $global:userReportData) {
             $reportObject = [PSCustomObject]@{
                 Timestamp      = (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
                 SamAccountName = $SamAccountName
