@@ -293,3 +293,46 @@ function New-CustomADUser {
 
             $userParams = @{
                 Name = $Name
+                SamAccountName = $SamAccountName
+                UserPrincipalName = $UserPrincipalName
+                GivenName = $GivenName
+                Surname = $Surname
+                Department = $Department
+                Title = $Title
+                Manager = $Manager
+                Office = $Office
+                OfficePhone = $OfficePhone
+                Company = $Company
+                Description = $Description
+                Path = $OU
+                AccountPassword = $Password
+                Enabled = $true
+            }
+
+            # Entferne leere Parameter (AD cmdlets mögen keine null/leeren Strings für einige Attribute)
+            $cleanParams = @{}
+            foreach ($key in $userParams.Keys) {
+                if ($userParams[$key]) {
+                    $cleanParams[$key] = $userParams[$key]
+                }
+            }
+
+            New-ADUser @cleanParams -ErrorAction Stop
+            Write-Verbose "Benutzer '$Name' ($SamAccountName) erfolgreich erstellt."
+
+            if ($Groups -and $Groups.Count -gt 0) {
+                foreach ($group in $Groups) {
+                    try {
+                        Add-ADGroupMember -Identity $group -Members $SamAccountName -ErrorAction Stop
+                        Write-Verbose "Benutzer zu Gruppe '$group' hinzugefügt."
+                    } catch {
+                        Write-CustomLog "Fehler beim Hinzufügen von Benutzer '$SamAccountName' zu Gruppe '$group': $_" -Level "WARNUNG"
+                    }
+                }
+            }
+        }
+    } catch {
+        Write-CustomLog "Fehler bei der Erstellung des Benutzers '$Name': $_" -Level "FEHLER"
+        throw
+    }
+}
