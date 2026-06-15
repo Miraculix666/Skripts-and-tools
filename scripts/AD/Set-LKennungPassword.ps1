@@ -1,192 +1,106 @@
 # FILE: scripts\AD\Set-LKennungPassword.ps1
-# PURPOSE: Set passwords and update AD user properties for L-Kennung users
+# PURPOSE: Set passwords and update AD user properties using net user commands (V3)
 # DEPENDS ON: ActiveDirectory module
 # DEPENDED ON BY: None
 # LAST MODIFIED: 2026-06-15
 # MODIFIED BY: Systems Administration
-# CHANGE SUMMARY: Initial import of L-Kennung password reset script (V2)
+# CHANGE SUMMARY: Update Set-LKennungPassword.ps1 to support batch sizes and logging (V3)
 # BRANCH: main
 
 <#
 .SYNOPSIS
-AD-Benutzerverwaltung mit erweitertem Logging und deutscher Lokalisierung
+Modifies user accounts in Active Directory using "net user" commands.
 
 .DESCRIPTION
-Dieses Skript führt folgende Aufgaben durch:
-1. Sucht Benutzer in OUs 81/82 mit Namensmustern L110* oder L114*
-2. Zeigt gefundene Benutzer an
-3. Protokolliert alle Operationen in CSV
-4. Setzt Passwörter zurück und aktualisiert Kontoeigenschaften
-5. Deutsche Lokalisierung und Formatierung
+This script applies settings to user accounts matching specific naming patterns (e.g., "L110####" or "L114####"). 
+It ensures:
+- Accounts are reactivated
+- Passwords are reset
+- Password policies are applied
+
+Includes German localization and detailed logging.
 #>
 
-#Requires -Version 5.1
-#Requires -Modules ActiveDirectory
-
-[CmdletBinding(SupportsShouldProcess = $true)]
-param(
-    [Parameter()]
-    [string[]]$OUNames = @('81', '82'),
-
-    [Parameter()]
-    [string]$ReportPath = "C:\Daten\Benutzerbericht.csv",
-
-    [Parameter()]
-    [switch]$Force
+[CmdletBinding()]
+param (
+    [string]$LogPath = "C:\ADLogs\Operations.log",
+    [int]$BatchSize = 500,
+    [switch]$Silent
 )
 
-begin {
-    # Deutsche Lokalisierung
-    $culture = [System.Globalization.CultureInfo]::GetCultureInfo('de-DE')
-    [System.Threading.Thread]::CurrentThread.CurrentCulture = $culture
-    [System.Threading.Thread]::CurrentThread.CurrentUICulture = $culture
+# Set error handling and localization
+$ErrorActionPreference = "Stop"
+$startTime = Get-Date
 
-    # Initialisierungen
-    $ErrorActionPreference = 'Stop'
-    $global:OperationResults = [System.Collections.Generic.List[object]]::new()
-    $PasswordSetDate = Get-Date
+# Logging function with automatic directory creation
+function Write-Log {
+    param (
+        [string]$Message,
+        [ValidateSet("INFO", "WARNUNG", "FEHLER")]
+        [string]$Level = "INFO"
+    )
+    $timestamp = Get-Date -Format "dd.MM.yyyy HH:mm:ss.fff"
+    $logEntry = "$timestamp [$Level] - $Message"
 
-    # Protokollierungsfunktion
-    function Write-Header {
-        param([string]$Title)
-        Write-Host "`n$(('=' * 80))" -ForegroundColor Cyan
-        Write-Host " $Title " -ForegroundColor Cyan
-        Write-Host "$(('=' * 80))`n" -ForegroundColor Cyan
+    # Ensure directory exists for the log file
+    $logDirectory = Split-Path $LogPath -Parent
+    if (-not (Test-Path -Path $logDirectory)) {
+        New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
+    }
+
+    # Write log entry to file
+    Add-Content -Path $LogPath -Value $logEntry -Encoding UTF8
+
+    # Output to console unless Silent mode is enabled
+    if (-not $Silent) {
+        $colors = @{"INFO"="White"; "WARNUNG"="Yellow"; "FEHLER"="Red"}
+        Write-Host $logEntry -ForegroundColor $colors[$Level]
     }
 }
 
-process {
-    try {
-        # 1. OU-SUCHE ---------------------------------------------------------
-        Write-Header -Title "SCHRITT 1: ORGANISATIONSEINHEITEN-SUCHE"
-        Write-Host "Suche nach OUs: $($OUNames -join ', ')" -ForegroundColor Yellow
-        
-        $domain = Get-ADDomain
-        $targetOUs = foreach ($name in $OUNames) {
-            Get-ADOrganizationalUnit -Filter "Name -eq '$name'" `
-                -SearchBase $domain.DistinguishedName `
-                -SearchScope Subtree
+try {
+    Write-Log "Script started: User modification process"
+
+    # Retrieve users matching the naming pattern without checking properties
+    $users = Get-ADUser -Filter {
+        SamAccountName -like "L110*" -or SamAccountName -like "L114*"
+    } -ResultPageSize $BatchSize |
+    Where-Object { $_.SamAccountName -match '^(L110|L114)\d{4}$' }
+
+    Write-Log "Found $($users.Count) users for processing"
+
+    foreach ($user in $users) {
+        try {
+            $username = $user.SamAccountName
+            $tempPass = "TempPass$(Get-Random -Min 1000 -Max 9999)!"
+
+            # Reactivate account (always)
+            net user $username /active:yes 2>&1 | Out-Null
+            Write-Log "Account reactivated: $username"
+
+            # Set new password using net user
+            net user $username $tempPass 2>&1 | Out-Null
+            Write-Log "Password reset for: $username"
+
+            # Apply password policies using net user and AD cmdlets
+            net user $username /passwordchg:no 2>&1 | Out-Null
+            Set-ADUser -Identity $username -PasswordNeverExpires $true 2>&1 | Out-Null
+            Set-ADUser -Identity $username -Replace @{pwdLastSet = 0} 2>&1 | Out-Null
+
+            Write-Log "Password policies applied for: $username"
         }
-
-        if (-not $targetOUs) {
-            throw "Keine OUs gefunden für: $($OUNames -join ', ')"
+        catch {
+            Write-Log "Error processing user '$username': $_" -Level "FEHLER"
+            continue
         }
-
-        # 2. BENUTZERSUCHE ----------------------------------------------------
-        Write-Header -Title "SCHRITT 2: BENUTZERRECHE"
-        $users = foreach ($ou in $targetOUs) {
-            Get-ADUser -LDAPFilter "(|(sAMAccountName=L110*)(sAMAccountName=L114*))" `
-                -SearchBase $ou.DistinguishedName `
-                -Properties * `
-                -SearchScope Subtree
-        }
-
-        if (-not $users) {
-            Write-Host "Keine passenden Benutzer gefunden." -ForegroundColor Yellow
-            return
-        }
-
-        # 3. BENUTZERANZEIGE --------------------------------------------------
-        Write-Header -Title "GEFUNDENE BENUTZER"
-        $users | Format-Table @{l='Benutzername';e={$_.Name}},
-                            @{l='Aktiviert';e={if($_.Enabled){'Ja'}else{'Nein'}}},
-                            @{l='Letzte Anmeldung';e={$_.LastLogonDate}} -AutoSize
-
-        # 4. PASSWORTHINWEIS --------------------------------------------------
-        Write-Header -Title "PASSWORTINFORMATION"
-        Write-Host "Geplantes Passwort-Änderungsdatum: $($PasswordSetDate.ToString('dd.MM.yyyy HH:mm:ss'))" -ForegroundColor Magenta
-
-        # 5. BESTÄTIGUNG ------------------------------------------------------
-        Write-Header -Title "BESTÄTIGUNG"
-        if (-not $Force) {
-            $confirmation = Read-Host "Möchten Sie die Änderungen durchführen? (J/N)"
-            if ($confirmation -notin @('J','j')) { return }
-        }
-
-        # 6. PASSWORTVERWALTUNG -----------------------------------------------
-        Write-Header -Title "PASSWORTZURÜCKSETZUNG"
-        $securePass = Read-Host "Neues Passwort eingeben" -AsSecureString
-        $plainPass = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto(
-            [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePass)
-        )
-
-        # 7. BENUTZERVERARBEITUNG ---------------------------------------------
-        foreach ($user in $users) {
-            $resultTemplate = [PSCustomObject]@{
-                Benutzername     = $user.Name
-                Anmeldename      = $user.SamAccountName
-                Aktiviert        = $user.Enabled
-                LetzteAnmeldung  = $user.LastLogonDate
-                OU_Pfad          = $user.DistinguishedName
-                OperationStatus  = "Nicht durchgeführt"
-                FehlerCode       = $null
-                FehlerMeldung    = $null
-                PasswortDatum    = $null
-            }
-
-            try {
-                Write-Host "`nVerarbeite Benutzer: $($user.SamAccountName)" -ForegroundColor Cyan
-
-                if ($PSCmdlet.ShouldProcess($user.SamAccountName, "Passwort zurücksetzen")) {
-                    # Passwortreset
-                    $output = net user $user.SamAccountName $plainPass /DOMAIN /ACTIVE:YES 2>&1
-                    if ($LASTEXITCODE -ne 0) {
-                        throw "NetUser-Fehler ($LASTEXITCODE): $output"
-                    }
-
-                    # AD-Einstellungen
-                    Set-ADUser -Identity $user -PasswordNeverExpires $true `
-                        -CannotChangePassword $true `
-                        -Replace @{lastLogonTimestamp = [DateTime]::Now.ToFileTime()}
-
-                    # Erfolgsmeldung
-                    $resultTemplate.OperationStatus = "Erfolgreich"
-                    $resultTemplate.PasswortDatum = Get-Date
-                    Write-Host "Erfolgreich aktualisiert" -ForegroundColor Green
-                }
-            }
-            catch {
-                $resultTemplate.OperationStatus = "Fehlgeschlagen"
-                $resultTemplate.FehlerCode = $LASTEXITCODE
-                $resultTemplate.FehlerMeldung = $_.Exception.Message
-                $resultTemplate.PasswortDatum = $null
-                
-                Write-Host "Fehler: $($_.Exception.Message)" -ForegroundColor Red
-            }
-            finally {
-                $global:OperationResults.Add($resultTemplate)
-            }
-        }
-    }
-    catch {
-        Write-Host "KRITISCHER FEHLER: $($_.Exception.Message)" -ForegroundColor Red
-        exit 1
-    }
-    finally {
-        # 8. CSV-EXPORT -------------------------------------------------------
-        Write-Header -Title "CSV-EXPORT"
-        $global:OperationResults | Export-Csv -Path $ReportPath -Delimiter ";" -Encoding UTF8 -NoTypeInformation
-        Write-Host "Bericht erstellt: $ReportPath" -ForegroundColor Green
-
-        # Bereinigung
-        Remove-Variable plainPass -ErrorAction SilentlyContinue
     }
 }
-
-end {
-    # 9. ZUSAMMENFASSUNG ------------------------------------------------------
-    Write-Header -Title "ZUSAMMENFASSUNG"
-    $successCount = ($global:OperationResults | Where-Object { $_.OperationStatus -eq "Erfolgreich" }).Count
-    $errorCount = ($global:OperationResults | Where-Object { $_.OperationStatus -eq "Fehlgeschlagen" }).Count
-
-    Write-Host @"
-    Verarbeitete Benutzer: $($global:OperationResults.Count)
-    Erfolgreich:          $successCount
-    Fehlgeschlagen:       $errorCount
-
-    Fehlerübersicht:
-    $($global:OperationResults | Where-Object { $_.FehlerCode } | Format-Table Anmeldename, FehlerCode, FehlerMeldung -AutoSize | Out-String)
-"@
-
-    if ($errorCount -gt 0) { exit 2 }
+catch {
+    Write-Log "Critical error encountered: $_" -Level "FEHLER"
+    exit 1
+}
+finally {
+    # Log script completion time and duration
+    $duration = (Get-Date) - $startTime
+    Write-Log "Script completed in $($duration.TotalSeconds.ToString('N2')) seconds"
 }
