@@ -5,21 +5,21 @@ Unicode UTF-8, PowerShell 5.1 kompatibel, keine externen Abhängigkeiten.
 
 .DESCRIPTION
 Vollständiges AD-Management-Tool mit:
-- Interaktives Menü (Unicode, Pfeiltasten, Enter)
-- CopySingleUser: Kopiert Benutzer + Gruppen + OU-Struktur
-- CreateUsersFromCSV: Batch-Import mit Template
-- ApplyPropertiesToExistingUser: Synchronisiert Eigenschaften + Gruppen (FIXED: Dynamische Domain-Ermittlung)
-- ExportUserData: Filtert und exportiert Benutzer
-- ExportLKennung: L-Kennung-Spezialexport
+- Interaktives Menü (Unicode, korrekte Box-Drawing-Zeichen)
+- CopySingleUser: Kopiert Benutzer + Gruppen + OU-Struktur + dynamische Domain-Ermittlung
+- CreateUsersFromCSV: Batch-Import mit Template-Unterstützung
+- ApplyPropertiesToExistingUser: Synchronisiert Eigenschaften + Gruppen (mit Fix für Serververbindung)
+- ExportUserData: Filtert und exportiert Benutzer flexibel
+- ExportLKennung: L-Kennung-Spezialexport mit OU-Filterung
 - Debug-Output für alle Operationen
 - Strukturiertes Reporting (CSV + Log)
 
 .NOTES
-Version: 8.0 FINAL-FIXED (Serververbindung)
+Version: 9.0 FINAL (Konsolidiert v8 + v6.7 Features)
 Datum: 2025-05-28
-Autor: Systems Administration + FIX für dynamische Domain-Ermittlung
+Autor: Systems Administration (Fixes + Optimierungen)
 Kompatibilität: PowerShell 5.1+, UTF-8, ISE-ready
-FIX: Serververbindung durch dynamische Domain/OU-Ermittlung
+Verbessert: Menu-Formatierung, Serververbindung, OU-Filterung, Error Handling
 #>
 
 #requires -Version 5.1
@@ -105,15 +105,7 @@ begin {
         }
     }
     catch {
-        Write-Warning "UTF-8 OutputEncoding konnte nicht gesetzt werden (ISE oder eingeschränkter Kontext): $_"
-    }
-
-    # Test UTF-8 Datei-Schreibzugriff
-    try {
-        [System.IO.File]::WriteAllText("$env:TEMP\utf8test.txt", "UTF-8", [System.Text.Encoding]::UTF8)
-    }
-    catch {
-        Write-Warning "UTF-8 Testdatei konnte nicht geschrieben werden: $_"
+        Write-Warning "UTF-8 OutputEncoding konnte nicht gesetzt werden: $_"
     }
 
     # Kultur auf Deutsch
@@ -198,7 +190,7 @@ begin {
         $global:userReportData.Add($reportObject)
     }
 
-    # FIX: Dynamische Domain/Server-Ermittlung aus Referenzbenutzern
+    # FIX: Dynamische Domain/Server-Ermittlung aus Benutzer-DN
     function Get-ADServerFromUser {
         param(
             [Parameter(Mandatory = $true)]
@@ -206,8 +198,7 @@ begin {
         )
         
         try {
-            # Extrahiere Domain aus DN
-            # Format: CN=...,OU=...,DC=firma,DC=local
+            # Extrahiere Domain aus DN: CN=...,OU=...,DC=firma,DC=local → firma.local
             $dnParts = $User.DistinguishedName -split ','
             $dcParts = $dnParts | Where-Object { $_ -like 'DC=*' } | ForEach-Object { $_ -replace 'DC=' }
             $domain = $dcParts -join '.'
@@ -218,6 +209,43 @@ begin {
         catch {
             Write-Log -Level Warning -Message "Konnte Domain nicht aus Benutzer-DN ermitteln: $_"
             return $null
+        }
+    }
+
+    # Optimierte OU-Filterung (aus v6.7)
+    function Get-ADUsersWithOUFilter {
+        param(
+            [Parameter(Mandatory = $true)]
+            [string]$IdentityFilter,
+            [Parameter(Mandatory = $false)]
+            [string]$OUFilter,
+            [Parameter(Mandatory = $false)]
+            [string]$SearchBaseOU
+        )
+        
+        try {
+            $filter = "*$IdentityFilter*"
+            $users = Get-ADUser -Filter "SamAccountName -like '$filter'" -Properties DistinguishedName -ErrorAction Stop
+            
+            if ($OUFilter -or $SearchBaseOU) {
+                if ($SearchBaseOU) {
+                    Write-Log -Level Debug -Message "Filtere nach SearchBaseOU: $SearchBaseOU"
+                    $users = $users | Where-Object { $_.DistinguishedName -like "*$SearchBaseOU*" }
+                }
+                elseif ($OUFilter) {
+                    Write-Log -Level Debug -Message "Filtere nach OUFilter: $OUFilter"
+                    $users = $users | Where-Object { 
+                        $ouName = ($_.DistinguishedName -split ',' | Where-Object { $_ -like 'OU=*' }) -join ','
+                        $ouName -like "*$OUFilter*"
+                    }
+                }
+            }
+            
+            return $users
+        }
+        catch {
+            Write-Log -Level Error -Message "Fehler beim Filtern von Benutzern: $_"
+            return @()
         }
     }
 
@@ -382,30 +410,30 @@ begin {
         Write-Log -Level Debug -Message "Zeige interaktives Menü"
         
         $menuItems = @(
-            @{ Number = 1; Title = "Benutzer kopieren"; Icon = "?" },
-            @{ Number = 2; Title = "Benutzer aus CSV erstellen"; Icon = "?" },
-            @{ Number = 3; Title = "Eigenschaften/Gruppen synchronisieren"; Icon = "?" },
-            @{ Number = 4; Title = "Benutzer exportieren"; Icon = "?" },
-            @{ Number = 5; Title = "L-Kennung exportieren"; Icon = "?" },
-            @{ Number = 0; Title = "Beenden"; Icon = "x" }
+            @{ Number = 1; Title = "Benutzer kopieren"; Icon = "[1]" },
+            @{ Number = 2; Title = "Benutzer aus CSV erstellen"; Icon = "[2]" },
+            @{ Number = 3; Title = "Eigenschaften/Gruppen synchronisieren"; Icon = "[3]" },
+            @{ Number = 4; Title = "Benutzer exportieren"; Icon = "[4]" },
+            @{ Number = 5; Title = "L-Kennung exportieren"; Icon = "[5]" },
+            @{ Number = 0; Title = "Beenden"; Icon = "[x]" }
         )
 
         while ($true) {
             Clear-Host
-            Write-Host "╔═══════════════════════════════════════════════════════════════╗"
-            Write-Host "║          AD-Benutzerverwaltung v8.0 - Interaktives Menü        ║" -ForegroundColor Cyan
-            Write-Host "╚═══════════════════════════════════════════════════════════════╝"
-            Write-Host ""
+            Write-Host "`n"
+            Write-Host "╔════════════════════════════════════════════════════════════════╗" -ForegroundColor White
+            Write-Host "║  AD-Benutzerverwaltung v9.0 - Interaktives Menü (FINAL)       ║" -ForegroundColor Cyan
+            Write-Host "╚════════════════════════════════════════════════════════════════╝" -ForegroundColor White
+            Write-Host "`n"
             
             foreach ($item in $menuItems) {
-                $icon = if ($item.Number -eq 0) { "[x]" } else { "[$($item.Number)]" }
-                Write-Host "  $icon  $($item.Title)" -ForegroundColor White
+                Write-Host "  $($item.Icon)  $($item.Title)" -ForegroundColor White
             }
             
-            Write-Host ""
-            Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            Write-Host "`n"
+            Write-Host "════════════════════════════════════════════════════════════════" -ForegroundColor Gray
             Write-Host "Eingabe: 0-5 (oder Q zum Beenden)" -ForegroundColor Yellow
-            Write-Host "Log: $global:fullLogPath" -ForegroundColor DarkGray
+            Write-Host "Log:     $global:fullLogPath" -ForegroundColor DarkGray
             Write-Host ""
 
             $choice = Read-Host "Wahl"
@@ -573,8 +601,8 @@ begin {
 
     # ★★★ FIX: ApplyPropertiesToExistingUser mit dynamischer Domain-Ermittlung ★★★
     function Invoke-ApplyPropertiesToExistingUser {
-        Write-Log -Level Debug -Message "Invoke-ApplyPropertiesToExistingUser: Start"
-        Write-Log -Level Info -Message "Modus: ApplyPropertiesToExistingUser (FIXED)"
+        Write-Log -Level Debug -Message "Invoke-ApplyPropertiesToExistingUser: Start (FIXED)"
+        Write-Log -Level Info -Message "Modus: ApplyPropertiesToExistingUser"
 
         try {
             if (-not $ReferenceUserSamAccountName) {
@@ -662,9 +690,10 @@ begin {
         Write-Log -Level Debug -Message "Invoke-ApplyPropertiesToExistingUser: End"
     }
 
+    # Optimierte ExportUserData (mit OU-Filterung aus v6.7)
     function Invoke-ExportUserData {
         Write-Log -Level Debug -Message "Invoke-ExportUserData: Start"
-        Write-Log -Level Info -Message "Modus: ExportUserData"
+        Write-Log -Level Info -Message "Modus: ExportUserData (mit OU-Filterung)"
 
         try {
             if (-not $IdentityFilter) {
@@ -681,8 +710,8 @@ begin {
             Write-Log -Level Debug -Message "├─ Filter: $IdentityFilter"
             Write-Log -Level Debug -Message "├─ Ziel: $ExportCsvPath"
 
-            $filter = "*$IdentityFilter*"
-            $users = Get-ADUser -Filter "SamAccountName -like '$filter'" -Properties * -ErrorAction Stop
+            # Nutze optimierte Filterfunktion aus v6.7
+            $users = Get-ADUsersWithOUFilter -IdentityFilter $IdentityFilter -OUFilter $OUFilter -SearchBaseOU $SearchBaseOU
 
             if (-not $users) {
                 Write-Host "Keine Benutzer gefunden" -ForegroundColor Yellow
@@ -690,6 +719,7 @@ begin {
                 return
             }
 
+            $users = $users | Get-ADUser -Properties * -ErrorAction Stop
             $exportData = $users | Select-Object SamAccountName, Name, DisplayName, UserPrincipalName, Enabled, DistinguishedName, EmailAddress
             $exportData | Export-Csv -Path $ExportCsvPath -Delimiter ';' -Encoding UTF8 -NoTypeInformation
 
