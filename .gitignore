@@ -4,3 +4,9 @@
 *.cab
 wsusscn2.cab
 Universal_Update_and_Fix/OfflineUpdates/
+
+# Ignore local environment and secrets configurations
+environment.json
+.env
+.env.*
+*.log

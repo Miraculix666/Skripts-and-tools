@@ -1,0 +1,18 @@
+{
+  "OUs": [
+    "OU=81,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de",
+    "OU=82,OU=Polizei-NRW-PB-PE-2012,DC=polizei,DC=nrw,DC=de"
+  ],
+  "DefaultOutputDir": "C:\\Daten",
+  "ADServer": "localhost",
+  "EmailSettings": {
+    "SmtpServer": "smtp.polizei.nrw.de",
+    "Port": 25,
+    "Sender": "admin@polizei.nrw.de",
+    "Recipient": "report@polizei.nrw.de"
+  },
+  "GitHubSync": {
+    "LocalPath": "C:\\GitHub",
+    "RemoteUrl": "https://github.com/SystemsAdministration"
+  }
+}
