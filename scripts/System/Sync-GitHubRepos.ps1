@@ -12,6 +12,13 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# ── Load Private Secrets & Run D: Backup ──────────────────────────────────────
+$secretsScript = "C:\GitHub\configs\Scripts\Manage-SecretsAndBackup.ps1"
+if (Test-Path $secretsScript) {
+    & $secretsScript -Load
+    & $secretsScript -Backup
+}
+
 # ── Helpers ──────────────────────────────────────────────────────────────────
 function Write-Step {
     param([int]$N, [int]$Total, [string]$Msg, [string]$Color = 'Cyan')
