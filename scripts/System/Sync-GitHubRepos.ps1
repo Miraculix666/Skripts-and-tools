@@ -1,4 +1,4 @@
-﻿# Sync-GitHubRepos.ps1 - Synchronises all GitHub repos to C:\GitHub and manages VS Code workspaces
+# Sync-GitHubRepos.ps1 - Synchronises all GitHub repos to C:\GitHub and manages VS Code workspaces
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
@@ -27,6 +27,94 @@ function Write-Step {
 function Write-OK { param([string]$M) if (-not $Silent) { Write-Host "    [OK] $M" -ForegroundColor Green } }
 function Write-Warn { param([string]$M) if (-not $Silent) { Write-Host "    [WARN] $M" -ForegroundColor Yellow } }
 function Write-Err { param([string]$M) { Write-Host "    [ERR] $M" -ForegroundColor Red } }
+
+function Merge-JulesBranchesForRepo {
+    param(
+        [string]$RepoPath,
+        [string]$RepoName
+    )
+
+    # 1. Fetch remote branches
+    git -C $RepoPath fetch --all --prune -q 2>$null
+
+    # 2. Get the default branch name (usually main or master)
+    $defaultBranch = (git -C $RepoPath symbolic-ref refs/remotes/origin/HEAD 2>$null) -replace '^refs/remotes/origin/'
+    if (-not $defaultBranch) {
+        $defaultBranch = "main"
+        # Try master if main doesn't exist
+        $branches = git -C $RepoPath branch --list
+        if ($branches -match "master") { $defaultBranch = "master" }
+    }
+
+    # 3. Get all remote branches that are not merged into default branch
+    $unmerged = @(git -C $RepoPath branch -r --no-merged $defaultBranch 2>$null)
+    if (-not $unmerged -or $unmerged.Count -eq 0 -or $unmerged[0].Trim().Length -eq 0) {
+        return
+    }
+
+    # 4. Filter branches matching Jules PR patterns
+    $julesBranchPattern = "^origin/(fix-|test-|perf-|jules-|code-health-|refactor-|security-|performance-)"
+    
+    $branchesToMerge = @()
+    foreach ($line in $unmerged) {
+        $b = $line.Trim()
+        if ($b -match "^origin/") {
+            $branchName = $b -replace '^origin/'
+            if ($b -match $julesBranchPattern -and $branchName -ne $defaultBranch) {
+                $branchesToMerge += $branchName
+            }
+        }
+    }
+
+    if ($branchesToMerge.Count -eq 0) {
+        return
+    }
+
+    Write-Host "   [JULES] Found $($branchesToMerge.Count) unmerged Jules branches in $RepoName. Attempting auto-merge..." -ForegroundColor Cyan
+
+    # Save current active branch to restore it later
+    $activeBranch = (git -C $RepoPath branch --show-current).Trim()
+    if (-not $activeBranch) { $activeBranch = $defaultBranch }
+
+    # Ensure we are on the default branch
+    if ($activeBranch -ne $defaultBranch) {
+        git -C $RepoPath checkout $defaultBranch -q 2>$null
+    }
+
+    foreach ($branch in $branchesToMerge) {
+        Write-Host "     ► Merging branch: $branch ..." -ForegroundColor Cyan
+        
+        $commitMsg = "Integrate updates from $branch"
+        $mergeOutput = git -C $RepoPath -c core.safecrlf=false merge "origin/$branch" --no-edit -m $commitMsg 2>&1
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "       ✓ Merge successful: $branch" -ForegroundColor Green
+            
+            # Push the merged default branch to remote
+            $pushOutput = git -C $RepoPath push origin $defaultBranch 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "       ✓ Push successful for $defaultBranch" -ForegroundColor Green
+                
+                # Delete the remote branch on GitHub
+                git -C $RepoPath push origin --delete $branch -q 2>$null
+                Write-Host "       ✓ Remote branch deleted: $branch" -ForegroundColor Gray
+                
+                # Delete local tracking branch if created
+                git -C $RepoPath branch -D $branch -q 2>$null
+            } else {
+                Write-Host "       ✗ Push failed for $defaultBranch: $pushOutput" -ForegroundColor Red
+            }
+        } else {
+            Write-Host "       ✗ Merge conflict in $branch. Aborting merge." -ForegroundColor Yellow
+            git -C $RepoPath merge --abort 2>&1 | Out-Null
+        }
+    }
+
+    # Restore original branch if needed
+    if ($activeBranch -ne $defaultBranch) {
+        git -C $RepoPath checkout $activeBranch -q 2>$null
+    }
+}
 
 # ── Step 1 - Get API Token ────────────────────────────────────────────────────
 Write-Step 1 6 "GitHub API Token laden ..."
@@ -445,6 +533,35 @@ foreach ($repo in $localRepos) {
         }
     } else {
         $repo.ActionTaken = "Up to date"
+    }
+
+    # Auto-merge jules branches if in FullSync mode
+    if ($FullSync -and $repo.IsGit -and $repo.Type -ne "Local Git Only") {
+        Merge-JulesBranchesForRepo -RepoPath $repo.Path -RepoName $repo.Name
+    }
+
+    # Run daily AD cleanup routine if in scripts-and-tools-pol
+    if ($repo.Name -match "scripts-and-tools-pol") {
+        $cleanupScript = Join-Path $repo.Path "scripts\system\L-Kennung_IGVP_cleanup.ps1"
+        if (Test-Path $cleanupScript) {
+            $cleanupLog = Join-Path $repo.Path "scripts\system\last_cleanup_run.txt"
+            $today = Get-Date -Format "yyyy-MM-dd"
+            $runCleanup = $true
+            if (Test-Path $cleanupLog) {
+                $lastRun = Get-Content $cleanupLog -Raw
+                if ($lastRun.Trim() -eq $today) { $runCleanup = $false }
+            }
+            if ($runCleanup) {
+                Write-Host "   [CLEANUP] Starte taegliche AD-Aufraeumroutine..." -ForegroundColor Cyan
+                try {
+                    & $cleanupScript -Force 2>&1 | Out-String
+                    $today | Set-Content $cleanupLog -Encoding UTF8 -Force
+                    Write-Host "   [CLEANUP] Aufraeumroutine beendet." -ForegroundColor Green
+                } catch {
+                    Write-Warning "Fehler bei AD-Aufraeumroutine: $_"
+                }
+            }
+        }
     }
 }
 
