@@ -102,7 +102,7 @@ function Merge-JulesBranchesForRepo {
                 # Delete local tracking branch if created
                 git -C $RepoPath branch -D $branch -q 2>$null
             } else {
-                Write-Host "       ✗ Push failed for $defaultBranch: $pushOutput" -ForegroundColor Red
+                Write-Host "       ✗ Push failed for ${defaultBranch}: $pushOutput" -ForegroundColor Red
             }
         } else {
             Write-Host "       ✗ Merge conflict in $branch. Aborting merge." -ForegroundColor Yellow
