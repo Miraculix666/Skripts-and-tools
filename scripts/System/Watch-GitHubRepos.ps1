@@ -1,9 +1,9 @@
-﻿# Watch-GitHubRepos.ps1 - Überwacht C:\GitHub auf neue Ordner und löst Workspace-Updates aus
+# Watch-GitHubRepos.ps1 - Überwacht C:\GitHub auf neue Ordner und löst Workspace-Updates aus
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
     [string]$WatchDir = 'C:\GitHub',
-    [string]$SyncScript = 'C:\GitHub\Scripts-and-tools\Sync-GitHubRepos.ps1'
+    [string]$SyncScript = 'C:\GitHub\Scripts-and-tools\scripts\system\Sync-GitHubRepos.ps1'
 )
 
 Set-StrictMode -Version Latest
