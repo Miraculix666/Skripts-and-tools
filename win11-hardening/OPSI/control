@@ -1,0 +1,33 @@
+[Package]
+version: 10.0
+Increment: 1
+
+[Product]
+type: localboot
+id: ps-win11-hardening
+name: Windows 11 Hardening Suite V10.0
+description: Umfassende Systemhaertung, Debloating, Store-Deaktivierung und Lab-Optimierung
+advice: Erfordert Administrator-Rechte. Defender wird standardmaessig deaktiviert!
+version: 10.0
+priority: 50
+licenseRequired: false
+
+[ProductProperty]
+name: enable_defender
+description: Soll der Defender aktiv bleiben? (false = deaktivieren fuer Lab/Alt-AV)
+default: false
+values: ["true", "false"]
+
+[ProductProperty]
+name: drivers_path
+description: Pfad zum Verzeichnis mit den zu installierenden Treibern (.inf)
+default: C:\Drivers_Temp
+
+[ProductProperty]
+name: skip_remote_setup
+description: RDP/WinRM/Firewall-Konfiguration ueberspringen?
+default: false
+values: ["true", "false"]
+
+[SetupScript]
+primary: setup.opsi
