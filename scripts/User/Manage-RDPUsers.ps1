@@ -1,5 +1,4 @@
-<#
-#https://gemini.google.com/gem/a0a0ee9c06a3/71a6525ab796d42f
+﻿<#
 .SYNOPSIS
     RDP User Manager & Mail Generator (v5.1)
 
@@ -557,3 +556,4 @@ else {
     }
 }
 Write-Host "Ende."
+

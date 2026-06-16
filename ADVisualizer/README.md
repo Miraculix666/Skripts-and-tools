@@ -1,6 +1,6 @@
-# 🏗️ ADVisualizer
+﻿# 🏗️ ADVisualizer
 
-> **Standard**: v2.0.0 (Master Agent)
+> **Standard**: v2.0.0 (Systems Administration)
 > **Description**: Modular PowerShell project for Active Directory user analysis and visualization.
 
 ## 📂 Project Structure
@@ -19,4 +19,5 @@ For more detailed information, please refer to:
 - [CHANGELOG.md](docs/CHANGELOG.md) - Version history.
 
 ---
-🚀 Managed by **Antigravity Master Agent**.
+🚀 Managed by **Antigravity Systems Administration**.
+

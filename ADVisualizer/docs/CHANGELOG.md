@@ -1,9 +1,9 @@
-# 📜 Changelog — ADVisualizer
+﻿# 📜 Changelog — ADVisualizer
 
 ## [2.1.0] - 2026-02-27
 ### Added
 - "Matrix View" in Excel export with conditional formatting and group colors.
-- v2.0.0 Master Agent framework integration.
+- v2.0.0 framework integration.
 
 ### Changed
 - **BREAKING**: Reorganized project structure (scripts moved to `scripts/`, documentation moved to `docs/`).
@@ -19,3 +19,4 @@
 
 ---
 *Format based on Keep a Changelog.*
+

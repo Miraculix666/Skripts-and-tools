@@ -1,6 +1,6 @@
-# 🛠️ Skripts-and-tools
+﻿# 🛠️ Scripts-and-tools
 
-> **Standard**: v2.0.0 (Master Agent)
+> **Standard**: v2.0.0
 > **Description**: Consolidated collection of administrative scripts and tools for DevOps and IT infrastructure.
 
 ## 📂 Project Structure
@@ -16,7 +16,7 @@
 
 ## 🚀 Usage
 
-Navigate to the respective subfolder in `scripts/` to find the tool you need. All scripts follow the Antigravity v2.0.0 code standards.
+Navigate to the respective subfolder in `scripts/` to find the tool you need. All scripts follow the Systems Administration v2.0.0 code standards.
 
 For more information:
 - [README.md](docs/README.md) - Legacy readme and detailed notes.
@@ -24,3 +24,4 @@ For more information:
 
 ---
 🚀 Managed by **Antigravity Master Agent**.
+

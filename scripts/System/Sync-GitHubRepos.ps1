@@ -1,4 +1,4 @@
-# Sync-GitHubRepos.ps1 - Synchronises all GitHub repos to C:\GitHub and manages VS Code workspaces
+﻿# Sync-GitHubRepos.ps1 - Synchronises all GitHub repos to C:\GitHub and manages VS Code workspaces
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
@@ -116,10 +116,10 @@ foreach ($repo in $allRepos) {
 # ── Step 3 - Auditing & Synchronising Repos ───────────────────────────────────
 Write-Step 3 6 "Lokale Ordner analysieren und synchronisieren ..."
 
-# Backup local settings for VS Code and Antigravity IDE before repo scan/commit
+# Backup local settings for VS Code and Custom IDE before repo scan/commit
 $settingsSyncScript = Join-Path $PSScriptRoot "Sync-VSCodeSettings.ps1"
 if (Test-Path $settingsSyncScript) {
-    Write-Step 3 6 "Backup fuer VS Code & Antigravity IDE Einstellungen ausfuehren..."
+    Write-Step 3 6 "Backup fuer VS Code & Custom IDE Einstellungen ausfuehren..."
     try {
         & $settingsSyncScript -Backup
     }
@@ -523,9 +523,9 @@ if (-not $Silent) {
 
 Write-OK "Sync abgeschlossen - Geklont: $($cloned.Count) | Gepullt: $($pulled.Count) | Uebersprungen: $($skipped.Count) | Fehler: $($failed.Count)"
 
-# Restore/Apply newly pulled settings for VS Code and Antigravity IDE
+# Restore/Apply newly pulled settings for VS Code and Custom IDE
 if (Test-Path $settingsSyncScript) {
-    Write-Step 3 6 "Wiederherstellen/Uebernehmen der synchronisierten VS Code & Antigravity IDE Einstellungen..."
+    Write-Step 3 6 "Wiederherstellen/Uebernehmen der synchronisierten VS Code & Custom IDE Einstellungen..."
     try {
         & $settingsSyncScript -Restore
     }
@@ -744,7 +744,7 @@ if ($failed.Count -gt 0 -and -not $DryRun) {
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Antigravity Sync - Fehlerbehebungs-Bericht</title>
+    <title>Custom Sync - Fehlerbehebungs-Bericht</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -854,7 +854,7 @@ if ($failed.Count -gt 0 -and -not $DryRun) {
 <body>
     <div class="container">
         <div class="header">
-            <h1>[WARN] Antigravity Sync Konflikte &amp; Fehler</h1>
+            <h1>[WARN] Custom Sync Konflikte &amp; Fehler</h1>
             <p>Einige Repositories konnten nicht vollautomatisch synchronisiert werden. Bitte loesen Sie die Probleme manuell.</p>
         </div>
 "@
@@ -929,7 +929,7 @@ git status</div>
 # ── Step 6 - Antigravity Auto-Update (Once a Day) ─────────────────────────────
 $stateDir = "C:\Users\nw0b4746\.gemini\antigravity-ide"
 if (Test-Path $stateDir) {
-    Write-Step 6 6 "Antigravity Auto-Update pruefen ..."
+    Write-Step 6 6 "Custom IDE Auto-Update pruefen ..."
     
     $updateLogFile = Join-Path $stateDir "last_update_check.txt"
     $todayDate = Get-Date -Format "yyyy-MM-dd"
@@ -966,16 +966,16 @@ if (Test-Path $stateDir) {
         $appPath = "C:\Users\nw0b4746\AppData\Local\Programs\Antigravity IDE\Antigravity IDE.exe"
         
         if (Test-Path $installerPath) {
-            Write-Warn "Neues Update fuer Antigravity IDE gefunden! Installiere..."
+            Write-Warn "Neues Update fuer Custom IDE gefunden! Installiere..."
             if (-not $DryRun) {
                 try {
                     # Relaunch installer silently and wait for completion
-                    Write-OK "Beende Antigravity IDE und installiere Update im Hintergrund..."
+                    Write-OK "Beende Custom IDE und installiere Update im Hintergrund..."
                     Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait
                     
                     # Relaunch IDE after update, restoring all open windows and workspaces automatically
                     if (Test-Path $appPath) {
-                        Write-OK "Starte Antigravity IDE neu..."
+                        Write-OK "Starte Custom IDE neu..."
                         Start-Process -FilePath $appPath
                     }
                 }
@@ -986,9 +986,10 @@ if (Test-Path $stateDir) {
                 Write-OK "[DRY] Wuerde IDE Update silent ausfuehren (/S) und neu starten"
             }
         } else {
-            Write-OK "Antigravity IDE ist auf dem neuesten Stand (keine pending Updates)."
+            Write-OK "Custom IDE ist auf dem neuesten Stand (keine pending Updates)."
         }
     } else {
         Write-OK "Update-Pruefung fuer heute bereits abgeschlossen ($lastCheck)."
     }
 }
+

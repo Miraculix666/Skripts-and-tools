@@ -1,4 +1,4 @@
-# Sync-VSCodeSettings.ps1 - Sync settings and extensions for standard VS Code and Antigravity IDE
+﻿# Sync-VSCodeSettings.ps1 - Sync settings and extensions for standard VS Code and Custom IDE
 #Requires -Version 5.1
 [CmdletBinding()]
 param (
@@ -20,7 +20,7 @@ $configs = @(
         IsCmd          = $false
     },
     @{
-        Name           = "AntigravityIDE"
+        Name           = "CustomIDE"
         UserDir        = "$env:APPDATA\Antigravity IDE\User"
         RepoDir        = Join-Path $repoBaseSettingsDir "AntigravityIDE"
         CliCommand     = "$env:LOCALAPPDATA\Programs\Antigravity IDE\bin\antigravity-ide.cmd"
@@ -226,3 +226,4 @@ else {
     }
     Write-Host "`nSettings backup complete!" -ForegroundColor Cyan
 }
+
