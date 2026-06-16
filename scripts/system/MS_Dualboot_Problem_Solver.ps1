@@ -1,7 +1,7 @@
-# Erfordert Administrator-Rechte
+﻿# Erfordert Administrator-Rechte
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))  
 {  
-    Write-Warning "Bitte führen Sie dieses Skript als Administrator aus!"
+    Write-Warning "Bitte fÃ¼hren Sie dieses Skript als Administrator aus!"
     Break
 }
 
@@ -12,7 +12,7 @@ Confirm-SecureBootUEFI -Disable
 # BCD-Store sichern
 bcdedit /export C:\BCD_Backup
 
-# Linux-Bootloader-Eintrag hinzufügen (Beispiel für Ubuntu)
+# Linux-Bootloader-Eintrag hinzufÃ¼gen (Beispiel fÃ¼r Ubuntu)
 $linuxPath = "\EFI\ubuntu\grubx64.efi"
 bcdedit /create /d "Ubuntu" /application osloader
 $guid = (bcdedit /create /d "Ubuntu" /application osloader) -replace ".*({.*}).*", '$1'
@@ -20,10 +20,10 @@ bcdedit /set $guid device partition=C:
 bcdedit /set $guid path $linuxPath
 bcdedit /set $guid description "Ubuntu Linux"
 
-# Bootmenü-Timeout einstellen (in Sekunden)
+# BootmenÃ¼-Timeout einstellen (in Sekunden)
 bcdedit /timeout 10
 
-# Signaturen großer Linux-Distributionen eintragen
+# Signaturen groÃŸer Linux-Distributionen eintragen
 $certPath = "C:\LinuxCerts"
 New-Item -Path $certPath -ItemType Directory -Force
 
@@ -44,4 +44,5 @@ Import-Certificate -FilePath "$certPath\ubuntu-ca.crt" -CertStoreLocation Cert:\
 Import-Certificate -FilePath "$certPath\fedora.gpg" -CertStoreLocation Cert:\LocalMachine\Root
 Import-Certificate -FilePath "$certPath\opensuse.pub" -CertStoreLocation Cert:\LocalMachine\Root
 
-Write-Host "Konfiguration abgeschlossen. Bitte starten Sie Ihren Computer neu, um die Änderungen zu übernehmen."
+Write-Host "Konfiguration abgeschlossen. Bitte starten Sie Ihren Computer neu, um die Ã„nderungen zu Ã¼bernehmen."
+

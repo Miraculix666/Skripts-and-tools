@@ -3,7 +3,7 @@ Import-Module 'C:\Program Files (x86)\Microsoft Endpoint Manager\AdminConsole\bi
 
 # Verbinde dich mit dem Configuration Manager
 $SiteCode = "ABC"  # Ersetze "ABC" durch deinen Site-Code
-cd "$SiteCode:"
+cd "${SiteCode}:"
 
 # Hole alle Anwendungen und ihren Installationsstatus
 $applications = Get-CMApplication | Select-Object -Property LocalizedDisplayName, SoftwareVersion, IsDeployed
