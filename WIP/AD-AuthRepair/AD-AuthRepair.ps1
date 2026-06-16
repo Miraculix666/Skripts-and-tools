@@ -6,9 +6,6 @@
     Dateiname: AD-AuthRepair.ps1
     Version 1.8
     
-    https://gemini.google.com/app/7a6c8ab18bc8dc70
-    https://gemini.google.com/share/ea42b884d872
-
     Änderungen in v1.8:
     - FIX: 'Finally'-Block gehärtet: Kurze Wartezeit vor dem Schließen, um versehentliches Beenden zu verhindern.
     - MSG: Klarerer Hinweis am Ende, dass das Fenster offen bleibt.

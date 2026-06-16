@@ -1,4 +1,4 @@
-﻿# 🛠️ Scripts-and-tools
+# 🛠️ Scripts-and-tools
 
 > **Standard**: v2.0.0
 > **Description**: Consolidated collection of administrative scripts and tools for DevOps and IT infrastructure.
@@ -23,5 +23,3 @@ For more information:
 - [CHANGELOG.md](docs/CHANGELOG.md) - Version history.
 
 ---
-🚀 Managed by **Antigravity Master Agent**.
-
