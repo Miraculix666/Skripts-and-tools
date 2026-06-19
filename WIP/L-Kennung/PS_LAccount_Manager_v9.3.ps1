@@ -68,36 +68,36 @@ function Write-Log {
     $Msg | Out-File -FilePath $LogFile -Append
 }
 
-function Invoke-Main {
-    Show-Header
-    Import-Module ActiveDirectory
 
-    if (-not $CsvPath) { $CsvPath = Read-Host "Pfad zur Master-CSV eingeben" }
-    $CsvPath = $CsvPath.Trim().Trim('"')
-    if (-not (Test-Path $CsvPath)) {
-        Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERROR"; return
-    }
-
-    # 1. BEDARFSLISTE
+function Get-RequiredList {
+    param([string]$Path)
     $RequiredList = New-Object System.Collections.Generic.HashSet[string]
-    if ($RequiredCsvPath -and (Test-Path $RequiredCsvPath)) {
+    if ($Path -and (Test-Path $Path)) {
         Write-Log "Lade Bedarfsliste..." "DEBUG"
-        foreach ($line in (Get-Content $RequiredCsvPath -Encoding UTF8)) {
+        foreach ($line in (Get-Content $Path -Encoding UTF8)) {
             if ($line -match "(L\d{6,8})") { [void]$RequiredList.Add($matches[1].ToUpper()) }
         }
         Write-Log "Bedarfsliste: $($RequiredList.Count) Eintraege." "SUCCESS"
     }
+    return $RequiredList
+}
 
-    # 2. MASTER-CSV
+function Get-MasterCsvData {
+    param([string]$Path)
     Write-Log "Lese Master-CSV..." "DEBUG"
     $MasterCsvData = @{}
-    foreach ($line in (Import-Csv -Path $CsvPath -Delimiter ';' -Encoding Default)) {
+    foreach ($line in (Import-Csv -Path $Path -Delimiter ';' -Encoding Default)) {
         $key = if ($line."L-Kennung") { $line."L-Kennung".ToString().Trim().ToUpper() } else { "" }
         if ($key) { $MasterCsvData[$key] = $line }
     }
     Write-Log "Master-CSV: $($MasterCsvData.Count) Zeilen." "SUCCESS"
+    return $MasterCsvData
+}
 
-    # 3. AD-DISCOVERY
+function Get-ADDiscovery {
+    param(
+        [switch]$SearchGlobal
+    )
     Write-Log "Schritt 1: AD-Discovery (OUs 81/82)..." "INFO"
     $ADCache      = @{}
     $UniqueGroups = New-Object System.Collections.Generic.HashSet[string]
@@ -112,8 +112,6 @@ function Invoke-Main {
         foreach ($u in $users) {
             $ADCache[$u.SamAccountName.ToUpper()] = $u
             foreach ($g in $u.MemberOf) {
-                # FIX-8: Komma in -replace 'x','y' wird als 2. Methodenargument geparst.
-                # Loesung: Ausdruck vorab in Variable berechnen.
                 $gn = ($g -split ',')[0] -replace 'CN=',''
                 [void]$UniqueGroups.Add($gn)
             }
@@ -136,6 +134,153 @@ function Invoke-Main {
             }
         }
     }
+
+    return @{
+        Cache  = $ADCache
+        Groups = $UniqueGroups
+    }
+}
+
+function Invoke-RunspaceJobs {
+    param(
+        $ProcessList,
+        $MasterCsvData,
+        $ADCache,
+        $RequiredList,
+        $SortedGroups,
+        $Pool,
+        $ScriptBlock,
+        $LogFile
+    )
+
+    # Jobs starten
+    $Jobs = [System.Collections.Generic.List[PSObject]]::new()
+    foreach ($LID in $ProcessList) {
+        $psi = [powershell]::Create()
+        [void]$psi.AddScript($ScriptBlock)
+        [void]$psi.AddArgument($LID)
+        [void]$psi.AddArgument($MasterCsvData[$LID])
+        [void]$psi.AddArgument($ADCache[$LID])
+        [void]$psi.AddArgument($RequiredList)
+        [void]$psi.AddArgument($SortedGroups)
+        $psi.RunspacePool = $Pool
+        [void]$Jobs.Add([PSCustomObject]@{
+            SAM         = $LID
+            Instance    = $psi
+            AsyncResult = $psi.BeginInvoke()
+        })
+    }
+
+    # Jobs einsammeln
+    $Results  = [System.Collections.Generic.List[PSObject]]::new()
+    $Count    = 0
+    $ErrCount = 0
+    $Total    = $Jobs.Count
+
+    while ($Jobs.Count -gt 0) {
+        $Finished = @($Jobs | Where-Object { $_.AsyncResult.IsCompleted })
+        $ToRemove = [System.Collections.Generic.List[PSObject]]::new()
+
+        foreach ($Job in $Finished) {
+            $Count++
+
+            foreach ($e in $Job.Instance.Streams.Error) {
+                $ErrCount++
+                $em = "[$( Get-Date -Format 'HH:mm:ss')] [ERROR] Runspace $($Job.SAM): $e"
+                Write-Host $em -ForegroundColor Red
+                $em | Out-File $LogFile -Append -ErrorAction Stop
+            }
+
+            $rawOut = $Job.Instance.EndInvoke($Job.AsyncResult)
+            foreach ($item in $rawOut) {
+                if ($null -ne $item -and
+                    $item.PSObject -ne $null -and
+                    $item -isnot [System.Management.Automation.PSDataCollection[psobject]]) {
+                    [void]$Results.Add($item)
+                }
+            }
+
+            Write-Host "[$Count/$Total] OK: $($Job.SAM)" -ForegroundColor Gray
+            Write-Progress -Activity "Verarbeite L-Kennungen" `
+                           -Status "$Count / $Total" `
+                           -PercentComplete ([math]::Round(($Count / $Total) * 100))
+
+            $Job.Instance.Dispose()
+            [void]$ToRemove.Add($Job)
+        }
+
+        foreach ($j in $ToRemove) { [void]$Jobs.Remove($j) }
+        if ($Jobs.Count -gt 0) { Start-Sleep -Milliseconds 50 }
+    }
+
+    Write-Progress -Activity "Verarbeite L-Kennungen" -Completed
+
+    return @{
+        Results = $Results
+        ErrCount = $ErrCount
+    }
+}
+
+function Export-Results {
+    param(
+        $Results,
+        $SortedGroups,
+        $ScriptDir,
+        $Version
+    )
+
+    if ($Results.Count -eq 0) {
+        Write-Log "FEHLER: Keine Ergebnisse generiert." "ERROR"
+        return
+    }
+
+    Write-Log "Erzeuge Ausgabedateien ($($Results.Count) Datensaetze)..." "INFO"
+
+    $Path1    = Join-Path $ScriptDir "L-Kennungen_Full_Analysis_v$Version.csv"
+    $baseCols = @("L-Kennung","andere OU","GELOESCHT","Benoetigt","Geaendert","LOESCHEN",
+                  "AD_Vorname","AD_Nachname")
+    $grpCols  = $SortedGroups | ForEach-Object { "GRP_$_" }
+    $Results | Select-Object ($baseCols + $grpCols) |
+        Export-Csv -Path $Path1 -Delimiter ';' -NoTypeInformation -Encoding UTF8
+
+    $Path2    = Join-Path $ScriptDir "L-Kennungen_Properties_v$Version.csv"
+    $allCols  = $Results[0].psobject.Properties.Name | Where-Object { $_ -ne "LOESCHEN" }
+    $lines    = [System.Collections.Generic.List[string]]::new()
+    $lines.Add($allCols -join ';')
+    foreach ($r in $Results) {
+        $row = foreach ($col in $allCols) {
+            $val = $r.$col
+            $str = if ($null -ne $val) { $val.ToString() } else { "" }
+            if ($str -match '[;\r\n"]') { '"' + $str.Replace('"','""') + '"' } else { $str }
+        }
+        $lines.Add($row -join ';')
+    }
+    $lines | Out-File -FilePath $Path2 -Encoding UTF8 -Force -ErrorAction Stop
+
+    return @{ Path1 = $Path1; Path2 = $Path2 }
+}
+
+
+function Invoke-Main {
+    Show-Header
+    Import-Module ActiveDirectory
+
+    if (-not $CsvPath) { $CsvPath = Read-Host "Pfad zur Master-CSV eingeben" }
+    $CsvPath = $CsvPath.Trim().Trim('"')
+    if (-not (Test-Path $CsvPath)) {
+        Write-Log "Master-CSV nicht gefunden: '$CsvPath'" "ERROR"; return
+    }
+
+    # 1. BEDARFSLISTE
+    $RequiredList = Get-RequiredList -Path $RequiredCsvPath
+
+    # 2. MASTER-CSV
+    $MasterCsvData = Get-MasterCsvData -Path $CsvPath
+
+    # 3. AD-DISCOVERY
+    $AdData = Get-ADDiscovery -SearchGlobal:$SearchGlobal
+    $ADCache = $AdData.Cache
+    $UniqueGroups = $AdData.Groups
 
     $SortedGroups   = $UniqueGroups | Sort-Object
     $AllUniqueSAMs  = $ADCache.Keys + $MasterCsvData.Keys | Select-Object -Unique | Sort-Object
@@ -320,102 +465,21 @@ function Invoke-Main {
     }
     # -----------------------------------------------------------------------
 
-    # Jobs starten
-    $Jobs = [System.Collections.Generic.List[PSObject]]::new()
-    foreach ($LID in $ProcessList) {
-        $psi = [powershell]::Create()
-        [void]$psi.AddScript($ScriptBlock)
-        [void]$psi.AddArgument($LID)
-        [void]$psi.AddArgument($MasterCsvData[$LID])
-        [void]$psi.AddArgument($ADCache[$LID])
-        [void]$psi.AddArgument($RequiredList)
-        [void]$psi.AddArgument($SortedGroups)
-        $psi.RunspacePool = $Pool
-        [void]$Jobs.Add([PSCustomObject]@{
-            SAM         = $LID
-            Instance    = $psi
-            AsyncResult = $psi.BeginInvoke()
-        })
-    }
+    $JobResult = Invoke-RunspaceJobs -ProcessList $ProcessList -MasterCsvData $MasterCsvData `
+                                     -ADCache $ADCache -RequiredList $RequiredList `
+                                     -SortedGroups $SortedGroups -Pool $Pool `
+                                     -ScriptBlock $ScriptBlock -LogFile $LogFile
 
-    # Jobs einsammeln
-    $Results  = [System.Collections.Generic.List[PSObject]]::new()
-    $Count    = 0
-    $ErrCount = 0
-    $Total    = $Jobs.Count
+    $Results = $JobResult.Results
+    $ErrCount = $JobResult.ErrCount
 
-    while ($Jobs.Count -gt 0) {
-        $Finished = @($Jobs | Where-Object { $_.AsyncResult.IsCompleted })
-        $ToRemove = [System.Collections.Generic.List[PSObject]]::new()
-
-        foreach ($Job in $Finished) {
-            $Count++
-
-            # Fehler-Stream ausgeben (OPT-1)
-            foreach ($e in $Job.Instance.Streams.Error) {
-                $ErrCount++
-                $em = "[$( Get-Date -Format 'HH:mm:ss')] [ERROR] Runspace $($Job.SAM): $e"
-                Write-Host $em -ForegroundColor Red
-                $em | Out-File $LogFile -Append
-            }
-
-            # FIX-2: Robustes Unrolling - nur PSCustomObject-artige Objekte
-            $rawOut = $Job.Instance.EndInvoke($Job.AsyncResult)
-            foreach ($item in $rawOut) {
-                if ($null -ne $item -and
-                    $item.PSObject -ne $null -and
-                    $item -isnot [System.Management.Automation.PSDataCollection[psobject]]) {
-                    [void]$Results.Add($item)
-                }
-            }
-
-            Write-Host "[$Count/$Total] OK: $($Job.SAM)" -ForegroundColor Gray
-            Write-Progress -Activity "Verarbeite L-Kennungen" `
-                           -Status "$Count / $Total" `
-                           -PercentComplete ([math]::Round(($Count / $Total) * 100))
-
-            $Job.Instance.Dispose()
-            [void]$ToRemove.Add($Job)
-        }
-
-        # FIX-4: Erst nach Loop entfernen
-        foreach ($j in $ToRemove) { [void]$Jobs.Remove($j) }
-        if ($Jobs.Count -gt 0) { Start-Sleep -Milliseconds 50 }
-    }
-
-    Write-Progress -Activity "Verarbeite L-Kennungen" -Completed
     $Pool.Close(); $Pool.Dispose()
 
     # 5. EXPORT
-    # FIX-6: Bounds-Check
-    if ($Results.Count -eq 0) {
-        Write-Log "FEHLER: Keine Ergebnisse generiert." "ERROR"; return
-    }
+    $ExportInfo = Export-Results -Results $Results -SortedGroups $SortedGroups `
+                                 -ScriptDir $ScriptDir -Version $Version
 
-    Write-Log "Erzeuge Ausgabedateien ($($Results.Count) Datensaetze)..." "INFO"
-
-    # Tabelle 1: Gruppen-Uebersicht
-    $Path1    = Join-Path $ScriptDir "L-Kennungen_Full_Analysis_v$Version.csv"
-    $baseCols = @("L-Kennung","andere OU","GELOESCHT","Benoetigt","Geaendert","LOESCHEN",
-                  "AD_Vorname","AD_Nachname")
-    $grpCols  = $SortedGroups | ForEach-Object { "GRP_$_" }
-    $Results | Select-Object ($baseCols + $grpCols) |
-        Export-Csv -Path $Path1 -Delimiter ';' -NoTypeInformation -Encoding UTF8
-
-    # Tabelle 2: Properties (alle Spalten ausser LOESCHEN, mit RFC-4180-Escaping)
-    $Path2    = Join-Path $ScriptDir "L-Kennungen_Properties_v$Version.csv"
-    $allCols  = $Results[0].psobject.Properties.Name | Where-Object { $_ -ne "LOESCHEN" }
-    $lines    = [System.Collections.Generic.List[string]]::new()
-    $lines.Add($allCols -join ';')
-    foreach ($r in $Results) {
-        $row = foreach ($col in $allCols) {
-            $val = $r.$col
-            $str = if ($null -ne $val) { $val.ToString() } else { "" }
-            if ($str -match '[;\r\n"]') { '"' + $str.Replace('"','""') + '"' } else { $str }
-        }
-        $lines.Add($row -join ';')
-    }
-    $lines | Out-File -FilePath $Path2 -Encoding UTF8 -Force
+    if (-not $ExportInfo) { return }
 
     $Stopwatch.Stop()
 
@@ -426,8 +490,8 @@ function Invoke-Main {
     Write-Host "ZEILEN  : $($Results.Count)"
     Write-Host "FEHLER  : $ErrCount"
     Write-Host "DAUER   : $($Stopwatch.Elapsed.TotalSeconds.ToString('F2'))s"
-    Write-Host "TAB 1   : $Path1"
-    Write-Host "TAB 2   : $Path2"
+    Write-Host "TAB 1   : $($ExportInfo.Path1)"
+    Write-Host "TAB 2   : $($ExportInfo.Path2)"
     Write-Host "LOG     : $LogFile"
     Write-Host "====================================================`n" -ForegroundColor Cyan
 }
