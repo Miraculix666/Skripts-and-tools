@@ -82,30 +82,30 @@ function Merge-JulesBranchesForRepo {
     }
 
     foreach ($branch in $branchesToMerge) {
-        Write-Host "     ► Merging branch: $branch ..." -ForegroundColor Cyan
+        Write-Host "     > Merging branch: $branch ..." -ForegroundColor Cyan
         
         $commitMsg = "Integrate updates from $branch"
         $mergeOutput = git -C $RepoPath -c core.safecrlf=false merge "origin/$branch" --no-edit -m $commitMsg 2>&1
         
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "       ✓ Merge successful: $branch" -ForegroundColor Green
+            Write-Host "       [OK] Merge successful: $branch" -ForegroundColor Green
             
             # Push the merged default branch to remote
             $pushOutput = git -C $RepoPath push origin $defaultBranch 2>&1
             if ($LASTEXITCODE -eq 0) {
-                Write-Host "       ✓ Push successful for $defaultBranch" -ForegroundColor Green
+                Write-Host "       [OK] Push successful for $defaultBranch" -ForegroundColor Green
                 
                 # Delete the remote branch on GitHub
                 git -C $RepoPath push origin --delete $branch -q 2>$null
-                Write-Host "       ✓ Remote branch deleted: $branch" -ForegroundColor Gray
+                Write-Host "       [OK] Remote branch deleted: $branch" -ForegroundColor Gray
                 
                 # Delete local tracking branch if created
                 git -C $RepoPath branch -D $branch -q 2>$null
             } else {
-                Write-Host "       ✗ Push failed for ${defaultBranch}: $pushOutput" -ForegroundColor Red
+                Write-Host "       [FAIL] Push failed for ${defaultBranch}: $pushOutput" -ForegroundColor Red
             }
         } else {
-            Write-Host "       ✗ Merge conflict in $branch. Aborting merge." -ForegroundColor Yellow
+            Write-Host "       [FAIL] Merge conflict in $branch. Aborting merge." -ForegroundColor Yellow
             git -C $RepoPath merge --abort 2>&1 | Out-Null
         }
     }
