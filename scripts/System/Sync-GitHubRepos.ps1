@@ -26,13 +26,14 @@ function Write-Step {
 }
 function Write-OK { param([string]$M) if (-not $Silent) { Write-Host "    [OK] $M" -ForegroundColor Green } }
 function Write-Warn { param([string]$M) if (-not $Silent) { Write-Host "    [WARN] $M" -ForegroundColor Yellow } }
-function Write-Err { param([string]$M) { Write-Host "    [ERR] $M" -ForegroundColor Red } }
+function Write-Err { param([string]$M) Write-Host "    [ERR] $M" -ForegroundColor Red }
 
 function Merge-JulesBranchesForRepo {
     param(
         [string]$RepoPath,
         [string]$RepoName
     )
+    $ErrorActionPreference = 'Continue'
 
     # 1. Fetch remote branches
     git -C $RepoPath fetch --all --prune -q 2>$null
@@ -120,6 +121,11 @@ function Merge-JulesBranchesForRepo {
 Write-Step 1 6 "GitHub API Token laden ..."
 
 function Get-GitHubToken {
+    # Clean up placeholder token from template
+    if ($env:GITHUB_TOKEN -eq "your_token_here" -or $env:GITHUB_TOKEN -eq "your_github_token_here") {
+        $env:GITHUB_TOKEN = $null
+    }
+
     # 1. Try gh CLI (preferred - it manages token lifecycle itself)
     if (Get-Command gh -ErrorAction SilentlyContinue) {
         try {
@@ -158,7 +164,7 @@ if (-not $PAT) {
     Write-Host "  Tipp: 'gh auth login' ausfuehren um gh dauerhaft zu authentifizieren." -ForegroundColor Yellow
     exit 1
 }
-$tokenSource = if ((Get-Command gh -EA SilentlyContinue) -and ((gh auth status 2>&1) -notmatch 'not logged')) { 'gh auth' } else { 'Eingabe' }
+$tokenSource = if ((Get-Command gh -EA SilentlyContinue) -and (( & { $ErrorActionPreference = 'Continue'; gh auth status 2>&1 } ) -notmatch 'not logged')) { 'gh auth' } else { 'Eingabe' }
 Write-OK "API Token geladen (via $tokenSource)"
 
 $headers = @{
