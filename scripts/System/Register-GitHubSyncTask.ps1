@@ -6,6 +6,7 @@ param(
     [string]$TaskName    = 'GitHub-Repo-Sync',
     [string]$TaskPath    = '\GitHub\',
     [switch]$DisableFullSync,
+    [switch]$Silent,
     [switch]$Remove
 )
 
@@ -90,12 +91,14 @@ Register-ScheduledTask @params | Out-Null
 Write-Host "    [OK] Scheduled Task '$TaskPath$TaskName' erfolgreich registriert." -ForegroundColor Green
 Write-Host "   Trigger: alle 20 Minuten + bei Anmeldung" -ForegroundColor DarkGray
 Write-Host "   Skript : $ScriptPath" -ForegroundColor DarkGray
-Write-Host ""
-Write-Host "   Jetzt manuell ausfuehren? (empfohlen fuer ersten Sync)" -ForegroundColor Yellow
-$run = Read-Host "   [J/n]"
-if ($run -ne 'n' -and $run -ne 'N') {
-    Write-Host "    [RUN] Starte Sync ..." -ForegroundColor Cyan
-    $runParams = @{}
-    if (-not $DisableFullSync) { $runParams['FullSync'] = $true }
-    & $ScriptPath @runParams
+if (-not $Silent) {
+    Write-Host ""
+    Write-Host "   Jetzt manuell ausfuehren? (empfohlen fuer ersten Sync)" -ForegroundColor Yellow
+    $run = Read-Host "   [J/n]"
+    if ($run -ne 'n' -and $run -ne 'N') {
+        Write-Host "    [RUN] Starte Sync ..." -ForegroundColor Cyan
+        $runParams = @{}
+        if (-not $DisableFullSync) { $runParams['FullSync'] = $true }
+        & $ScriptPath @runParams
+    }
 }
