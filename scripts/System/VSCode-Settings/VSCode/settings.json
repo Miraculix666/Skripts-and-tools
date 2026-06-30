@@ -1,0 +1,12 @@
+{
+    "geminicodeassist.project": "hassio-a9b0a",
+    "workbench.startupEditor": "none",
+    "workbench.editor.empty.hint": "hidden",
+    "editor.inlineSuggest.suppressSuggestions": true,
+    "editor.inlineSuggest.syntaxHighlightingEnabled": true,
+    "yaml.schemas": {
+        "file:///c%3A/Users/nw0b4746/.vscode/extensions/continue.continue-1.2.11-win32-x64/config-yaml-schema.json": [
+            ".continue/**/*.yaml"
+        ]
+    }
+}

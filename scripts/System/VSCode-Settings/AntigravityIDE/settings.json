@@ -1,0 +1,23 @@
+{
+  "json.schemaDownload.enable": true,
+  "git.autofetch": true,
+  "sshfs.configs": [
+    {
+      "name": "dx80",
+      "host": "192.168.250.20",
+      "password": "023654192",
+      "label": "Cisco",
+      "username": "Administrator"
+    },
+    {
+      "name": "sopsi",
+      "group": "Schulung",
+      "host": "sopsi",
+      "username": "adminuser",
+      "password": "Ng2times4ever?"
+    }
+  ],
+  "gitlens.ai.model": "gitkraken",
+  "gitlens.ai.gitkraken.model": "gemini:gemini-2.5-flash",
+  "git.confirmSync": false,
+}
