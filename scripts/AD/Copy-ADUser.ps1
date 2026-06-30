@@ -181,10 +181,10 @@ function Export-ADUsers {
         }
 
         Write-Verbose "Suche Benutzer in allen relevanten OUs"
-        $allUsers = @()
+        $allUsers = [System.Collections.Generic.List[object]]::new()
         if ($ExportTemplateOnly) {
             # Export only the template user
-            $allUsers += $Template
+            [void]$allUsers.Add($Template)
         } else {
             foreach ($ou in $templateOUs) {
                 Write-Verbose "Durchsuche OU: $ou"
@@ -196,7 +196,7 @@ function Export-ADUsers {
 
                     foreach ($user in $usersInOU) {
                         if (Compare-GroupMembership -TemplateGroups $templateGroups -UserGroups $user.MemberOf) {
-                            $allUsers += $user
+                            [void]$allUsers.Add($user)
                         }
                     }
                 } catch {
