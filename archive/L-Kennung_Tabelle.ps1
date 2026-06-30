@@ -194,13 +194,12 @@ function Export-ToExcel {
     }
 }
 
-function Export-ToHtml {
+function Get-HtmlTemplate {
     param (
-        [Parameter(Mandatory)][object[]]$Data,
-        [Parameter(Mandatory)][string]$Path
+        [Parameter(Mandatory)][string]$JsonData
     )
     
-    $html = @"
+    return @"
 <!DOCTYPE html>
 <html>
 <head>
@@ -224,7 +223,7 @@ function Export-ToHtml {
         };
         
         // Process data for visualization
-        const users = $($Data | ConvertTo-Json);
+        const users = $JsonData;
         const processedUsers = new Set();
         const processedGroups = new Set();
         
@@ -324,6 +323,16 @@ function Export-ToHtml {
 </body>
 </html>
 "@
+}
+
+function Export-ToHtml {
+    param (
+        [Parameter(Mandatory)][object[]]$Data,
+        [Parameter(Mandatory)][string]$Path
+    )
+
+    $jsonData = $Data | ConvertTo-Json -Depth 10
+    $html = Get-HtmlTemplate -JsonData $jsonData
     
     $html | Out-File -FilePath $Path -Encoding UTF8
     Write-Host "HTML visualization exported: $Path" -ForegroundColor Green
