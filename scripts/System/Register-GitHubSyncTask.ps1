@@ -4,7 +4,7 @@
 param(
     [string]$ScriptPath  = $null,
     [string]$TaskName    = 'GitHub-Repo-Sync',
-    [string]$TaskPath    = '\GitHub\',
+    [string]$TaskPath    = '\',
     [switch]$DisableFullSync,
     [switch]$Silent,
     [switch]$Remove
@@ -15,27 +15,6 @@ $ErrorActionPreference = 'Stop'
 
 if ([string]::IsNullOrEmpty($ScriptPath)) {
     $ScriptPath = Join-Path $PSScriptRoot 'Sync-GitHubRepos.ps1'
-}
-
-# ── Auto-Elevation to Administrator ──────────────────────────────────────────
-$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if (-not $isAdmin) {
-    Write-Host "    [WARN] Keine Administratorrechte erkannt. Starte neu als Administrator..." -ForegroundColor Yellow
-    $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
-    $paramList = @()
-    foreach ($key in $MyInvocation.BoundParameters.Keys) {
-        $value = $MyInvocation.BoundParameters[$key]
-        if ($value -is [switch]) {
-            if ($value) { $paramList += "-$key" }
-        } else {
-            $paramList += "-$key `"$value`""
-        }
-    }
-    if ($paramList.Count -gt 0) {
-        $arguments += " " + ($paramList -join " ")
-    }
-    Start-Process powershell.exe -ArgumentList $arguments -Verb RunAs
-    exit 0
 }
 
 if ($Remove) {
@@ -57,15 +36,8 @@ $action = New-ScheduledTaskAction `
     -Execute 'powershell.exe' `
     -Argument $argsList
 
-# Triggers: logon + repeating every 20 minutes indefinitely
-$triggerLogon = New-ScheduledTaskTrigger -AtLogOn
-$trigger20Min = New-ScheduledTaskTrigger -Once -At '00:00' -RepetitionInterval (New-TimeSpan -Minutes 20) -RepetitionDuration ([System.TimeSpan]::MaxValue)
-
-# Principal: current user, run only when logged on
-$principal = New-ScheduledTaskPrincipal `
-    -UserId "$env:USERDOMAIN\$env:USERNAME" `
-    -LogonType Interactive `
-    -RunLevel Limited
+# Triggers: repeating every 20 minutes indefinitely
+$trigger20Min = New-ScheduledTaskTrigger -Once -At '00:00' -RepetitionInterval (New-TimeSpan -Minutes 20)
 
 # Settings
 $settings = New-ScheduledTaskSettingsSet `
@@ -79,8 +51,7 @@ $params = @{
     TaskName  = $TaskName
     TaskPath  = $TaskPath
     Action    = $action
-    Trigger   = @($triggerLogon, $trigger20Min)
-    Principal = $principal
+    Trigger   = $trigger20Min
     Settings  = $settings
     Force     = $true
     Description = "Synchronisiert alle GitHub-Repos nach C:\GitHub\ und aktualisiert VS Code Workspaces."
